@@ -43,3 +43,14 @@ def test_PlayedCards():
 
     with pytest.raises(AssertionError):
         cv = hand.PlayedCards(hand.CardValue(1), 0)
+
+def test_Hand_cards_equal():
+    theHand = hand.Hand()
+    theHand.add_cards(hand.CardValue(0), 3)
+    theHand.add_cards(hand.CardValue(1), 2)
+    theHand.add_cards(hand.CardValue(4), 1)
+
+    assert theHand.cards_equal({0:3, 1:2, 4:1})
+    assert not theHand.cards_equal({0:3, 1:2, 4:1, 5:1})
+    assert not theHand.cards_equal({0:3, 1:2})
+    assert not theHand.cards_equal({0:3, 1:2, 4:2})
