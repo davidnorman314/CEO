@@ -44,6 +44,15 @@ class Hand:
 
         self._cards[card_value.value] += count
 
+    def to_dict(self):
+        """
+        Converts the hand to a dictionary mapping the card value to the
+        count of cards in the hand
+        """
+        return {key:self._cards[key] 
+            for key in range(13) 
+            if self._cards[key] > 0}
+
     def cards_equal(self, card_dict: dict):
         """
         Checks that hand exactly equals the hand described by the dictionary.

@@ -49,3 +49,9 @@ def test_Hand_cards_equal():
     assert not theHand.cards_equal({0:3, 1:2, 4:1, 5:1})
     assert not theHand.cards_equal({0:3, 1:2})
     assert not theHand.cards_equal({0:3, 1:2, 4:2})
+
+    assert theHand.to_dict() == {0:3, 1:2, 4:1}
+
+    theHand.add_cards(hand.CardValue(12), 5)
+
+    assert theHand.to_dict() == {0:3, 1:2, 4:1, 12:5}
