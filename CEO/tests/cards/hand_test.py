@@ -72,6 +72,18 @@ def test_PlayCardsFromHand():
     theHand.play_cards(pc)
     assert theHand.to_dict() == {1:2}
 
+def test_HandCardCount():
+    theHand = hand.Hand()
+
+    cv0 = hand.CardValue(0)
+    cv3 = hand.CardValue(3)
+
+    theHand.add_cards(cv0, 3)
+    theHand.add_cards(cv3, 5)
+
+    assert theHand.count(cv0) == 3
+    assert theHand.count(cv3) == 5
+
 
 def test_Hand_cards_equal():
     theHand = hand.Hand()
