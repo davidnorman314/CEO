@@ -1,6 +1,11 @@
 import array
 
 class CardValue:
+    """
+    Class representing a card value, e.g, 2, 3, 4, ..., King, and Ace.
+    The values are zero through thirteen.
+    """
+
     def __init__(self, value:int):
         assert value >= 0
         assert value <= 12
@@ -13,6 +18,10 @@ class CardValue:
         return NotImplemented
 
 class PlayedCards:
+    """
+    Class a set of cards that are played from a hand to the table.
+    """
+
     def __init__(self, value : CardValue, count : int):
         assert count >= 1
 
