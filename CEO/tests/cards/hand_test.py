@@ -39,6 +39,40 @@ def test_PlayedCards():
     with pytest.raises(AssertionError):
         cv = hand.PlayedCards(hand.CardValue(1), 0)
 
+def test_PlayCardsFromHand():
+    theHand = hand.Hand()
+
+    theHand.add_cards(hand.CardValue(0), 3)
+    pc = hand.PlayedCards(hand.CardValue(0), 1)
+    theHand.play_cards(pc)
+    assert theHand.to_dict() == {0:2}
+
+    pc = hand.PlayedCards(hand.CardValue(0), 1)
+    theHand.play_cards(pc)
+    assert theHand.to_dict() == {0:1}
+
+    theHand.add_cards(hand.CardValue(1), 5)
+    pc = hand.PlayedCards(hand.CardValue(1), 3)
+    theHand.play_cards(pc)
+    assert theHand.to_dict() == {0:1, 1:2}
+
+    with pytest.raises(AssertionError):
+        pc = hand.PlayedCards(hand.CardValue(0), 2)
+        theHand.play_cards(pc)
+
+    with pytest.raises(AssertionError):
+        pc = hand.PlayedCards(hand.CardValue(0), 3)
+        theHand.play_cards(pc)
+
+    with pytest.raises(AssertionError):
+        pc = hand.PlayedCards(hand.CardValue(1), 3)
+        theHand.play_cards(pc)
+
+    pc = hand.PlayedCards(hand.CardValue(0), 1)
+    theHand.play_cards(pc)
+    assert theHand.to_dict() == {1:2}
+
+
 def test_Hand_cards_equal():
     theHand = hand.Hand()
     theHand.add_cards(hand.CardValue(0), 3)

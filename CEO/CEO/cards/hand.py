@@ -44,6 +44,15 @@ class Hand:
 
         self._cards[card_value.value] += count
 
+    def play_cards(self, cards : PlayedCards):
+        assert cards.count > 0
+
+        index = cards.value.value
+
+        assert self._cards[index] >= cards.count
+
+        self._cards[index] -= cards.count
+
     def to_dict(self):
         """
         Converts the hand to a dictionary mapping the card value to the
