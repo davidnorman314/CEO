@@ -20,23 +20,28 @@ class PlayedCards:
         self.count = count
 
 class Hand:
+    """
+    Class representing a CEO hand
+    """
+
     def __init__(self):
         self._cards = array.array('i', [0,0,0,0,0,0,0,0,0,0,0,0,0] )
 
     def add_cards(self, card_value : CardValue, count :int):
+        """
+        Adds cards with the given value to the hand
+        """
         assert isinstance(card_value, CardValue)
 
         self._cards[card_value.value] += count
 
-    def add(self,x,y):
-        print (self._cards)
-        print (len(self._cards))
-        return x + y
-
-    # Checks that hand exactly equals the hand described by the dictionary.
-    # The dictionary is a map from integer card value to the count of cards.
-    # This is intended for unit testing.
     def cards_equal(self, card_dict: dict):
+        """
+        Checks that hand exactly equals the hand described by the dictionary.
+        The dictionary is a map from integer card value to the count of cards.
+        This is intended for unit testing.
+        """
+
         # Check that all the entries in card_dict match _cards
         for key in card_dict:
             hand_count = self._cards[key]
