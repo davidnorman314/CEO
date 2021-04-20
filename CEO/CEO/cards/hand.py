@@ -46,6 +46,7 @@ class Hand:
         """
         Adds cards with the given value to the hand
         """
+        assert card_value is not None
         assert isinstance(card_value, CardValue)
 
         self._cards[card_value.value] += count
@@ -54,6 +55,7 @@ class Hand:
         """
         Removes cards with the given value to the hand
         """
+        assert card_value is not None
         assert isinstance(card_value, CardValue)
 
         assert self._cards[card_value.value] >= count

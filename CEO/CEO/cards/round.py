@@ -13,6 +13,8 @@ class Round:
         assert len(self._players) == len(self._hands)
 
     def play(self):
+        print("Staring round")
+
         starting_player = 0
         trick_number = 0
         while not self._all_cards_played():
@@ -41,6 +43,7 @@ class Round:
 
         print(starting_player, " ", cur_player, " leads ", cur_card_value)
 
+        assert cur_card_value is not None
         assert cur_card_count > 0
 
         # Let the remaining players play
@@ -52,8 +55,13 @@ class Round:
             new_card_value = cur_player.behavoir.playOnTrick(
                 cur_hand, cur_card_value, cur_card_count, state)
 
+            if new_card_value is None:
+                print(cur_index, " ", cur_player, " passes")
+                continue
+
             print(cur_index, " ", cur_player, " plays ", new_card_value)
 
+            assert new_card_value is not None
             cur_hand.remove_cards(new_card_value, cur_card_count)
 
             cur_card_value = new_card_value

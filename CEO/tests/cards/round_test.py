@@ -144,3 +144,81 @@ def test_SimpleRound():
     assert hand2.to_dict() == {}
     assert hand3.to_dict() == {}
     assert hand4.to_dict() == {}
+
+def test_Passing():
+    """
+    Test playing a round of CEO with passing
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = hand.CardValue(0)
+    cv1 = hand.CardValue(1)
+    cv2 = hand.CardValue(2)
+    cv3 = hand.CardValue(3)
+    cv4 = hand.CardValue(4)
+    cv5 = hand.CardValue(5)
+
+    # Make the hands
+    hand1 = hand.Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv4, 2)
+
+    hand2 = hand.Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv5, 2)
+
+    hand3 = hand.Hand()
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv2, 2)
+
+    hand4 = hand.Hand()
+    hand4.add_cards(cv3, 2)
+
+    # Make the players
+    behavior1 = MockPlayerBehavior()
+    behavior1.value_to_play.append(cv0)
+    behavior1.value_to_play.append(cv4)
+
+    behavior2 = MockPlayerBehavior()
+    behavior2.value_to_play.append(cv1)
+    behavior2.value_to_play.append(cv5)
+
+    behavior3 = MockPlayerBehavior()
+    behavior3.value_to_play.append(cv2)
+    behavior3.value_to_play.append(cv2)
+
+    behavior4 = MockPlayerBehavior()
+    behavior4.value_to_play.append(None)
+    behavior4.value_to_play.append(cv3)
+    
+    player1 = player.Player("Player1", behavior1)
+    player2 = player.Player("Player2", behavior2)
+    player3 = player.Player("Player3", behavior3)
+    player4 = player.Player("Player4", behavior4)
+
+    # Play the round
+    round = rd.Round([player1, player2, player3, player4], 
+                     [hand1, hand2, hand3, hand4])
+    round.play()
+
+    # Check that the behavior objects were correctly called
+    assert behavior1.trick_states[0] == LeadState()
+    assert behavior2.trick_states[0] == TrickState(cv0, 1)
+    assert behavior3.trick_states[0] == TrickState(cv1, 1)
+    assert behavior4.trick_states[0] == TrickState(cv2, 1)
+
+    assert behavior3.trick_states[1] == LeadState()
+    assert behavior4.trick_states[1] == TrickState(cv2, 2)
+    assert behavior1.trick_states[1] == TrickState(cv3, 2)
+    assert behavior2.trick_states[1] == TrickState(cv4, 2)
+
+    assert len(behavior1.trick_states) == 2
+    assert len(behavior2.trick_states) == 2
+    assert len(behavior3.trick_states) == 2
+    assert len(behavior4.trick_states) == 2
+
+    # All hands should be empty
+    assert hand1.to_dict() == {}
+    assert hand2.to_dict() == {}
+    assert hand3.to_dict() == {}
+    assert hand4.to_dict() == {}

@@ -24,6 +24,7 @@ class PlayerBehaviorInterface:
         """
         Called to decide what the player should play on the given trick.
         Returns the value of the card(s) that should be played.
+        If the player passes, then None should be returned.
         """
         pass
 
