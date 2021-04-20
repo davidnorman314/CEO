@@ -52,6 +52,9 @@ class Round:
             cur_player = self._players[cur_index]
             cur_hand = self._hands[cur_index]
 
+            if cur_hand.is_empty():
+                continue
+
             new_card_value = cur_player.behavoir.playOnTrick(
                 cur_hand, cur_card_value, cur_card_count, state)
 
