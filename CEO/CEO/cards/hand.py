@@ -17,6 +17,12 @@ class CardValue:
             return self.value == other.value
         return NotImplemented
 
+    def __str__(self):
+        return "V" + str(self.value)
+
+    def __repr__(self):
+        return str(self)
+
 class PlayedCards:
     """
     Class a set of cards that are played from a hand to the table.
@@ -43,6 +49,22 @@ class Hand:
         assert isinstance(card_value, CardValue)
 
         self._cards[card_value.value] += count
+
+    def remove_cards(self, card_value : CardValue, count :int):
+        """
+        Removes cards with the given value to the hand
+        """
+        assert isinstance(card_value, CardValue)
+
+        assert self._cards[card_value.value] >= count
+
+        self._cards[card_value.value] -= count
+
+    def is_empty(self) -> bool:
+        return sum(self._cards) == 0
+
+    def count(self, card_value: CardValue) -> int:
+        return self._cards[card_value.value]
 
     def play_cards(self, cards : PlayedCards):
         assert cards.count > 0
@@ -87,3 +109,9 @@ class Hand:
                 return False
 
         return True
+
+    def __str__(self):
+        return "Hand " + str(self.to_dict())
+
+    def __repr__(self):
+        return str(self)
