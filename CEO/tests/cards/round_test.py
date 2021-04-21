@@ -145,6 +145,9 @@ def test_SimpleRound():
     assert hand3.to_dict() == {}
     assert hand4.to_dict() == {}
 
+    # Check the next round odder
+    assert round.get_next_round_order() == [3, 0, 1, 2]
+
 def test_Passing():
     """
     Test playing a round of CEO with passing
@@ -222,6 +225,9 @@ def test_Passing():
     assert hand2.to_dict() == {}
     assert hand3.to_dict() == {}
     assert hand4.to_dict() == {}
+
+    # Check the next round order
+    assert round.get_next_round_order() == [2, 3, 0, 1]
 
 def test_SkipEmptyHand():
     """
@@ -362,6 +368,9 @@ def test_LeadAfterPlayerGoesOut():
     assert hand3.to_dict() == {}
     assert hand4.to_dict() == {}
 
+    # Check the next round order
+    assert round.get_next_round_order() == [2, 0, 1, 3]
+
 def test_LeadAfterPlayerGoesOut2():
     """
     Test that the game correctly determines who leads after a
@@ -434,3 +443,6 @@ def test_LeadAfterPlayerGoesOut2():
     assert hand2.to_dict() == {}
     assert hand3.to_dict() == {}
     assert hand4.to_dict() == {}
+
+    # Check the next round order
+    assert round.get_next_round_order() == [0, 2, 1, 3]

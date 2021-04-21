@@ -9,6 +9,7 @@ class Round:
         self._players = players
         self._hands = hands
         self._player_count = len(self._players)
+        self._next_round_order = []
 
         assert len(self._players) == len(self._hands)
 
@@ -41,9 +42,9 @@ class Round:
 
         cur_card_value = cur_player.behavoir.lead(cur_hand, state)
         cur_card_count = cur_hand.count(cur_card_value)
-        cur_hand.remove_cards(cur_card_value, cur_card_count)
 
         print(starting_player, " ", cur_player, " leads ", cur_card_value)
+        self._play_cards(starting_player, cur_card_value, cur_card_count)
 
         assert cur_card_value is not None
         assert cur_card_count > 0
@@ -64,10 +65,8 @@ class Round:
                 print(cur_index, " ", cur_player, " passes")
                 continue
 
+            self._play_cards(cur_index, new_card_value, cur_card_count)
             print(cur_index, " ", cur_player, " plays ", new_card_value)
-
-            assert new_card_value is not None
-            cur_hand.remove_cards(new_card_value, cur_card_count)
 
             cur_card_value = new_card_value
             last_index_to_play = cur_index
@@ -80,6 +79,16 @@ class Round:
                 last_index_to_play += 1
 
         return last_index_to_play
+
+    def get_next_round_order(self) -> list[int]:
+        return self._next_round_order
+
+    def _play_cards(self, player_index: int, card_value : CardValue, count : int):
+        theHand = self._hands[player_index]
+        theHand.remove_cards(card_value, count)
+
+        if theHand.is_empty():
+            self._next_round_order.append(player_index)
 
     def _all_cards_played(self):
         return all(map((lambda x : x.is_empty()), self._hands))
