@@ -37,6 +37,8 @@ class Round:
         cur_player = self._players[starting_player]
         cur_hand = self._hands[starting_player]
 
+        assert not cur_hand.is_empty()
+
         cur_card_value = cur_player.behavoir.lead(cur_hand, state)
         cur_card_count = cur_hand.count(cur_card_value)
         cur_hand.remove_cards(cur_card_value, cur_card_count)
@@ -69,6 +71,13 @@ class Round:
 
             cur_card_value = new_card_value
             last_index_to_play = cur_index
+
+        # If the last player to play on the trick went out, then
+        # find the next player to lead.
+        if self._hands[last_index_to_play].is_empty():
+            last_index_to_play = 0
+            while last_index_to_play < self._player_count and self._hands[last_index_to_play].is_empty():
+                last_index_to_play += 1
 
         return last_index_to_play
 
