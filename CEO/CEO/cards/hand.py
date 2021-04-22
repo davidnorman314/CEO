@@ -71,6 +71,13 @@ class Hand:
     def count(self, card_value: CardValue) -> int:
         return self._cards[card_value.value]
 
+    def max_card_value(self) -> CardValue:
+        for i in range(len(self._cards) - 1, -1, -1):
+            if self._cards[i] > 0:
+                return CardValue(i)
+
+        assert False
+
     def play_cards(self, cards : PlayedCards):
         assert cards.count > 0
 

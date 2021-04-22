@@ -13,6 +13,14 @@ class PlayerBehaviorInterface:
     Interface implemented by objects that describe the plays made by a player
     """
 
+    def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
+        """
+        Called to find out which cards are passed from a player on the
+        high side of the table. This is not called for players on the low
+        side.
+        """
+        pass
+
     def lead(self, hand: Hand, state: RoundState) -> CardValue:
         """
         Called to decide what the player should lead to start a trick.
