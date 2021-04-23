@@ -62,7 +62,7 @@ class Round:
             if cur_hand.is_empty():
                 continue
 
-            new_card_value = cur_player.behavoir.playOnTrick(
+            new_card_value = cur_player.behavoir.play_on_trick(
                 cur_hand, cur_card_value, cur_card_count, state)
 
             if new_card_value is None:

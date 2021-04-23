@@ -58,7 +58,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
 
         return ret
 
-    def playOnTrick(self, hand: hand.Hand, cur_trick_value : hand.CardValue, 
+    def play_on_trick(self, hand: hand.Hand, cur_trick_value : hand.CardValue, 
                 cur_trick_count: int, state: rd.RoundState) -> hand.CardValue:
         self.trick_states.append(TrickState(cur_trick_value, cur_trick_count))
 
