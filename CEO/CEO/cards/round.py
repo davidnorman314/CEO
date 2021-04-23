@@ -1,15 +1,17 @@
 from CEO.CEO.cards.hand import *
 from CEO.CEO.cards.player import *
+from CEO.CEO.cards.eventlistener import *
 
 class Round:
     """
     Class representing on round in a game of CEO
     """
-    def __init__(self, players : list[Player], hands : list[Hand]):
+    def __init__(self, players : list[Player], hands : list[Hand], listener : EventListenerInterface):
         self._players = players
         self._hands = hands
         self._player_count = len(self._players)
         self._next_round_order = []
+        self._listener = listener
 
         assert len(self._players) == len(self._hands)
 
@@ -25,7 +27,7 @@ class Round:
             starting_player = self._play_trick(starting_player)
 
     def _play_trick(self, starting_player : int) -> int:
-        print("Staring trick with player number ", starting_player)
+        # print("Staring trick with player number ", starting_player)
         state = RoundState()
 
         # Calculate the order of the other players after the player that leads.
@@ -43,7 +45,9 @@ class Round:
         cur_card_value = cur_player.behavoir.lead(cur_hand, state)
         cur_card_count = cur_hand.count(cur_card_value)
 
-        print(starting_player, " ", cur_player, " leads ", cur_card_value)
+        # print(starting_player, " ", cur_player, " leads ", cur_card_value)
+        self._listener.lead(cur_card_value, cur_card_count, starting_player, cur_player)
+
         self._play_cards(starting_player, cur_card_value, cur_card_count)
 
         assert cur_card_value is not None
@@ -63,10 +67,13 @@ class Round:
 
             if new_card_value is None:
                 print(cur_index, " ", cur_player, " passes")
+                self._listener.pass_on_trick(cur_index, cur_player)
                 continue
 
             self._play_cards(cur_index, new_card_value, cur_card_count)
-            print(cur_index, " ", cur_player, " plays ", new_card_value)
+
+            # print(cur_index, " ", cur_player, " plays ", new_card_value)
+            self._listener.play_cards(new_card_value, cur_card_count, cur_index, cur_player)
 
             cur_card_value = new_card_value
             last_index_to_play = cur_index

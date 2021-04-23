@@ -4,6 +4,7 @@ import CEO.CEO.cards.hand as hand
 import CEO.CEO.cards.player as player
 import CEO.CEO.cards.passcards as pc
 import CEO.CEO.cards.round as rd
+import CEO.CEO.cards.eventlistener as el
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface):
     to_pass : list[hand.CardValue]
@@ -80,8 +81,10 @@ def test_FivePlayers():
     player5 = player.Player("Player5", behavior5)
 
     # Do passing
+    listener = el.PrintAllEventListener()
     passcards = pc.PassCards([player1, player2, player3, player4, player5], 
-                             [hand1, hand2, hand3, hand4, hand5])
+                             [hand1, hand2, hand3, hand4, hand5],
+                             listener)
     passcards.do_card_passing()
 
     # Check that the behavior objects were correctly called
@@ -149,8 +152,10 @@ def test_FourPlayers():
     player4 = player.Player("Player4", behavior4)
 
     # Do passing
+    listener = el.PrintAllEventListener()
     passcards = pc.PassCards([player1, player2, player3, player4], 
-                             [hand1, hand2, hand3, hand4])
+                             [hand1, hand2, hand3, hand4],
+                             listener)
     passcards.do_card_passing()
 
     # Check that the behavior objects were correctly called

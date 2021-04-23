@@ -3,6 +3,7 @@ import CEO.CEO.cards.deck as deck
 import CEO.CEO.cards.hand as hand
 import CEO.CEO.cards.round as rd
 import CEO.CEO.cards.player as player
+import CEO.CEO.cards.eventlistener as el
 
 class StateBase:
     pass
@@ -119,8 +120,10 @@ def test_SimpleRound():
     player4 = player.Player("Player4", behavior4)
 
     # Play the round
+    listener = el.PrintAllEventListener()
     round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4])
+                     [hand1, hand2, hand3, hand4],
+                     listener)
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -200,8 +203,10 @@ def test_Passing():
     player4 = player.Player("Player4", behavior4)
 
     # Play the round
+    listener = el.PrintAllEventListener()
     round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4])
+                     [hand1, hand2, hand3, hand4],
+                     listener)
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -272,8 +277,10 @@ def test_SkipEmptyHand():
     player4 = player.Player("Player4", behavior4)
 
     # Play the round
+    listener = el.PrintAllEventListener()
     round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4])
+                     [hand1, hand2, hand3, hand4],
+                     listener)
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -343,8 +350,10 @@ def test_LeadAfterPlayerGoesOut():
     player4 = player.Player("Player4", behavior4)
 
     # Play the round
+    listener = el.PrintAllEventListener()
     round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4])
+                     [hand1, hand2, hand3, hand4],
+                     listener)
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -420,8 +429,10 @@ def test_LeadAfterPlayerGoesOut2():
     player4 = player.Player("Player4", behavior4)
 
     # Play the round
+    listener = el.PrintAllEventListener()
     round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4])
+                     [hand1, hand2, hand3, hand4],
+                     listener)
     round.play()
 
     # Check that the behavior objects were correctly called

@@ -12,6 +12,9 @@ class CardValue:
 
         self.value = value
 
+    def to_display(self, plural = True):
+        return str(self)
+
     def __eq__(self, other):
         if isinstance(other, CardValue):
             return self.value == other.value
