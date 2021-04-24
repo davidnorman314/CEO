@@ -6,10 +6,11 @@ import CEO.CEO.cards.passcards as pc
 import CEO.CEO.cards.round as rd
 import CEO.CEO.cards.eventlistener as el
 
+
 class MockPlayerBehavior(player.PlayerBehaviorInterface):
-    to_pass : list[hand.CardValue]
-    pass_called : bool
-    
+    to_pass: list[hand.CardValue]
+    pass_called: bool
+
     def __init__(self):
         self.to_pass = None
         self.pass_called = False
@@ -21,9 +22,15 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
     def lead(self, hand: hand.Hand, state: rd.RoundState) -> hand.CardValue:
         pass
 
-    def play_on_trick(self, hand: hand.Hand, cur_trick_value : hand.CardValue, 
-                cur_trick_count: int, state: rd.RoundState) -> hand.CardValue:
+    def play_on_trick(
+        self,
+        hand: hand.Hand,
+        cur_trick_value: hand.CardValue,
+        cur_trick_count: int,
+        state: rd.RoundState,
+    ) -> hand.CardValue:
         pass
+
 
 def test_FivePlayers():
     """
@@ -73,7 +80,7 @@ def test_FivePlayers():
     behavior4 = MockPlayerBehavior()
 
     behavior5 = MockPlayerBehavior()
-    
+
     player1 = player.Player("Player1", behavior1)
     player2 = player.Player("Player2", behavior2)
     player3 = player.Player("Player3", behavior3)
@@ -82,9 +89,9 @@ def test_FivePlayers():
 
     # Do passing
     listener = el.PrintAllEventListener()
-    passcards = pc.PassCards([player1, player2, player3, player4, player5], 
-                             [hand1, hand2, hand3, hand4, hand5],
-                             listener)
+    passcards = pc.PassCards(
+        [player1, player2, player3, player4, player5], [hand1, hand2, hand3, hand4, hand5], listener
+    )
     passcards.do_card_passing()
 
     # Check that the behavior objects were correctly called
@@ -95,11 +102,12 @@ def test_FivePlayers():
     assert not behavior5.pass_called
 
     # Check the hands
-    assert hand1.to_dict() == { 2 : 1, 3 : 2, 5 : 2}
-    assert hand2.to_dict() == { 4 : 3}
-    assert hand3.to_dict() == { 2 : 1}
-    assert hand4.to_dict() == { 1 : 1, 2 : 2, 3 : 1, 4 : 1}
-    assert hand5.to_dict() == { 0 : 1, 1 : 1, 3 : 1}
+    assert hand1.to_dict() == {2: 1, 3: 2, 5: 2}
+    assert hand2.to_dict() == {4: 3}
+    assert hand3.to_dict() == {2: 1}
+    assert hand4.to_dict() == {1: 1, 2: 2, 3: 1, 4: 1}
+    assert hand5.to_dict() == {0: 1, 1: 1, 3: 1}
+
 
 def test_FourPlayers():
     """
@@ -145,7 +153,7 @@ def test_FourPlayers():
     behavior3 = MockPlayerBehavior()
 
     behavior4 = MockPlayerBehavior()
-    
+
     player1 = player.Player("Player1", behavior1)
     player2 = player.Player("Player2", behavior2)
     player3 = player.Player("Player3", behavior3)
@@ -153,9 +161,9 @@ def test_FourPlayers():
 
     # Do passing
     listener = el.PrintAllEventListener()
-    passcards = pc.PassCards([player1, player2, player3, player4], 
-                             [hand1, hand2, hand3, hand4],
-                             listener)
+    passcards = pc.PassCards(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     passcards.do_card_passing()
 
     # Check that the behavior objects were correctly called
@@ -165,7 +173,7 @@ def test_FourPlayers():
     assert not behavior4.pass_called
 
     # Check the hands
-    assert hand1.to_dict() == { 2 : 1, 3 : 2, 4 : 1, 5 : 1}
-    assert hand2.to_dict() == { 4 : 3}
-    assert hand3.to_dict() == { 1 : 1, 2 : 2, 3 : 1, 4 : 1}
-    assert hand4.to_dict() == { 0 : 1, 1 : 1, 3 : 1}
+    assert hand1.to_dict() == {2: 1, 3: 2, 4: 1, 5: 1}
+    assert hand2.to_dict() == {4: 3}
+    assert hand3.to_dict() == {1: 1, 2: 2, 3: 1, 4: 1}
+    assert hand4.to_dict() == {0: 1, 1: 1, 3: 1}

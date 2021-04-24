@@ -1,18 +1,19 @@
 import array
 
+
 class CardValue:
     """
     Class representing a card value, e.g, 2, 3, 4, ..., King, and Ace.
     The values are zero through thirteen.
     """
 
-    def __init__(self, value:int):
+    def __init__(self, value: int):
         assert value >= 0
         assert value <= 12
 
         self.value = value
 
-    def to_display(self, plural = True):
+    def to_display(self, plural=True):
         return str(self)
 
     def __eq__(self, other):
@@ -26,16 +27,18 @@ class CardValue:
     def __repr__(self):
         return str(self)
 
+
 class PlayedCards:
     """
     Class a set of cards that are played from a hand to the table.
     """
 
-    def __init__(self, value : CardValue, count : int):
+    def __init__(self, value: CardValue, count: int):
         assert count >= 1
 
         self.value = value
         self.count = count
+
 
 class Hand:
     """
@@ -43,9 +46,9 @@ class Hand:
     """
 
     def __init__(self):
-        self._cards = array.array('i', [0,0,0,0,0,0,0,0,0,0,0,0,0] )
+        self._cards = array.array("i", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
-    def add_cards(self, card_value : CardValue, count :int):
+    def add_cards(self, card_value: CardValue, count: int):
         """
         Adds cards with the given value to the hand
         """
@@ -54,7 +57,7 @@ class Hand:
 
         self._cards[card_value.value] += count
 
-    def remove_cards(self, card_value : CardValue, count :int):
+    def remove_cards(self, card_value: CardValue, count: int):
         """
         Removes cards with the given value to the hand
         """
@@ -81,7 +84,7 @@ class Hand:
 
         assert False
 
-    def play_cards(self, cards : PlayedCards):
+    def play_cards(self, cards: PlayedCards):
         assert cards.count > 0
 
         index = cards.value.value
@@ -95,9 +98,7 @@ class Hand:
         Converts the hand to a dictionary mapping the card value to the
         count of cards in the hand
         """
-        return {key:self._cards[key] 
-            for key in range(13) 
-            if self._cards[key] > 0}
+        return {key: self._cards[key] for key in range(13) if self._cards[key] > 0}
 
     def cards_equal(self, card_dict: dict):
         """
@@ -112,7 +113,7 @@ class Hand:
             dict_count = card_dict[key]
             if hand_count != dict_count:
                 return False
-        
+
         # Check that all the entries in _cards are also in card_dict
         # We don't need to check values here, since they were checked
         # above.

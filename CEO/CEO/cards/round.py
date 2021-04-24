@@ -2,11 +2,13 @@ from CEO.CEO.cards.hand import *
 from CEO.CEO.cards.player import *
 from CEO.CEO.cards.eventlistener import *
 
+
 class Round:
     """
     Class representing on round in a game of CEO
     """
-    def __init__(self, players : list[Player], hands : list[Hand], listener : EventListenerInterface):
+
+    def __init__(self, players: list[Player], hands: list[Hand], listener: EventListenerInterface):
         self._players = players
         self._hands = hands
         self._player_count = len(self._players)
@@ -26,16 +28,17 @@ class Round:
 
             starting_player = self._play_trick(starting_player)
 
-    def _play_trick(self, starting_player : int) -> int:
+    def _play_trick(self, starting_player: int) -> int:
         # print("Staring trick with player number ", starting_player)
         state = RoundState()
 
         # Calculate the order of the other players after the player that leads.
         # Note that play_order is an iterator.
-        play_order = map( (lambda x : (x + starting_player) % self._player_count), 
-                            range(self._player_count))
+        play_order = map(
+            (lambda x: (x + starting_player) % self._player_count), range(self._player_count)
+        )
         next(play_order)
-        
+
         # Handle the lead
         cur_player = self._players[starting_player]
         cur_hand = self._hands[starting_player]
@@ -63,7 +66,8 @@ class Round:
                 continue
 
             new_card_value = cur_player.behavoir.play_on_trick(
-                cur_hand, cur_card_value, cur_card_count, state)
+                cur_hand, cur_card_value, cur_card_count, state
+            )
 
             if new_card_value is None:
                 print(cur_index, " ", cur_player, " passes")
@@ -82,7 +86,10 @@ class Round:
         # find the next player to lead.
         if self._hands[last_index_to_play].is_empty():
             last_index_to_play = 0
-            while last_index_to_play < self._player_count and self._hands[last_index_to_play].is_empty():
+            while (
+                last_index_to_play < self._player_count
+                and self._hands[last_index_to_play].is_empty()
+            ):
                 last_index_to_play += 1
 
         return last_index_to_play
@@ -90,7 +97,7 @@ class Round:
     def get_next_round_order(self) -> list[int]:
         return self._next_round_order
 
-    def _play_cards(self, player_index: int, card_value : CardValue, count : int):
+    def _play_cards(self, player_index: int, card_value: CardValue, count: int):
         theHand = self._hands[player_index]
         theHand.remove_cards(card_value, count)
 
@@ -98,4 +105,4 @@ class Round:
             self._next_round_order.append(player_index)
 
     def _all_cards_played(self):
-        return all(map((lambda x : x.is_empty()), self._hands))
+        return all(map((lambda x: x.is_empty()), self._hands))

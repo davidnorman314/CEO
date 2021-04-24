@@ -1,6 +1,7 @@
 import pytest
 import CEO.CEO.cards.hand as hand
 
+
 def test_CardValue():
     cv = hand.CardValue(1)
     assert cv.value == 1
@@ -31,6 +32,7 @@ def test_CardValue():
     assert cv2 != cv1
     assert cv2 == cv2
 
+
 def test_PlayedCards():
     pc = hand.PlayedCards(hand.CardValue(1), 3)
     assert pc.value == hand.CardValue(1)
@@ -39,22 +41,23 @@ def test_PlayedCards():
     with pytest.raises(AssertionError):
         cv = hand.PlayedCards(hand.CardValue(1), 0)
 
+
 def test_PlayCardsFromHand():
     theHand = hand.Hand()
 
     theHand.add_cards(hand.CardValue(0), 3)
     pc = hand.PlayedCards(hand.CardValue(0), 1)
     theHand.play_cards(pc)
-    assert theHand.to_dict() == {0:2}
+    assert theHand.to_dict() == {0: 2}
 
     pc = hand.PlayedCards(hand.CardValue(0), 1)
     theHand.play_cards(pc)
-    assert theHand.to_dict() == {0:1}
+    assert theHand.to_dict() == {0: 1}
 
     theHand.add_cards(hand.CardValue(1), 5)
     pc = hand.PlayedCards(hand.CardValue(1), 3)
     theHand.play_cards(pc)
-    assert theHand.to_dict() == {0:1, 1:2}
+    assert theHand.to_dict() == {0: 1, 1: 2}
 
     with pytest.raises(AssertionError):
         pc = hand.PlayedCards(hand.CardValue(0), 2)
@@ -70,7 +73,8 @@ def test_PlayCardsFromHand():
 
     pc = hand.PlayedCards(hand.CardValue(0), 1)
     theHand.play_cards(pc)
-    assert theHand.to_dict() == {1:2}
+    assert theHand.to_dict() == {1: 2}
+
 
 def test_HandCardCount():
     theHand = hand.Hand()
@@ -91,13 +95,13 @@ def test_Hand_cards_equal():
     theHand.add_cards(hand.CardValue(1), 2)
     theHand.add_cards(hand.CardValue(4), 1)
 
-    assert theHand.cards_equal({0:3, 1:2, 4:1})
-    assert not theHand.cards_equal({0:3, 1:2, 4:1, 5:1})
-    assert not theHand.cards_equal({0:3, 1:2})
-    assert not theHand.cards_equal({0:3, 1:2, 4:2})
+    assert theHand.cards_equal({0: 3, 1: 2, 4: 1})
+    assert not theHand.cards_equal({0: 3, 1: 2, 4: 1, 5: 1})
+    assert not theHand.cards_equal({0: 3, 1: 2})
+    assert not theHand.cards_equal({0: 3, 1: 2, 4: 2})
 
-    assert theHand.to_dict() == {0:3, 1:2, 4:1}
+    assert theHand.to_dict() == {0: 3, 1: 2, 4: 1}
 
     theHand.add_cards(hand.CardValue(12), 5)
 
-    assert theHand.to_dict() == {0:3, 1:2, 4:1, 12:5}
+    assert theHand.to_dict() == {0: 3, 1: 2, 4: 1, 12: 5}

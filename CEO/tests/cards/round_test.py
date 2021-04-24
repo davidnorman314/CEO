@@ -5,8 +5,10 @@ import CEO.CEO.cards.round as rd
 import CEO.CEO.cards.player as player
 import CEO.CEO.cards.eventlistener as el
 
+
 class StateBase:
     pass
+
 
 class LeadState(StateBase):
     def __init__(self):
@@ -20,17 +22,21 @@ class LeadState(StateBase):
     def __str__(self):
         return "(Lead)"
 
+
 class TrickState(StateBase):
     cur_trick_value: hand.CardValue
     cur_trick_count: int
 
-    def __init__(self, cur_trick_value : hand.CardValue, cur_trick_count : int):
-        self.cur_trick_value = cur_trick_value 
+    def __init__(self, cur_trick_value: hand.CardValue, cur_trick_count: int):
+        self.cur_trick_value = cur_trick_value
         self.cur_trick_count = cur_trick_count
 
     def __eq__(self, other):
         if isinstance(other, TrickState):
-            return self.cur_trick_value == other.cur_trick_value and self.cur_trick_count == other.cur_trick_count
+            return (
+                self.cur_trick_value == other.cur_trick_value
+                and self.cur_trick_count == other.cur_trick_count
+            )
         return NotImplemented
 
     def __str__(self):
@@ -39,9 +45,10 @@ class TrickState(StateBase):
     def __repr__(self):
         return str(self)
 
+
 class MockPlayerBehavior(player.PlayerBehaviorInterface):
     trick_states: list[TrickState]
-    
+
     value_to_play: list[hand.CardValue]
     to_play_next_index: int
 
@@ -58,14 +65,20 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
 
         return ret
 
-    def play_on_trick(self, hand: hand.Hand, cur_trick_value : hand.CardValue, 
-                cur_trick_count: int, state: rd.RoundState) -> hand.CardValue:
+    def play_on_trick(
+        self,
+        hand: hand.Hand,
+        cur_trick_value: hand.CardValue,
+        cur_trick_count: int,
+        state: rd.RoundState,
+    ) -> hand.CardValue:
         self.trick_states.append(TrickState(cur_trick_value, cur_trick_count))
 
         ret = self.value_to_play[self.to_play_next_index]
         self.to_play_next_index += 1
 
         return ret
+
 
 def test_SimpleRound():
     """
@@ -113,7 +126,7 @@ def test_SimpleRound():
     behavior4 = MockPlayerBehavior()
     behavior4.value_to_play.append(cv3)
     behavior4.value_to_play.append(cv2)
-    
+
     player1 = player.Player("Player1", behavior1)
     player2 = player.Player("Player2", behavior2)
     player3 = player.Player("Player3", behavior3)
@@ -121,9 +134,7 @@ def test_SimpleRound():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4],
-                     listener)
+    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -150,6 +161,7 @@ def test_SimpleRound():
 
     # Check the next round odder
     assert round.get_next_round_order() == [3, 0, 1, 2]
+
 
 def test_Passing():
     """
@@ -196,7 +208,7 @@ def test_Passing():
     behavior4 = MockPlayerBehavior()
     behavior4.value_to_play.append(None)
     behavior4.value_to_play.append(cv3)
-    
+
     player1 = player.Player("Player1", behavior1)
     player2 = player.Player("Player2", behavior2)
     player3 = player.Player("Player3", behavior3)
@@ -204,9 +216,7 @@ def test_Passing():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4],
-                     listener)
+    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -233,6 +243,7 @@ def test_Passing():
 
     # Check the next round order
     assert round.get_next_round_order() == [2, 3, 0, 1]
+
 
 def test_SkipEmptyHand():
     """
@@ -270,7 +281,7 @@ def test_SkipEmptyHand():
 
     behavior4 = MockPlayerBehavior()
     behavior4.value_to_play.append(cv2)
-    
+
     player1 = player.Player("Player1", behavior1)
     player2 = player.Player("Player2", behavior2)
     player3 = player.Player("Player3", behavior3)
@@ -278,9 +289,7 @@ def test_SkipEmptyHand():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4],
-                     listener)
+    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -298,6 +307,7 @@ def test_SkipEmptyHand():
     assert hand2.to_dict() == {}
     assert hand3.to_dict() == {}
     assert hand4.to_dict() == {}
+
 
 def test_LeadAfterPlayerGoesOut():
     """
@@ -339,11 +349,11 @@ def test_LeadAfterPlayerGoesOut():
     behavior2.value_to_play.append(cv1)
     behavior3.value_to_play.append(cv2)
     behavior4.value_to_play.append(None)
-    
+
     behavior1.value_to_play.append(cv2)
     behavior2.value_to_play.append(cv3)
     behavior4.value_to_play.append(cv4)
-    
+
     player1 = player.Player("Player1", behavior1)
     player2 = player.Player("Player2", behavior2)
     player3 = player.Player("Player3", behavior3)
@@ -351,9 +361,7 @@ def test_LeadAfterPlayerGoesOut():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4],
-                     listener)
+    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -379,6 +387,7 @@ def test_LeadAfterPlayerGoesOut():
 
     # Check the next round order
     assert round.get_next_round_order() == [2, 0, 1, 3]
+
 
 def test_LeadAfterPlayerGoesOut2():
     """
@@ -419,10 +428,10 @@ def test_LeadAfterPlayerGoesOut2():
     behavior2.value_to_play.append(cv1)
     behavior3.value_to_play.append(cv2)
     behavior4.value_to_play.append(None)
-    
+
     behavior2.value_to_play.append(cv3)
     behavior4.value_to_play.append(cv4)
-    
+
     player1 = player.Player("Player1", behavior1)
     player2 = player.Player("Player2", behavior2)
     player3 = player.Player("Player3", behavior3)
@@ -430,9 +439,7 @@ def test_LeadAfterPlayerGoesOut2():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], 
-                     [hand1, hand2, hand3, hand4],
-                     listener)
+    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
     round.play()
 
     # Check that the behavior objects were correctly called

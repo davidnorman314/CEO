@@ -2,6 +2,7 @@ import pytest
 import CEO.CEO.cards.deck as deck
 import CEO.CEO.cards.hand as hand
 
+
 def test_Deal():
 
     theDeck = deck.Deck(4)
@@ -23,7 +24,7 @@ def test_Deal():
     print(hands[1])
     print(hands[2])
     print(hands[3])
-    
+
     # Check that each rank was dealt correctly
     for value in range(13):
         card_value = hand.CardValue(value)
