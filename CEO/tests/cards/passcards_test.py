@@ -21,7 +21,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
     def lead(self, hand: hand.Hand, state: rd.RoundState) -> hand.CardValue:
         pass
 
-    def playOnTrick(self, hand: hand.Hand, cur_trick_value : hand.CardValue, 
+    def play_on_trick(self, hand: hand.Hand, cur_trick_value : hand.CardValue, 
                 cur_trick_count: int, state: rd.RoundState) -> hand.CardValue:
         pass
 

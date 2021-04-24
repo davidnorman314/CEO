@@ -28,7 +28,7 @@ class PlayerBehaviorInterface:
         """
         pass
 
-    def playOnTrick(self, hand: Hand, cur_trick_value : CardValue, cur_trick_count: int, state: RoundState) -> CardValue:
+    def play_on_trick(self, hand: Hand, cur_trick_value : CardValue, cur_trick_count: int, state: RoundState) -> CardValue:
         """
         Called to decide what the player should play on the given trick.
         Returns the value of the card(s) that should be played.
