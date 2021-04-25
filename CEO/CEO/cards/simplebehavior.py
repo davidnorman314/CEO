@@ -4,6 +4,11 @@ from CEO.CEO.cards.hand import *
 
 class SimpleBehaviorBase(PlayerBehaviorInterface):
     def pass_singles(self, hand: Hand, count: int) -> list[CardValue]:
+        """
+        Function that passes the three lowest singles in a hand.
+        If there aren't enough singles, then a card from the lowest
+        pair will be passed.
+        """
         ret = []
 
         for i in range(13):
@@ -42,3 +47,17 @@ class SimpleBehaviorBase(PlayerBehaviorInterface):
 
             if len(ret) == count:
                 return ret
+
+    def play_lowest_or_pass(
+        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, state: RoundState
+    ) -> CardValue:
+        """
+        Method that either playes the lowest card possible or passes.
+        It will break up sets, i.e., break up a pair to play a single.
+        """
+        for i in range(cur_trick_value.value + 1, 13):
+            if hand.count(CardValue(i)) >= cur_trick_count:
+                return CardValue(i)
+
+        # We can't play on the trick
+        return None
