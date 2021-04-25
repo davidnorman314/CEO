@@ -7,6 +7,9 @@ class EventListenerInterface:
     Interface implemented by objects that receive events in the game.
     """
 
+    def start_round(self, players: list[Player]):
+        pass
+
     def pass_cards(
         self,
         cards: list[CardValue],
@@ -32,6 +35,12 @@ class PrintAllEventListener(EventListenerInterface):
     Interface that prints all events. This includes information that would
     normally be secret.
     """
+
+    def start_round(self, players: list[Player]):
+        player_name_list = [player.name for player in players]
+        names_str = " ".join(player_name_list)
+
+        print("Starting round:", names_str)
 
     def pass_cards(
         self,
