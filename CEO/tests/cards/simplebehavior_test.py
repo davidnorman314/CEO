@@ -181,3 +181,42 @@ def test_SimpleBehaviorBase_play_lowest_or_pass():
     assert behavior.play_lowest_or_pass(hand, cv3, 2, state) == None
     assert behavior.play_lowest_or_pass(hand, cv4, 2, state) == None
     assert behavior.play_lowest_or_pass(hand, cv5, 2, state) == None
+
+
+def test_SimpleBehaviorBase_lead_lowest():
+    """
+    Test the lead_lowest method
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+
+    # Create the object
+    behavior = SimpleBehaviorBase()
+    state = RoundState()
+
+    # Test
+    hand = Hand()
+    hand.add_cards(cv0, 1)
+    hand.add_cards(cv1, 1)
+    hand.add_cards(cv2, 1)
+
+    assert behavior.lead_lowest(hand, state) == cv0
+
+    hand = Hand()
+    hand.add_cards(cv1, 1)
+    hand.add_cards(cv2, 1)
+
+    assert behavior.lead_lowest(hand, state) == cv1
+
+    hand = Hand()
+    hand.add_cards(cv4, 1)
+    hand.add_cards(cv5, 1)
+
+    assert behavior.lead_lowest(hand, state) == cv4

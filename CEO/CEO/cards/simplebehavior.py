@@ -61,3 +61,14 @@ class SimpleBehaviorBase(PlayerBehaviorInterface):
 
         # We can't play on the trick
         return None
+
+    def lead_lowest(self, hand: Hand, state: RoundState) -> CardValue:
+        """
+        Method that leads the hand's lowest card
+        """
+
+        for i in range(13):
+            if hand.count(CardValue(i)) > 0:
+                return CardValue(i)
+
+        assert "Hand doesn't have cards" == ""
