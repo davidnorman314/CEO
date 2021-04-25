@@ -1,9 +1,9 @@
-from CEO.CEO.cards.player import *
-from CEO.CEO.cards.hand import *
-from CEO.CEO.cards.eventlistener import *
-from CEO.CEO.cards.passcards import *
-from CEO.CEO.cards.round import *
-from CEO.CEO.cards.eventlistener import *
+from CEO.cards.player import *
+from CEO.cards.hand import *
+from CEO.cards.eventlistener import *
+from CEO.cards.passcards import *
+from CEO.cards.round import *
+from CEO.cards.eventlistener import *
 
 import random
 

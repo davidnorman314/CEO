@@ -1,9 +1,9 @@
 import pytest
-import CEO.CEO.cards.deck as deck
-from CEO.CEO.cards.hand import *
-import CEO.CEO.cards.round as rd
-import CEO.CEO.cards.player as player
-from CEO.CEO.cards.simplebehavior import *
+import CEO.cards.deck as deck
+from CEO.cards.hand import *
+import CEO.cards.round as rd
+import CEO.cards.player as player
+from CEO.cards.simplebehavior import *
 
 
 def test_SimpleBehaviorBase_pass_singles():

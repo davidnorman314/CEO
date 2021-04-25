@@ -1,4 +1,4 @@
-from CEO.CEO.cards.hand import *
+from CEO.cards.hand import *
 
 
 class RoundState:

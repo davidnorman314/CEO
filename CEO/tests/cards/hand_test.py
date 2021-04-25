@@ -1,5 +1,5 @@
 import pytest
-import CEO.CEO.cards.hand as hand
+import CEO.cards.hand as hand
 
 
 def test_CardValue():

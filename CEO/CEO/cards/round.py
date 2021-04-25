@@ -1,6 +1,6 @@
-from CEO.CEO.cards.hand import *
-from CEO.CEO.cards.player import *
-from CEO.CEO.cards.eventlistener import *
+from CEO.cards.hand import *
+from CEO.cards.player import *
+from CEO.cards.eventlistener import *
 
 
 class Round:

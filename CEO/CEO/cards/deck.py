@@ -4,7 +4,7 @@
 # import .hand as hand
 # import hand as hand
 # from hand import *
-from CEO.CEO.cards.hand import *
+from CEO.cards.hand import *
 import random as random
 
 

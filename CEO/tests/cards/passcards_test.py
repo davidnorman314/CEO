@@ -1,10 +1,10 @@
 import pytest
-import CEO.CEO.cards.deck as deck
-import CEO.CEO.cards.hand as hand
-import CEO.CEO.cards.player as player
-import CEO.CEO.cards.passcards as pc
-import CEO.CEO.cards.round as rd
-import CEO.CEO.cards.eventlistener as el
+import CEO.cards.deck as deck
+import CEO.cards.hand as hand
+import CEO.cards.player as player
+import CEO.cards.passcards as pc
+import CEO.cards.round as rd
+import CEO.cards.eventlistener as el
 
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface):

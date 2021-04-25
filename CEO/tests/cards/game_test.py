@@ -1,8 +1,8 @@
 import pytest
-import CEO.CEO.cards.round as rd
-import CEO.CEO.cards.player as player
-import CEO.CEO.cards.game as g
-import CEO.CEO.cards.eventlistener as el
+import CEO.cards.round as rd
+import CEO.cards.player as player
+import CEO.cards.game as g
+import CEO.cards.eventlistener as el
 
 from unittest.mock import MagicMock, Mock, patch, call
 
@@ -11,8 +11,8 @@ def players_to_name_list(players: list[player.Player]):
     return list(map(lambda player: player.name, players))
 
 
-@patch("CEO.CEO.cards.game.random")
-@patch("CEO.CEO.cards.game.Round")
+@patch("CEO.cards.game.random")
+@patch("CEO.cards.game.Round")
 def test_game_player_order(MockRoundClass, MockRandom):
     """
     Test that players have the correct order from round to round.

@@ -1,6 +1,6 @@
 import pytest
-import CEO.CEO.cards.deck as deck
-import CEO.CEO.cards.hand as hand
+import CEO.cards.deck as deck
+import CEO.cards.hand as hand
 
 
 def test_Deal():
