@@ -19,7 +19,7 @@ class PassCards:
         assert len(self._players) == len(self._hands)
 
     def do_card_passing(self):
-        print("Passing cards")
+        # print("Passing cards")
 
         pass_count = self._player_count // 2
 

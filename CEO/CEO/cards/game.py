@@ -40,6 +40,7 @@ class Game:
             hands = deck.deal()
 
             passcards = PassCards(players_for_round, hands, self._listener)
+            passcards.do_card_passing()
 
             round = Round(players_for_round, hands, self._listener)
             round.play()

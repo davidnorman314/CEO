@@ -70,7 +70,7 @@ class Round:
             )
 
             if new_card_value is None:
-                print(cur_index, " ", cur_player, " passes")
+                # print(cur_index, " ", cur_player, " passes")
                 self._listener.pass_on_trick(cur_index, cur_player)
                 continue
 

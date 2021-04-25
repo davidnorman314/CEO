@@ -80,12 +80,12 @@ class BasicBehavior(SimpleBehaviorBase):
     """
 
     def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
-        self.pass_singles(hand, count)
+        return self.pass_singles(hand, count)
 
     def lead(self, hand: Hand, state: RoundState) -> CardValue:
-        self.lead_lowest(hand, state)
+        return self.lead_lowest(hand, state)
 
     def play_on_trick(
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, state: RoundState
     ) -> CardValue:
-        self.play_lowest_or_pass(hand, cur_trick_value, cur_trick_count, state)
+        return self.play_lowest_or_pass(hand, cur_trick_value, cur_trick_count, state)
