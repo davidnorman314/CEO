@@ -90,9 +90,11 @@ class ConsoleListener(EventListenerInterface):
         )
 
     def pass_on_trick(self, index: int, player: Player):
+        self._played[index] = "pass"
+
         print(player.name + " (" + str(index) + ") passes")
 
-    def print_cur_players(self):
+    def print_cur_players(self, state: RoundState):
         width = 10
 
         for player in self._players:
@@ -100,17 +102,26 @@ class ConsoleListener(EventListenerInterface):
 
         print("")
 
-    def print_cur_trick(self):
-        width = 10
+        for cards_remaining in state.cards_remaining:
+            if cards_remaining > 0:
+                text = "- " + str(cards_remaining)
+            else:
+                text = "Out"
 
-        for player in self._players:
-            print(player.name.ljust(width), end="")
+            print(text.ljust(width), end="")
 
         print("")
+
+        return width
+
+    def print_cur_trick(self, state: RoundState):
+        width = self.print_cur_players(state)
 
         for played in self._played:
             if played == None:
                 print("".ljust(width), end="")
+            elif played is str:
+                print(played.ljust(width), end="")
             else:
                 text = str(self._cur_trick_size) + " " + str(played)
                 print(text.ljust(width), end="")
@@ -171,7 +182,7 @@ class ConsoleBehavior(PlayerBehaviorInterface):
 
     def lead(self, hand: Hand, state: RoundState) -> CardValue:
 
-        self._listener.print_cur_players()
+        self._listener.print_cur_players(state)
 
         print("Lead:")
         self._print_hand(hand)
@@ -182,7 +193,7 @@ class ConsoleBehavior(PlayerBehaviorInterface):
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, state: RoundState
     ) -> CardValue:
 
-        self._listener.print_cur_trick()
+        self._listener.print_cur_trick(state)
 
         print("Current trick:", str(cur_trick_count), "cards of", str(cur_trick_value))
         self._print_hand(hand)
