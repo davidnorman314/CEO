@@ -57,7 +57,7 @@ class Round:
         assert cur_card_count > 0
 
         # Let the remaining players play
-        last_index_to_play = -1
+        last_index_to_play = starting_player
         for cur_index in play_order:
             cur_player = self._players[cur_index]
             cur_hand = self._hands[cur_index]
@@ -76,6 +76,8 @@ class Round:
                 # print(cur_index, " ", cur_player, " passes")
                 self._listener.pass_on_trick(cur_index, cur_player)
                 continue
+
+            assert new_card_value.value > cur_card_value.value
 
             self._play_cards(cur_index, new_card_value, cur_card_count)
 
