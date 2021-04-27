@@ -36,7 +36,7 @@ def test_game_player_order(MockRoundClass, MockPassCards, MockRandom):
     listener = el.PrintAllEventListener()
 
     game = g.Game([player1, player2, player3, player4], listener)
-    game.play(3)
+    game.play(round_count=3)
 
     # Check that the rounds were created with the correct players.
     # We need to filter the call list to get the constructor calls

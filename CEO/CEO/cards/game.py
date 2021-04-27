@@ -23,13 +23,15 @@ class Game:
         self._players = players
         self._player_count = len(players)
 
-    def play(self, round_count: int):
+    def play(self, *, round_count: int = 500, do_shuffle: bool = True):
         """
         Play a game with a given number of rounds
         """
 
         self._seats = list(range(len(self._players)))
-        random.shuffle(self._seats)
+
+        if do_shuffle:
+            random.shuffle(self._seats)
 
         for i in range(round_count):
             players_for_round = [self._players[i] for i in self._seats]

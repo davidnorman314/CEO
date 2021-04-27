@@ -209,13 +209,16 @@ def main():
 
     human = Player(human_name, ConsoleBehavior(console_listener))
 
-    players = [human]
+    players = []
     for i in range(5):
         name = "Basic" + str(i + 1)
         players.append(Player(name, BasicBehavior()))
 
+    # Put the human player last
+    players.append(human)
+
     game = g.Game(players, console_listener)
-    game.play(3)
+    game.play(round_count=500, do_shuffle=False)
 
 
 if __name__ == "__main__":
