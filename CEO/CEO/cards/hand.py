@@ -8,8 +8,11 @@ class CardValue:
     """
 
     def __init__(self, value: int):
-        assert value >= 0
-        assert value <= 12
+        if value < 0:
+            raise ValueError("Value is negative " + str(value))
+
+        if value > 12:
+            raise ValueError("Value is too large " + str(value))
 
         self.value = value
 

@@ -18,8 +18,6 @@ class Round:
         assert len(self._players) == len(self._hands)
 
     def play(self):
-        print("Staring round")
-
         starting_player = 0
         trick_number = 0
         while not self._all_cards_played():
