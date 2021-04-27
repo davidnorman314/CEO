@@ -6,8 +6,14 @@ class RoundState:
     Class representing the state of the current round
     """
 
+    cards_remaining: list[int]
+
     def __init__(self):
         pass
+
+    def initialize(self, players, hands: list[Hand]):
+        hands[0].count
+        self.cards_remaining = [hand.card_count() for hand in hands]
 
 
 class PlayerBehaviorInterface:

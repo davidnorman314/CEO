@@ -48,6 +48,7 @@ class TrickState(StateBase):
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface):
     trick_states: list[TrickState]
+    cards_remaining: list[rd.RoundState]
 
     value_to_play: list[hand.CardValue]
     to_play_next_index: int
@@ -56,9 +57,11 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         self.value_to_play = []
         self.to_play_next_index = 0
         self.trick_states = []
+        self.cards_remaining = []
 
     def lead(self, hand: hand.Hand, state: rd.RoundState) -> hand.CardValue:
         self.trick_states.append(LeadState())
+        self.cards_remaining.append(state.cards_remaining)
 
         ret = self.value_to_play[self.to_play_next_index]
         self.to_play_next_index += 1
@@ -73,6 +76,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         state: rd.RoundState,
     ) -> hand.CardValue:
         self.trick_states.append(TrickState(cur_trick_value, cur_trick_count))
+        self.cards_remaining.append(state.cards_remaining)
 
         ret = self.value_to_play[self.to_play_next_index]
         self.to_play_next_index += 1
@@ -161,6 +165,27 @@ def test_SimpleRound():
 
     # Check the next round odder
     assert round.get_next_round_order() == [3, 0, 1, 2]
+
+    # Check cards_remaining
+    cards_remaining = behavior1.cards_remaining
+    assert cards_remaining[0] == [3, 3, 3, 3]
+    assert cards_remaining[1] == [2, 2, 2, 0]
+    assert len(cards_remaining) == 2
+
+    cards_remaining = behavior2.cards_remaining
+    assert cards_remaining[0] == [2, 3, 3, 3]
+    assert cards_remaining[1] == [0, 2, 2, 0]
+    assert len(cards_remaining) == 2
+
+    cards_remaining = behavior3.cards_remaining
+    assert cards_remaining[0] == [2, 2, 3, 3]
+    assert cards_remaining[1] == [0, 0, 2, 0]
+    assert len(cards_remaining) == 2
+
+    cards_remaining = behavior4.cards_remaining
+    assert cards_remaining[0] == [2, 2, 2, 3]
+    assert cards_remaining[1] == [2, 2, 2, 2]
+    assert len(cards_remaining) == 2
 
 
 def test_Passing():

@@ -28,7 +28,6 @@ class Round:
 
     def _play_trick(self, starting_player: int) -> int:
         # print("Staring trick with player number ", starting_player)
-        state = RoundState()
 
         # Calculate the order of the other players after the player that leads.
         # Note that play_order is an iterator.
@@ -42,6 +41,9 @@ class Round:
         cur_hand = self._hands[starting_player]
 
         assert not cur_hand.is_empty()
+
+        state = RoundState()
+        state.initialize(self._players, self._hands)
 
         cur_card_value = cur_player.behavoir.lead(cur_hand, state)
         cur_card_count = cur_hand.count(cur_card_value)
@@ -62,6 +64,9 @@ class Round:
 
             if cur_hand.is_empty():
                 continue
+
+            state = RoundState()
+            state.initialize(self._players, self._hands)
 
             new_card_value = cur_player.behavoir.play_on_trick(
                 cur_hand, cur_card_value, cur_card_count, state
