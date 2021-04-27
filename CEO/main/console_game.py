@@ -198,7 +198,16 @@ class ConsoleBehavior(PlayerBehaviorInterface):
         print("Current trick:", str(cur_trick_count), "cards of", str(cur_trick_value))
         self._print_hand(hand)
 
-        return self._get_card_to_play(hand)
+        while True:
+            ret = self._get_card_to_play(hand)
+
+            if ret == None:
+                return ret
+            elif ret.value <= cur_trick_value.value:
+                print("Invalid lead", ret)
+                continue
+
+            return ret
 
 
 def main():
