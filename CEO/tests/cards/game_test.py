@@ -12,8 +12,9 @@ def players_to_name_list(players: list[player.Player]):
 
 
 @patch("CEO.cards.game.random")
+@patch("CEO.cards.game.PassCards")
 @patch("CEO.cards.game.Round")
-def test_game_player_order(MockRoundClass, MockRandom):
+def test_game_player_order(MockRoundClass, MockPassCards, MockRandom):
     """
     Test that players have the correct order from round to round.
     """

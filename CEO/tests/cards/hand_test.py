@@ -12,10 +12,10 @@ def test_CardValue():
     cv = hand.CardValue(12)
     assert cv.value == 12
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         cv = hand.CardValue(-1)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         cv = hand.CardValue(13)
 
     cv = hand.CardValue(1)
