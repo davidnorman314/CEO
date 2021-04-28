@@ -14,6 +14,7 @@ class Round:
         self._player_count = len(self._players)
         self._next_round_order = []
         self._listener = listener
+        self._ceo_to_bottom = False
 
         assert len(self._players) == len(self._hands)
 
@@ -53,6 +54,9 @@ class Round:
 
         self._play_cards(starting_player, cur_card_value, cur_card_count)
 
+        if self._hands[starting_player].is_empty():
+            self._check_ceo_done()
+
         assert cur_card_value is not None
         assert cur_card_count > 0
 
@@ -81,6 +85,9 @@ class Round:
 
             self._play_cards(cur_index, new_card_value, cur_card_count)
 
+            if self._hands[cur_index].is_empty():
+                self._check_ceo_done()
+
             # print(cur_index, " ", cur_player, " plays ", new_card_value)
             self._listener.play_cards(new_card_value, cur_card_count, cur_index, cur_player)
 
@@ -99,7 +106,29 @@ class Round:
 
         return last_index_to_play
 
+    def _check_ceo_done(self):
+        """
+        Another player went out. See if CEO is still playing
+        """
+        if self._hands[0].is_empty():
+            return
+
+        # CEO isn't out, so they lost and don't have to play anymore
+        self._ceo_to_bottom = True
+
+        ceo_hand = self._hands[0]
+        for i in range(13):
+            cv = CardValue(i)
+            count = ceo_hand.count(cv)
+
+            if count > 0:
+                self._hands[0].remove_cards(cv, count)
+
     def get_next_round_order(self) -> list[int]:
+        if self._ceo_to_bottom:
+            self._next_round_order.append(0)
+            self._ceo_to_bottom = False
+
         return self._next_round_order
 
     def _play_cards(self, player_index: int, card_value: CardValue, count: int):
