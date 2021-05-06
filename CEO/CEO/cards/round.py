@@ -46,7 +46,7 @@ class Round:
         state = RoundState()
         state.initialize(self._players, self._hands)
 
-        cur_card_value = cur_player.behavoir.lead(cur_hand, state)
+        cur_card_value = cur_player.behavoir.lead(starting_player, cur_hand, state)
         cur_card_count = cur_hand.count(cur_card_value)
 
         # print(starting_player, " ", cur_player, " leads ", cur_card_value)
@@ -73,7 +73,7 @@ class Round:
             state.initialize(self._players, self._hands)
 
             new_card_value = cur_player.behavoir.play_on_trick(
-                cur_hand, cur_card_value, cur_card_count, state
+                cur_index, cur_hand, cur_card_value, cur_card_count, state
             )
 
             if new_card_value is None:

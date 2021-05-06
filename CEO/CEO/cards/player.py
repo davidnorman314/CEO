@@ -29,7 +29,7 @@ class PlayerBehaviorInterface:
         """
         pass
 
-    def lead(self, hand: Hand, state: RoundState) -> CardValue:
+    def lead(self, player_position: int, hand: Hand, state: RoundState) -> CardValue:
         """
         Called to decide what the player should lead to start a trick.
         All cards of the given value will be lead.
@@ -37,7 +37,12 @@ class PlayerBehaviorInterface:
         pass
 
     def play_on_trick(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, state: RoundState
+        self,
+        player_position: int,
+        hand: Hand,
+        cur_trick_value: CardValue,
+        cur_trick_count: int,
+        state: RoundState,
     ) -> CardValue:
         """
         Called to decide what the player should play on the given trick.
