@@ -73,7 +73,7 @@ class Round:
             state.initialize(self._players, self._hands)
 
             new_card_value = cur_player.behavoir.play_on_trick(
-                cur_index, cur_hand, cur_card_value, cur_card_count, state
+                starting_player, cur_index, cur_hand, cur_card_value, cur_card_count, state
             )
 
             if new_card_value is None:

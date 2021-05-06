@@ -2,7 +2,7 @@ from CEO.cards.player import *
 from CEO.cards.hand import *
 
 
-class SimpleBehaviorBase(PlayerBehaviorInterface):
+class SimpleBehaviorBase:
     def pass_singles(self, hand: Hand, count: int) -> list[CardValue]:
         """
         Function that passes the three lowest singles in a hand.
@@ -74,7 +74,7 @@ class SimpleBehaviorBase(PlayerBehaviorInterface):
         assert "Hand doesn't have cards" == ""
 
 
-class BasicBehavior(SimpleBehaviorBase):
+class BasicBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
     """
     Class implementing a simple, non-optimal behavior
     """

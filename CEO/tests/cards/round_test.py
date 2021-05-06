@@ -26,11 +26,19 @@ class LeadState(StateBase):
 
 
 class TrickState(StateBase):
+    starting_position: int
     player_position: int
     cur_trick_value: hand.CardValue
     cur_trick_count: int
 
-    def __init__(self, player_position: int, cur_trick_value: hand.CardValue, cur_trick_count: int):
+    def __init__(
+        self,
+        starting_position: int,
+        player_position: int,
+        cur_trick_value: hand.CardValue,
+        cur_trick_count: int,
+    ):
+        self.starting_position = starting_position
         self.player_position = player_position
         self.cur_trick_value = cur_trick_value
         self.cur_trick_count = cur_trick_count
@@ -64,6 +72,9 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         self.trick_states = []
         self.cards_remaining = []
 
+    def pass_cards(self, hand: hand.Hand, count: int) -> list[hand.CardValue]:
+        raise NotImplemented
+
     def lead(self, player_position: int, hand: hand.Hand, state: rd.RoundState) -> hand.CardValue:
         self.trick_states.append(LeadState(player_position))
         self.cards_remaining.append(state.cards_remaining)
@@ -78,13 +89,16 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
 
     def play_on_trick(
         self,
+        starting_position: int,
         player_position: int,
         hand: hand.Hand,
         cur_trick_value: hand.CardValue,
         cur_trick_count: int,
         state: rd.RoundState,
     ) -> hand.CardValue:
-        self.trick_states.append(TrickState(player_position, cur_trick_value, cur_trick_count))
+        self.trick_states.append(
+            TrickState(starting_position, player_position, cur_trick_value, cur_trick_count)
+        )
         self.cards_remaining.append(state.cards_remaining)
 
         if len(self.value_to_play) <= self.to_play_next_index:
@@ -161,18 +175,18 @@ def test_SimpleRound():
 
     # Check that the behavior objects were correctly called
     assert behavior1.trick_states[0] == LeadState(0)
-    assert behavior2.trick_states[0] == TrickState(1, cv0, 1)
-    assert behavior3.trick_states[0] == TrickState(2, cv1, 1)
-    assert behavior4.trick_states[0] == TrickState(3, cv2, 1)
+    assert behavior2.trick_states[0] == TrickState(0, 1, cv0, 1)
+    assert behavior3.trick_states[0] == TrickState(0, 2, cv1, 1)
+    assert behavior4.trick_states[0] == TrickState(0, 3, cv2, 1)
 
     assert behavior4.trick_states[1] == LeadState(3)
-    assert behavior1.trick_states[1] == TrickState(0, cv2, 2)
-    assert behavior2.trick_states[1] == TrickState(1, cv3, 2)
-    assert behavior3.trick_states[1] == TrickState(2, cv4, 2)
+    assert behavior1.trick_states[1] == TrickState(3, 0, cv2, 2)
+    assert behavior2.trick_states[1] == TrickState(3, 1, cv3, 2)
+    assert behavior3.trick_states[1] == TrickState(3, 2, cv4, 2)
 
     assert behavior3.trick_states[2] == LeadState(2)
-    assert behavior4.trick_states[2] == TrickState(3, cv0, 1)
-    assert behavior2.trick_states[2] == TrickState(1, cv1, 1)
+    assert behavior4.trick_states[2] == TrickState(2, 3, cv0, 1)
+    assert behavior2.trick_states[2] == TrickState(2, 1, cv1, 1)
 
     assert len(behavior1.trick_states) == 2
     assert len(behavior2.trick_states) == 3
@@ -277,18 +291,18 @@ def test_Passing():
 
     # Check that the behavior objects were correctly called
     assert behavior1.trick_states[0] == LeadState(0)
-    assert behavior2.trick_states[0] == TrickState(1, cv0, 1)
-    assert behavior3.trick_states[0] == TrickState(2, cv1, 1)
-    assert behavior4.trick_states[0] == TrickState(3, cv2, 1)
+    assert behavior2.trick_states[0] == TrickState(0, 1, cv0, 1)
+    assert behavior3.trick_states[0] == TrickState(0, 2, cv1, 1)
+    assert behavior4.trick_states[0] == TrickState(0, 3, cv2, 1)
 
     assert behavior3.trick_states[1] == LeadState(2)
-    assert behavior4.trick_states[1] == TrickState(3, cv2, 2)
-    assert behavior1.trick_states[1] == TrickState(0, cv3, 2)
-    assert behavior2.trick_states[1] == TrickState(1, cv4, 2)
+    assert behavior4.trick_states[1] == TrickState(2, 3, cv2, 2)
+    assert behavior1.trick_states[1] == TrickState(2, 0, cv3, 2)
+    assert behavior2.trick_states[1] == TrickState(2, 1, cv4, 2)
 
     assert behavior2.trick_states[2] == LeadState(1)
-    assert behavior3.trick_states[2] == TrickState(2, cv0, 1)
-    assert behavior4.trick_states[2] == TrickState(3, cv1, 1)
+    assert behavior3.trick_states[2] == TrickState(1, 2, cv0, 1)
+    assert behavior4.trick_states[2] == TrickState(1, 3, cv1, 1)
 
     assert len(behavior1.trick_states) == 2
     assert len(behavior2.trick_states) == 3
@@ -354,8 +368,8 @@ def test_SkipEmptyHand():
 
     # Check that the behavior objects were correctly called
     assert behavior1.trick_states[0] == LeadState(0)
-    assert behavior2.trick_states[0] == TrickState(1, cv0, 1)
-    assert behavior4.trick_states[0] == TrickState(3, cv1, 1)
+    assert behavior2.trick_states[0] == TrickState(0, 1, cv0, 1)
+    assert behavior4.trick_states[0] == TrickState(0, 3, cv1, 1)
 
     assert len(behavior1.trick_states) == 1
     assert len(behavior2.trick_states) == 1
@@ -426,12 +440,12 @@ def test_LeadAfterPlayerGoesOut_NotCEO():
 
     # Check that the behavior objects were correctly called
     assert behavior1.trick_states[0] == LeadState(0)
-    assert behavior2.trick_states[0] == TrickState(1, cv0, 1)
-    assert behavior3.trick_states[0] == TrickState(2, cv1, 1)
-    assert behavior4.trick_states[0] == TrickState(3, cv2, 1)
+    assert behavior2.trick_states[0] == TrickState(0, 1, cv0, 1)
+    assert behavior3.trick_states[0] == TrickState(0, 2, cv1, 1)
+    assert behavior4.trick_states[0] == TrickState(0, 3, cv2, 1)
 
     assert behavior2.trick_states[1] == LeadState(1)
-    assert behavior4.trick_states[1] == TrickState(3, cv3, 2)
+    assert behavior4.trick_states[1] == TrickState(1, 3, cv3, 2)
 
     assert len(behavior1.trick_states) == 1
     assert len(behavior2.trick_states) == 2
@@ -503,13 +517,13 @@ def test_LeadAfterPlayerGoesOut_CEO():
 
     # Check that the behavior objects were correctly called
     assert behavior1.trick_states[0] == LeadState(0)
-    assert behavior2.trick_states[0] == TrickState(1, cv5, 1)
-    assert behavior3.trick_states[0] == TrickState(2, cv5, 1)
-    assert behavior4.trick_states[0] == TrickState(3, cv5, 1)
+    assert behavior2.trick_states[0] == TrickState(0, 1, cv5, 1)
+    assert behavior3.trick_states[0] == TrickState(0, 2, cv5, 1)
+    assert behavior4.trick_states[0] == TrickState(0, 3, cv5, 1)
 
     assert behavior2.trick_states[1] == LeadState(1)
-    assert behavior3.trick_states[1] == TrickState(2, cv1, 1)
-    assert behavior4.trick_states[1] == TrickState(3, cv2, 1)
+    assert behavior3.trick_states[1] == TrickState(1, 2, cv1, 1)
+    assert behavior4.trick_states[1] == TrickState(1, 3, cv2, 1)
 
     assert len(behavior1.trick_states) == 1
     assert len(behavior2.trick_states) == 2
@@ -581,12 +595,12 @@ def test_LeadAfterPlayerGoesOut2():
 
     # Check that the behavior objects were correctly called
     assert behavior1.trick_states[0] == LeadState(0)
-    assert behavior2.trick_states[0] == TrickState(1, cv0, 1)
-    assert behavior3.trick_states[0] == TrickState(2, cv1, 1)
-    assert behavior4.trick_states[0] == TrickState(3, cv2, 1)
+    assert behavior2.trick_states[0] == TrickState(0, 1, cv0, 1)
+    assert behavior3.trick_states[0] == TrickState(0, 2, cv1, 1)
+    assert behavior4.trick_states[0] == TrickState(0, 3, cv2, 1)
 
     assert behavior2.trick_states[1] == LeadState(1)
-    assert behavior4.trick_states[1] == TrickState(3, cv3, 2)
+    assert behavior4.trick_states[1] == TrickState(1, 3, cv3, 2)
 
     assert len(behavior1.trick_states) == 1
     assert len(behavior2.trick_states) == 2
@@ -658,14 +672,14 @@ def test_NoOnePlaysOnTrick():
 
     # Check that the behavior objects were correctly called
     assert behavior1.trick_states[0] == LeadState(0)
-    assert behavior2.trick_states[0] == TrickState(1, cv5, 1)
-    assert behavior3.trick_states[0] == TrickState(2, cv5, 1)
-    assert behavior4.trick_states[0] == TrickState(3, cv5, 1)
+    assert behavior2.trick_states[0] == TrickState(0, 1, cv5, 1)
+    assert behavior3.trick_states[0] == TrickState(0, 2, cv5, 1)
+    assert behavior4.trick_states[0] == TrickState(0, 3, cv5, 1)
 
     assert behavior1.trick_states[1] == LeadState(0)
-    assert behavior2.trick_states[1] == TrickState(1, cv0, 1)
-    assert behavior3.trick_states[1] == TrickState(2, cv1, 1)
-    assert behavior4.trick_states[1] == TrickState(3, cv2, 1)
+    assert behavior2.trick_states[1] == TrickState(0, 1, cv0, 1)
+    assert behavior3.trick_states[1] == TrickState(0, 2, cv1, 1)
+    assert behavior4.trick_states[1] == TrickState(0, 3, cv2, 1)
 
     assert len(behavior1.trick_states) == 2
     assert len(behavior2.trick_states) == 2
@@ -738,12 +752,12 @@ def test_CEODoesNotGoOutFirst_Middle():
 
     # Check that the behavior objects were correctly called
     assert behavior1.trick_states[0] == LeadState(0)
-    assert behavior2.trick_states[0] == TrickState(1, cv0, 1)
-    assert behavior3.trick_states[0] == TrickState(2, cv1, 1)
-    assert behavior4.trick_states[0] == TrickState(3, cv2, 1)
+    assert behavior2.trick_states[0] == TrickState(0, 1, cv0, 1)
+    assert behavior3.trick_states[0] == TrickState(0, 2, cv1, 1)
+    assert behavior4.trick_states[0] == TrickState(0, 3, cv2, 1)
 
     assert behavior4.trick_states[1] == LeadState(3)
-    assert behavior3.trick_states[1] == TrickState(2, cv4, 1)
+    assert behavior3.trick_states[1] == TrickState(3, 2, cv4, 1)
 
     assert len(behavior1.trick_states) == 1
     assert len(behavior2.trick_states) == 1
@@ -824,16 +838,16 @@ def test_CEODoesNotGoOutFirst_Lead():
 
     # Check that the behavior objects were correctly called
     assert behavior1.trick_states[0] == LeadState(0)
-    assert behavior2.trick_states[0] == TrickState(1, cv0, 1)
-    assert behavior3.trick_states[0] == TrickState(2, cv1, 1)
-    assert behavior4.trick_states[0] == TrickState(3, cv2, 1)
+    assert behavior2.trick_states[0] == TrickState(0, 1, cv0, 1)
+    assert behavior3.trick_states[0] == TrickState(0, 2, cv1, 1)
+    assert behavior4.trick_states[0] == TrickState(0, 3, cv2, 1)
 
     assert behavior4.trick_states[1] == LeadState(3)
-    assert behavior2.trick_states[1] == TrickState(1, cv4, 1)
-    assert behavior3.trick_states[1] == TrickState(2, cv5, 1)
+    assert behavior2.trick_states[1] == TrickState(3, 1, cv4, 1)
+    assert behavior3.trick_states[1] == TrickState(3, 2, cv5, 1)
 
     assert behavior3.trick_states[2] == LeadState(2)
-    assert behavior2.trick_states[2] == TrickState(1, cv0, 1)
+    assert behavior2.trick_states[2] == TrickState(2, 1, cv0, 1)
 
     assert len(behavior1.trick_states) == 1
     assert len(behavior2.trick_states) == 3

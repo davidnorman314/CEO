@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from CEO.cards.hand import *
 
 
@@ -16,11 +17,12 @@ class RoundState:
         self.cards_remaining = [hand.card_count() for hand in hands]
 
 
-class PlayerBehaviorInterface:
+class PlayerBehaviorInterface(ABC):
     """
     Interface implemented by objects that describe the plays made by a player
     """
 
+    @abstractmethod
     def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
         """
         Called to find out which cards are passed from a player on the
@@ -29,6 +31,7 @@ class PlayerBehaviorInterface:
         """
         pass
 
+    @abstractmethod
     def lead(self, player_position: int, hand: Hand, state: RoundState) -> CardValue:
         """
         Called to decide what the player should lead to start a trick.
@@ -36,8 +39,10 @@ class PlayerBehaviorInterface:
         """
         pass
 
+    @abstractmethod
     def play_on_trick(
         self,
+        starting_position: int,
         player_position: int,
         hand: Hand,
         cur_trick_value: CardValue,
