@@ -29,6 +29,9 @@ class EventListenerInterface:
     def pass_on_trick(self, index: int, player: Player):
         pass
 
+    def end_round(self, next_round_players: list[Player]):
+        pass
+
 
 class PrintAllEventListener(EventListenerInterface):
     """

@@ -36,6 +36,9 @@ class Game:
         for i in range(round_count):
             players_for_round = [self._players[i] for i in self._seats]
 
+            if i > 0:
+                self._listener.end_round(players_for_round)
+
             self._listener.start_round(players_for_round)
 
             deck = Deck(self._player_count)
@@ -53,3 +56,5 @@ class Game:
             self._seats = list(map(lambda i: self._seats[i], next_round_order))
 
             assert len(self._seats) == self._player_count
+
+        self._listener.end_round(players_for_round)

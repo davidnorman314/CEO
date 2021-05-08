@@ -3,6 +3,7 @@ import CEO.cards.game as g
 from CEO.cards.game import *
 from CEO.cards.player import *
 from CEO.cards.simplebehavior import *
+from CEO.cards.behaviorstatistics import *
 
 
 def main():
@@ -19,10 +20,34 @@ def main():
         behavior = behaviorClass()
         players.append(Player(name, behavior))
 
+    player_count = len(playersData)
+
     listener = PrintAllEventListener()
-    listener = EventListenerInterface()
+    listener = BehaviorStatisticsCollector(players)
+
+    round_count = 20
     game = g.Game(players, listener)
-    game.play(round_count=1000, do_shuffle=False)
+    game.play(round_count=round_count, do_shuffle=False)
+
+    # Print statistics
+    for behavior_name in listener.stats:
+        print(behavior_name)
+        stats = listener.stats[behavior_name]
+
+        for i in range(player_count):
+            pct = stats.end_position_count[i] / round_count
+
+            print("{0:5.2f}".format(pct), end="")
+
+        print("")
+
+        for i in range(player_count):
+            pct = stats.end_position_count[i]
+
+            print("{0:5d}".format(pct), end="")
+
+        print("")
+        print("")
 
 
 if __name__ == "__main__":
