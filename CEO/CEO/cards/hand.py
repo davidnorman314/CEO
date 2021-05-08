@@ -7,6 +7,8 @@ class CardValue:
     The values are zero through thirteen.
     """
 
+    value: int
+
     def __init__(self, value: int):
         if value < 0:
             raise ValueError("Value is negative " + str(value))
