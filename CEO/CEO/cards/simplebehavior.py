@@ -26,6 +26,7 @@ class SimpleBehaviorBase:
         # We don't have enough singles, so we need to pass one or more
         # cards from the lowest pair.
         seen_lowest_pair = False
+        seen_second_lowest_pair = False
         ret = []
 
         for i in range(13):
@@ -40,6 +41,9 @@ class SimpleBehaviorBase:
                         ret.append(cv)
 
                     seen_lowest_pair = True
+                elif not seen_second_lowest_pair and single_count == 0:
+                    ret.append(cv)
+                    seen_second_lowest_pair = True
                 else:
                     continue
             else:

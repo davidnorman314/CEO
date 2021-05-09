@@ -155,6 +155,28 @@ def test_SimpleBehaviorBase_pass_singles():
 
     assert behavior.pass_singles(hand, 3) == [cv0, cv1, cv1]
 
+    # Test where there aren't any singles, but there are pairs
+    hand = Hand()
+    hand.add_cards(cv0, 3)
+    hand.add_cards(cv1, 2)
+    hand.add_cards(cv2, 2)
+    hand.add_cards(cv3, 3)
+    hand.add_cards(cv4, 3)
+    hand.add_cards(cv5, 5)
+
+    assert behavior.pass_singles(hand, 3) == [cv1, cv1, cv2]
+
+    # Test where there aren't any singles, but there are pairs
+    hand = Hand()
+    hand.add_cards(cv0, 3)
+    hand.add_cards(cv1, 2)
+    hand.add_cards(cv2, 3)
+    hand.add_cards(cv3, 2)
+    hand.add_cards(cv4, 3)
+    hand.add_cards(cv5, 5)
+
+    assert behavior.pass_singles(hand, 3) == [cv1, cv1, cv3]
+
 
 def test_SimpleBehaviorBase_play_lowest_or_pass():
     """
