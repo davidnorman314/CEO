@@ -21,6 +21,8 @@ class SimpleBehaviorBase:
             if len(ret) == count:
                 return ret
 
+        single_count = len(ret)
+
         # We don't have enough singles, so we need to pass one or more
         # cards from the lowest pair.
         seen_lowest_pair = False
@@ -47,6 +49,33 @@ class SimpleBehaviorBase:
 
             if len(ret) == count:
                 return ret
+
+        # We don't have enough singles and don't have a pair, so we need to pass the singles and
+        # cards from the lowest triple.
+        seen_lowest_triple = False
+        ret = []
+
+        for i in range(13):
+            cv = CardValue(i)
+            if hand.count(cv) == 1:
+                ret.append(cv)
+            elif hand.count(cv) > 3 or hand.count(cv) == 0:
+                pass
+            else:
+                assert hand.count(cv) == 3
+
+                if not seen_lowest_triple:
+                    for i in range(count - single_count):
+                        ret.append(cv)
+
+                    seen_lowest_triple = True
+                else:
+                    continue
+
+            if len(ret) == count:
+                return ret
+
+        assert "shouldn't be here" == ""
 
     def play_lowest_or_pass(
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, state: RoundState
