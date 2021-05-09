@@ -3,6 +3,7 @@ import CEO.cards.game as g
 from CEO.cards.game import *
 from CEO.cards.player import *
 from CEO.cards.simplebehavior import *
+from CEO.cards.heuristicbehavior import *
 from CEO.cards.behaviorstatistics import *
 
 
@@ -25,7 +26,7 @@ def main():
     listener = PrintAllEventListener()
     listener = BehaviorStatisticsCollector(players)
 
-    round_count = 20
+    round_count = 1000
     game = g.Game(players, listener)
     game.play(round_count=round_count, do_shuffle=False)
 
@@ -35,7 +36,7 @@ def main():
         stats = listener.stats[behavior_name]
 
         for i in range(player_count):
-            pct = stats.end_position_count[i] / round_count
+            pct = (stats.end_position_count[i] / stats.players_with_behavior_count) / round_count
 
             print("{0:5.2f}".format(pct), end="")
 

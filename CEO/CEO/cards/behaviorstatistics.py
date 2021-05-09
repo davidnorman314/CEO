@@ -9,6 +9,7 @@ class BehaviorStatistics:
     Class that keeps track of statistics for a single behavior
     """
 
+    players_with_behavior_count: int
     total_players: int
     # start_position_count: array.array[int]
     # end_position_count: array.array[int]
@@ -20,6 +21,7 @@ class BehaviorStatistics:
     move_down_delta: list[int]
 
     def __init__(self, total_players: int):
+        self.players_with_behavior_count = 1
         self.total_players = total_players
 
         zero_list = [0] * total_players
@@ -28,6 +30,9 @@ class BehaviorStatistics:
         self.end_position_count = array.array("i", zero_list)
         self.move_up_delta = array.array("i", zero_list)
         self.move_down_delta = array.array("i", zero_list)
+
+    def add_another_player_with_behavior(self):
+        self.players_with_behavior_count += 1
 
     def add_round_result(self, start_position: int, end_position: int):
         self.start_position_count[start_position] += 1
@@ -48,7 +53,11 @@ class BehaviorStatisticsCollector(EventListenerInterface):
         count = len(players)
         for player in players:
             behavior_name = player.behavoir.__class__.__name__
-            self.stats[behavior_name] = BehaviorStatistics(count)
+
+            if behavior_name in self.stats:
+                self.stats[behavior_name].add_another_player_with_behavior()
+            else:
+                self.stats[behavior_name] = BehaviorStatistics(count)
 
     def start_round(self, players: list[Player]):
         self._begin_order = players.copy()

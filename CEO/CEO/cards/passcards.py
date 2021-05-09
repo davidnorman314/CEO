@@ -62,6 +62,16 @@ class PassCards:
                 self._hands[from_index], cards_to_pass
             )
 
+            if values is None:
+                print(
+                    "No values returned by pass cards",
+                    self._players[from_index].name,
+                    "count",
+                    cards_to_pass,
+                )
+                print(self._hands[from_index])
+                assert "Nothing returned by pass_cards" == ""
+
             assert len(values) == cards_to_pass
 
             for cv in values:

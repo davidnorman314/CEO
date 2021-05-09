@@ -1,8 +1,8 @@
 {
     "players": [
         {
-            "name": "Basic1",
-            "behavior": "BasicBehavior",
+            "name": "Heuristic1",
+            "behavior": "HeuristicBehavior",
             "behaviorArgs": {}
         },
         {
