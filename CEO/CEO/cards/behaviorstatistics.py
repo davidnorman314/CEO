@@ -20,6 +20,7 @@ class BehaviorStatistics:
     move_up_delta: list[int]
     move_down_delta: list[int]
     stay_count: int
+    start_to_finish: list[list[int]]
 
     def __init__(self, total_players: int):
         self.players_with_behavior_count = 1
@@ -33,12 +34,15 @@ class BehaviorStatistics:
         self.move_up_delta = array.array("i", zero_list)
         self.move_down_delta = array.array("i", zero_list)
 
+        self.start_to_finish = [[0] * total_players for i in range(total_players)]
+
     def add_another_player_with_behavior(self):
         self.players_with_behavior_count += 1
 
     def add_round_result(self, start_position: int, end_position: int):
         self.start_position_count[start_position] += 1
         self.end_position_count[end_position] += 1
+        self.start_to_finish[start_position][end_position] += 1
 
         delta = end_position - start_position
         if delta == 0:

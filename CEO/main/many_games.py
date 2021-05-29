@@ -26,7 +26,7 @@ def main():
     listener = PrintAllEventListener()
     listener = BehaviorStatisticsCollector(players)
 
-    round_count = 10000
+    round_count = 1000
     game = g.Game(players, listener)
     game.play(round_count=round_count, do_shuffle=False)
 
@@ -82,6 +82,12 @@ def main():
         print(format1.format("Down count:"), end="")
         print(format2a.format(total_move_down), end="")
         print("")
+
+        print("All changes")
+        for i in range(player_count):
+            for j in range(player_count):
+                print(format2a.format(stats.start_to_finish[i][j]), end="")
+            print("")
 
         # for i in range(player_count):
         #    pct = stats.end_position_count[i]
