@@ -1,13 +1,31 @@
 import json
+import argparse
 import CEO.cards.game as g
 from CEO.cards.game import *
 from CEO.cards.player import *
 from CEO.cards.simplebehavior import *
 from CEO.cards.heuristicbehavior import *
 from CEO.cards.behaviorstatistics import *
+from CEO.cards.eventlistener import GameWatchListener
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Play many games")
+    parser.add_argument(
+        "--print",
+        dest="print",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Print the game status.",
+    )
+    parser.add_argument(
+        "--count", dest="count", type=int, default=1000, help="The number of rounds to play"
+    )
+
+    args = parser.parse_args()
+    print(args)
+
     print("Loading from main/players.json.")
     with open("main/players.json") as f:
         data = json.load(f)
@@ -21,18 +39,30 @@ def main():
         behavior = behaviorClass()
         players.append(Player(name, behavior))
 
+        if data["behavior"] == "HeuristicBehavior":
+            console_log_player = data["name"]
+
     player_count = len(playersData)
 
-    listener = PrintAllEventListener()
-    listener = BehaviorStatisticsCollector(players)
+    if args.print:
+        doStats = False
+        listener = PrintAllEventListener()
+        listener = GameWatchListener(console_log_player)
+        print("Logging information for", console_log_player)
+    else:
+        doStats = True
+        listener = BehaviorStatisticsCollector(players)
 
-    round_count = 1000
+    round_count = args.count
     game = g.Game(players, listener)
     game.play(round_count=round_count, do_shuffle=False)
 
     format1 = "{:20}"
     format2 = "{:5.2f}"
     format2a = "{:5.0f}"
+
+    if not doStats:
+        exit(1)
 
     # Print statistics
     for behavior_name in listener.stats:
