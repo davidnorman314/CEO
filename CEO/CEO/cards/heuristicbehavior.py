@@ -24,21 +24,20 @@ class HeuristicBehavior(SimpleBehaviorBase, PlayerBehaviorInterface):
         state: RoundState,
     ) -> CardValue:
 
-        # We have to pass if the current value is an ace
-        if cur_trick_value == CardValue(12):
+        playable_list = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
+
+        if len(playable_list) == 0:
             return None
+
+        # Find the lowest group that can be played on a trick without breaking up a
+        # group.
+        for playable in playable_list:
+            if playable.count_matches:
+                return playable.cv
+
+        lowest_can_play = playable_list[0].cv.value
 
         higher_players_left = starting_position > 0 and starting_position < player_position
-
-        # Find the lowest group that can be played on a trick
-        lowest_can_play = None
-        for cvi in range(13):
-            if self._can_play_card(cvi, hand, cur_trick_value, cur_trick_count):
-                lowest_can_play = cvi
-                break
-
-        if lowest_can_play is None:
-            return None
 
         # The number of groups of cards that can't be played on the trick
         groups_lower = sum(map(lambda i: hand.count(CardValue(i)) > 0, range(lowest_can_play)))
@@ -53,7 +52,11 @@ class HeuristicBehavior(SimpleBehaviorBase, PlayerBehaviorInterface):
                 # return self.play_lowest_or_pass(hand, cur_trick_value, cur_trick_count, state)
                 return CardValue(lowest_can_play)
 
-        # return self.play_lowest_or_pass(hand, cur_trick_value, cur_trick_count, state)
+        # See if we should play an ace
+        highest_playable = playable_list[-1]
+        if highest_playable.cv.is_ace():
+            return highest_playable.cv
+
         return CardValue(lowest_can_play)
 
     def _can_play_card(
