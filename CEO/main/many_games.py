@@ -120,6 +120,35 @@ def main():
                 print(format2a.format(val), end="")
             print("")
 
+        # Bottom half stats
+        move_up_count = stats.bottom_half_move_up / stats.players_with_behavior_count
+        move_down_count = stats.bottom_half_move_down / stats.players_with_behavior_count
+        stay_count = stats.bottom_half_stay / stats.players_with_behavior_count
+        bottom_half_count = move_up_count + move_down_count + stay_count
+
+        print("Bottom half stats:")
+        print(format1.format("    Move up:"), end="")
+        print(
+            format2a.format(move_up_count),
+            format2.format(move_up_count / bottom_half_count),
+            end="",
+        )
+        print("")
+        print(format1.format("       Stay:"), end="")
+        print(
+            format2a.format(stay_count),
+            format2.format(stay_count / bottom_half_count),
+            end="",
+        )
+        print("")
+        print(format1.format("  Move down:"), end="")
+        print(
+            format2a.format(move_down_count),
+            format2.format(move_down_count / bottom_half_count),
+            end="",
+        )
+        print("")
+
         # for i in range(player_count):
         #    pct = stats.end_position_count[i]
         #

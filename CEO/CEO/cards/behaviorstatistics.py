@@ -21,18 +21,28 @@ class BehaviorStatistics:
     move_down_delta: list[int]
     stay_count: int
     start_to_finish: list[list[int]]
+    bottom_half_stay: int
+    bottom_half_move_up: int
+    bottom_half_move_down: int
+
+    _smallest_bottom_half_seat: int
 
     def __init__(self, total_players: int):
         self.players_with_behavior_count = 1
         self.total_players = total_players
         self.stay_count = 0
+        self.bottom_half_stay = 0
+        self.bottom_half_move_up = 0
+        self.bottom_half_move_down = 0
+
+        self._smallest_bottom_half_seat = total_players - total_players / 2
 
         zero_list = [0] * total_players
 
         self.start_position_count = array.array("i", zero_list)
         self.end_position_count = array.array("i", zero_list)
-        self.move_up_delta = array.array("i", zero_list)
-        self.move_down_delta = array.array("i", zero_list)
+        self.move_up_delta = array.array("i", [0] * total_players)
+        self.move_down_delta = array.array("i", [0] * total_players)
 
         self.start_to_finish = [[0] * total_players for i in range(total_players)]
 
@@ -51,6 +61,14 @@ class BehaviorStatistics:
             self.move_up_delta[delta] += 1
         elif delta < 0:
             self.move_down_delta[-delta] += 1
+
+        if start_position >= self._smallest_bottom_half_seat:
+            if end_position == start_position:
+                self.bottom_half_stay += 1
+            elif end_position <= start_position:
+                self.bottom_half_move_down += 1
+            else:
+                self.bottom_half_move_up += 1
 
 
 class BehaviorStatisticsCollector(EventListenerInterface):
