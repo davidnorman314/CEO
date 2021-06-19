@@ -128,6 +128,7 @@ class GameWatchListener(EventListenerInterface):
     _players: list[Player]
     _played: list[CardValue]
     _cur_trick_size: int
+    _start_seat: int
 
     def __init__(self, player_name: str):
         self._player_name = player_name
@@ -139,6 +140,11 @@ class GameWatchListener(EventListenerInterface):
         print("Starting round:", names_str)
 
         self._players = players
+
+        for i in range(len(players)):
+            if players[i].name == self._player_name:
+                self._start_seat = i
+                break
 
     def pass_cards(
         self,
@@ -277,3 +283,9 @@ class GameWatchListener(EventListenerInterface):
                 print(str(i), " ", end="")
 
         print("")
+
+    def end_round(self, next_round_players: list[Player]):
+        for i in range(len(next_round_players)):
+            if next_round_players[i].name == self._player_name:
+                print("Previous seat ", self._start_seat)
+                print("    Next seat ", i)

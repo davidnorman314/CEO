@@ -1,11 +1,6 @@
 {
     "players": [
         {
-            "name": "Heuristic1",
-            "behavior": "HeuristicBehavior",
-            "behaviorArgs": {}
-        },
-        {
             "name": "Basic2",
             "behavior": "BasicBehavior",
             "behaviorArgs": {}
@@ -28,6 +23,11 @@
         {
             "name": "Basic6",
             "behavior": "BasicBehavior",
+            "behaviorArgs": {}
+        },
+        {
+            "name": "Heuristic1",
+            "behavior": "HeuristicBehavior",
             "behaviorArgs": {}
         },
         {

@@ -57,4 +57,5 @@ class Game:
 
             assert len(self._seats) == self._player_count
 
+        players_for_round = [self._players[i] for i in self._seats]
         self._listener.end_round(players_for_round)
