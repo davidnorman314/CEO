@@ -1,6 +1,3 @@
-Visual Studio Code
-Shift alt F: Format code
-
 Run specific tests
   pytest -s -k game
 

@@ -26,15 +26,14 @@ class HeuristicBehavior(SimpleBehaviorBase, PlayerBehaviorInterface):
 
         playable_list = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
 
+        # Remove playable cards that would break up a set and that aren't aces.
+        playable_list = [p for p in playable_list if p.cv.is_ace() or p.count_matches]
+
         if len(playable_list) == 0:
             return None
 
         # Find the lowest group that can be played on a trick without breaking up a
         # group.
-        for playable in playable_list:
-            if playable.count_matches:
-                return playable.cv
-
         lowest_can_play = playable_list[0].cv.value
 
         higher_players_left = starting_position > 0 and starting_position < player_position

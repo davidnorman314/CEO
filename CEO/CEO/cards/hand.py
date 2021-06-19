@@ -10,7 +10,7 @@ class CardValue:
     value: int
 
     def is_ace(self) -> bool:
-        return self.value == 13
+        return self.value == 12
 
     def __init__(self, value: int):
         if value < 0:
