@@ -116,7 +116,8 @@ def main():
         print("All changes")
         for i in range(player_count):
             for j in range(player_count):
-                print(format2a.format(stats.start_to_finish[i][j]), end="")
+                val = stats.start_to_finish[i][j] / stats.players_with_behavior_count
+                print(format2a.format(val), end="")
             print("")
 
         # for i in range(player_count):
