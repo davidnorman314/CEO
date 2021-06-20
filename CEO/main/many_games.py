@@ -115,9 +115,14 @@ def main():
 
         print("All changes")
         for i in range(player_count):
+            total_for_start_seat = 0
             for j in range(player_count):
-                val = stats.start_to_finish[i][j] / stats.players_with_behavior_count
-                print(format2a.format(val), end="")
+                total_for_start_seat += stats.start_to_finish[i][j]
+
+            print(format1.format("Start seat " + str(i)), end="")
+            for j in range(player_count):
+                val = stats.start_to_finish[i][j] / total_for_start_seat
+                print(format2.format(val), end="")
             print("")
 
         # Bottom half stats
