@@ -3,6 +3,20 @@ from CEO.cards.player import *
 from CEO.cards.eventlistener import *
 
 
+class AsyncTest:
+    inc: int
+
+    def test_async(self):
+        yield 1 + self.inc
+        yield 2 + self.inc
+        yield 3 + self.inc
+        yield from self.sub_async()
+
+    def sub_async(self):
+        yield 100
+        yield 200
+
+
 class Round:
     """
     Class representing on round in a game of CEO
@@ -19,17 +33,27 @@ class Round:
         assert len(self._players) == len(self._hands)
 
     def play(self):
+        """
+        Play a round.
+        All behavoirs must be specified
+        """
+        gen = self.play_generator()
+        gen_results = list(gen)
+        assert gen_results == []
+
+    def play_generator(self):
+        """
+        Generator version of play that allows asynchronous behaviors.
+        """
         starting_player = 0
         trick_number = 0
         while not self._all_cards_played():
             trick_number += 1
             assert trick_number < len(self._hands) * 13
 
-            starting_player = self._play_trick(starting_player)
+            starting_player = yield from self._play_trick(starting_player)
 
-    def _play_trick(self, starting_player: int) -> int:
-        # print("Staring trick with player number ", starting_player)
-
+    def _play_trick(self, starting_player: int):
         # Calculate the order of the other players after the player that leads.
         # Note that play_order is an iterator.
         play_order = map(
@@ -48,7 +72,11 @@ class Round:
 
         self._listener.before_lead(starting_player, cur_player, cur_hand, state)
 
-        cur_card_value = cur_player.behavoir.lead(starting_player, cur_hand, state)
+        if cur_player.behavoir is not None:
+            cur_card_value = cur_player.behavoir.lead(starting_player, cur_hand, state)
+        else:
+            cur_card_value = yield "lead", starting_player, cur_hand, state
+
         cur_card_count = cur_hand.count(cur_card_value)
 
         self._listener.lead(cur_card_value, cur_card_count, starting_player, cur_player)
@@ -83,12 +111,22 @@ class Round:
                 state,
             )
 
-            new_card_value = cur_player.behavoir.play_on_trick(
-                starting_player, cur_index, cur_hand, cur_card_value, cur_card_count, state
-            )
+            if cur_player.behavoir is not None:
+                new_card_value = cur_player.behavoir.play_on_trick(
+                    starting_player, cur_index, cur_hand, cur_card_value, cur_card_count, state
+                )
+            else:
+                new_card_value = (
+                    yield "play",
+                    starting_player,
+                    cur_index,
+                    cur_hand,
+                    cur_card_value,
+                    cur_card_count,
+                    state,
+                )
 
             if new_card_value is None:
-                # print(cur_index, " ", cur_player, " passes")
                 self._listener.pass_on_trick(cur_index, cur_player)
                 continue
 
