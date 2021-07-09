@@ -39,12 +39,28 @@ class SimpleBehaviorBase:
         Returns a list of all cards that can be played on the trick.
         """
 
+        assert cur_trick_value is not None
+
         ret = []
         for i in range(cur_trick_value.value + 1, 13):
             cv = CardValue(i)
             hand_count = hand.count(cv)
             if hand_count >= trick_card_count:
                 ret.append(PlayableCard(cv, hand_count, trick_card_count))
+
+        return ret
+
+    def get_leadable_cards(self, hand: Hand) -> list[PlayableCard]:
+        """
+        Returns a list of all cards that can be lead, i.e., all cards in the trick.
+        """
+
+        ret = []
+        for i in range(13):
+            cv = CardValue(i)
+            hand_count = hand.count(cv)
+            if hand_count > 0:
+                ret.append(PlayableCard(cv, hand_count, hand_count))
 
         return ret
 

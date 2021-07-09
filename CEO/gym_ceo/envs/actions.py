@@ -4,11 +4,40 @@ from CEO.cards.simplebehavior import SimpleBehaviorBase
 
 
 class Actions(SimpleBehaviorBase):
+
+    play_highest_num = 0
+    play_second_lowest_num = 1
+    play_lowest_num = 2
+    pass_on_trick_num = 3
+
+    action_lead_count = 3
+    action_play_count = 4
+
+    def lead(self):
+        pass
+
+    def play(
+        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, action_number: int
+    ):
+        if action_number == self.pass_on_trick_num:
+            return self.pass_on_trick(hand, cur_trick_value, cur_trick_count)
+        elif action_number == self.play_lowest_num:
+            return self.play_lowest(hand, cur_trick_value, cur_trick_count)
+        elif action_number == self.play_second_lowest_num:
+            return self.play_second_lowest(hand, cur_trick_value, cur_trick_count)
+        elif action_number == self.play_highest_num:
+            return self.play_highest(hand, cur_trick_value, cur_trick_count)
+
+        assert "invalid action " + str(action_number) == ""
+
     def play_lowest(
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
 
-        playable_list = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
+        if cur_trick_value is None:
+            playable_list = self.get_leadable_cards(hand)
+        else:
+            playable_list = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
 
         if len(playable_list) == 0:
             return None
@@ -19,7 +48,10 @@ class Actions(SimpleBehaviorBase):
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
 
-        playable_list = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
+        if cur_trick_value is None:
+            playable_list = self.get_leadable_cards(hand)
+        else:
+            playable_list = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
 
         if len(playable_list) == 0:
             return None
@@ -33,9 +65,17 @@ class Actions(SimpleBehaviorBase):
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
 
-        playable_list = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
+        if cur_trick_value is None:
+            playable_list = self.get_leadable_cards(hand)
+        else:
+            playable_list = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
 
         if len(playable_list) == 0:
             return None
 
         return playable_list[-1].cv
+
+    def pass_on_trick(
+        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
+    ) -> CardValue:
+        return None
