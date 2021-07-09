@@ -35,6 +35,7 @@ class SeatCEOEnv(gym.Env):
     _hands: list[Hand]
     _observation_dimension: int
     _actions: Actions
+    _info = dict()
 
     _cur_hand: Hand
     _cur_trick_count: int
@@ -112,7 +113,7 @@ class SeatCEOEnv(gym.Env):
             else:
                 reward = -1.0
 
-        return obs, reward, done, None
+        return obs, reward, done, self._info
 
     def render(self, mode="human"):
         pass
