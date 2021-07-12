@@ -1,5 +1,6 @@
-from CEO.cards.eventlistener import PrintAllEventListener
 import pytest
+import random as random
+from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 import CEO.cards.deck as deck
 from CEO.cards.hand import *
 import CEO.cards.round as rd
@@ -50,15 +51,27 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         return ret
 
 
-def test_check_env():
+def test_SeatCEOEnv_check_env():
     """
     Test using the Gym check_env
     """
 
-    print("Checking SeatCEOEnv.")
+    listener = EventListenerInterface()
+    listener = PrintAllEventListener()
 
-    env = SeatCEOEnv()
+    print("Checking SeatCEOEnv. Seed 0")
+    random.seed(0)
+    env = SeatCEOEnv(listener=listener)
+    check_env(env, True, True)
 
+    print("Checking SeatCEOEnv. Seed 1")
+    random.seed(1)
+    env = SeatCEOEnv(listener=listener)
+    check_env(env, True, True)
+
+    print("Checking SeatCEOEnv. Seed 2")
+    random.seed(2)
+    env = SeatCEOEnv(listener=listener)
     check_env(env, True, True)
 
 
@@ -124,8 +137,12 @@ def test_SeatCEOEnv():
 
     observation = env.reset()
 
+    assert env.action_space.n == Actions.action_lead_count
+
+    # Lead lowest
     observation, reward, done, info = env.step(Actions.play_lowest_num)
 
+    assert env.action_space.n == Actions.action_play_count
     assert not done
     assert reward == 0
 
@@ -133,3 +150,156 @@ def test_SeatCEOEnv():
 
     assert reward > 0
     assert done
+
+
+def test_SeatCEOEnv_CanNotPlay_TwoTricks():
+    """
+    Test the environment that models a player in the the CEO seat.
+    Here CEO has low cards so can't play on the final two tricks.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+
+    # Make the hands
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 2)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv3, 2)
+    hand2.add_cards(cv7, 1)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv4, 2)
+    hand3.add_cards(cv5, 1)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+    hand4.add_cards(cv2, 2)
+    hand4.add_cards(cv6, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    # action: Lead lowest = cv0
+    behavior2.value_to_play.append(cv1)
+    behavior3.value_to_play.append(cv2)
+    behavior4.value_to_play.append(cv3)
+
+    behavior4.value_to_play.append(cv2)
+    # CEO must pass
+    behavior2.value_to_play.append(cv3)
+    behavior3.value_to_play.append(cv4)
+
+    behavior3.value_to_play.append(cv5)
+    behavior4.value_to_play.append(cv6)
+    behavior2.value_to_play.append(cv7)
+    # All players are out, so CEO drops
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        num_players=4, behaviors=behaviors, hands=hands, listener=PrintAllEventListener()
+    )
+
+    observation = env.reset()
+
+    # Lead lowest
+    observation, reward, done, info = env.step(Actions.play_lowest_num)
+
+    assert reward < 0
+    assert done
+
+
+def test_SeatCEOEnv_CanNotPlay_ThreeTricks():
+    """
+    Test the environment that models a player in the the CEO seat.
+    Here CEO has low cards so can't play on the final three tricks.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+
+    # Make the hands
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 2)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv3, 2)
+    hand2.add_cards(cv7, 1)
+    hand2.add_cards(cv6, 3)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv4, 2)
+    hand3.add_cards(cv5, 1)
+    hand3.add_cards(cv7, 3)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+    hand4.add_cards(cv2, 2)
+    hand4.add_cards(cv6, 1)
+    hand4.add_cards(cv8, 3)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    # action: Lead lowest = cv0
+    behavior2.value_to_play.append(cv1)
+    behavior3.value_to_play.append(cv2)
+    behavior4.value_to_play.append(cv3)
+
+    behavior4.value_to_play.append(cv2)
+    # CEO must pass
+    behavior2.value_to_play.append(cv3)
+    behavior3.value_to_play.append(cv4)
+
+    behavior3.value_to_play.append(cv5)
+    behavior4.value_to_play.append(cv6)
+    behavior2.value_to_play.append(cv7)
+
+    behavior2.value_to_play.append(cv6)
+    behavior3.value_to_play.append(cv7)
+    behavior4.value_to_play.append(cv8)
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        num_players=4, behaviors=behaviors, hands=hands, listener=PrintAllEventListener()
+    )
+
+    observation = env.reset()
+
+    # Lead lowest
+    observation, reward, done, info = env.step(Actions.play_lowest_num)
+
+    assert done
+    assert reward < 0

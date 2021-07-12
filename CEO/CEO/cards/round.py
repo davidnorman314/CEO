@@ -76,6 +76,8 @@ class Round:
             cur_card_value = cur_player.behavoir.lead(starting_player, cur_hand, state)
         else:
             cur_card_value = yield "lead", starting_player, cur_hand, state
+        if cur_card_value is None:
+            a = 1
         assert cur_card_value is not None
 
         cur_card_count = cur_hand.count(cur_card_value)

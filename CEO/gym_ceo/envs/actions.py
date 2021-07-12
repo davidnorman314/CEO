@@ -20,15 +20,24 @@ class Actions(SimpleBehaviorBase):
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, action_number: int
     ):
         if action_number == self.pass_on_trick_num:
+            if cur_trick_value is None:
+                print("Action pass for lead")
+                print(" Hand", hand)
+                assert cur_trick_value is not None
+                assert cur_trick_count is not None
+
             return self.pass_on_trick(hand, cur_trick_value, cur_trick_count)
         elif action_number == self.play_lowest_num:
-            return self.play_lowest(hand, cur_trick_value, cur_trick_count)
+            ret = self.play_lowest(hand, cur_trick_value, cur_trick_count)
         elif action_number == self.play_second_lowest_num:
-            return self.play_second_lowest(hand, cur_trick_value, cur_trick_count)
+            ret = self.play_second_lowest(hand, cur_trick_value, cur_trick_count)
         elif action_number == self.play_highest_num:
-            return self.play_highest(hand, cur_trick_value, cur_trick_count)
+            ret = self.play_highest(hand, cur_trick_value, cur_trick_count)
+        else:
+            print("invalid action ", str(action_number))
+            assert "invalid action " + str(action_number) == ""
 
-        assert "invalid action " + str(action_number) == ""
+        return ret
 
     def play_lowest(
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int

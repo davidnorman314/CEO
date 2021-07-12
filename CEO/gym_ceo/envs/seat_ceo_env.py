@@ -22,12 +22,6 @@ class SeatCEOEnv(gym.Env):
         high=np.array([13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13]),
         dtype=np.int32,
     )
-    """
-    """
-
-    """
-    Four actions corresponding to the actions in actions.py
-    """
 
     _num_players: int
     _round: Round
@@ -36,6 +30,9 @@ class SeatCEOEnv(gym.Env):
     _observation_dimension: int
     _actions: Actions
     _info = dict()
+
+    _action_space_lead = Discrete(Actions.action_lead_count)
+    _action_space_play = Discrete(Actions.action_play_count)
 
     _cur_hand: Hand
     _cur_trick_count: int
@@ -51,11 +48,7 @@ class SeatCEOEnv(gym.Env):
 
         self._actions = Actions()
 
-        if len(hands) == 0:
-            deck = Deck(self._num_players)
-            self._hands = deck.deal()
-        else:
-            self._hands = hands
+        self._hands = hands
 
         self._players = []
         self._players.append(Player("RL", None))
@@ -79,29 +72,49 @@ class SeatCEOEnv(gym.Env):
             dtype=np.int32,
         )
 
-        self.action_space = Discrete(4)
+        self.action_space = self._action_space_lead
 
     def reset(self):
+        self._listener.start_round(self._players)
+        self.action_space = self._action_space_lead
+
+        if self._hands is None or len(self._hands) == 0:
+            deck = Deck(self._num_players)
+            self._hands = deck.deal()
+
         self._round = Round(self._players, self._hands, self._listener)
         self._gen = self._round.play_generator()
 
         gen_tuple = next(self._gen)
+        assert gen_tuple[0] == "lead"
 
         return self._make_observation(gen_tuple)
 
     def step(self, action):
-        assert isinstance(action, int)
+        assert isinstance(action, int) or isinstance(action, np.int32)
 
         cv = self._actions.play(
             self._cur_hand, self._cur_trick_value, self._cur_trick_count, action
         )
 
+        if cv is None and self._cur_trick_value is None:
+            print("Action", action, "returned None to play on trick. Hand", hand)
+            assert cv is not None
+
         reward = 0
         done = False
         try:
-            gen_tuple = self._gen.send(cv)
+            while True:
+                gen_tuple = self._gen.send(cv)
 
-            obs = self._make_observation(gen_tuple)
+                obs = self._make_observation(gen_tuple)
+
+                if obs is not None:
+                    break
+                else:
+                    # The only action is to pass
+                    cv = None
+
             done = False
         except StopIteration:
             done = True
@@ -113,6 +126,8 @@ class SeatCEOEnv(gym.Env):
             else:
                 reward = -1.0
 
+            self._hands = None
+
         return obs, reward, done, self._info
 
     def render(self, mode="human"):
@@ -121,20 +136,12 @@ class SeatCEOEnv(gym.Env):
     def close(self):
         pass
 
-    def _make_observation(
-        self,
-        hand: Hand,
-        cur_card: CardValue,
-        cur_count: int,
-        starting_player: int,
-        state: RoundState,
-    ):
-        pass
-
     def _make_observation(self, gen_tuple):
         if gen_tuple[0] == "lead":
+            self.action_space = self._action_space_lead
             return self._make_observation_lead(gen_tuple)
         elif gen_tuple[0] == "play":
+            self.action_space = self._action_space_play
             return self._make_observation_play(gen_tuple)
         else:
             assert "Unexpected action" == ""
@@ -188,6 +195,10 @@ class SeatCEOEnv(gym.Env):
         self._cur_trick_count = cur_card_count
         self._cur_trick_value = cur_card_value
         self._cur_hand = cur_hand
+
+        # See if we must pass, i.e., there is no choice of action
+        if cur_hand.max_card_value().value <= cur_card_value.value:
+            return None
 
         # Create the return array
         obs = np.zeros(self._observation_dimension)

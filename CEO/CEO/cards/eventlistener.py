@@ -85,6 +85,9 @@ class PrintAllEventListener(EventListenerInterface):
             + ")"
         )
 
+    def before_lead(self, index: int, player: Player, hand: Hand, state: RoundState):
+        print(player.name, "leads on a trick. Hand", hand)
+
     def lead(self, card: CardValue, count: int, index: int, player: Player):
 
         plural = count > 1
@@ -98,6 +101,18 @@ class PrintAllEventListener(EventListenerInterface):
             + " "
             + card.to_display(plural)
         )
+
+    def before_play_cards(
+        self,
+        starting_position: int,
+        player_position: int,
+        player: Player,
+        hand: Hand,
+        cur_trick_value: CardValue,
+        cur_trick_count: int,
+        state: RoundState,
+    ):
+        print(player.name, "plays on a trick. Hand", hand)
 
     def play_cards(self, card: CardValue, count: int, index: int, player: Player):
 
