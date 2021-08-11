@@ -15,6 +15,11 @@ from CEO.cards.player import Player
 
 
 class SeatCEOEnv(gym.Env):
+    """
+    Environment for a player in the CEO seat. This environment contains all the information
+    available.
+    """
+
     metadata = {"render.modes": ["human"]}
 
     observation_space = Box(
@@ -33,7 +38,8 @@ class SeatCEOEnv(gym.Env):
     obs_index_cur_trick_count: int
     obs_index_start_player: int
 
-    _num_players: int
+    num_players: int
+
     _round: Round
     _listener: EventListenerInterface
     _hands: list[Hand]
@@ -49,7 +55,7 @@ class SeatCEOEnv(gym.Env):
     _cur_trick_value: CardValue
 
     def __init__(self, num_players=6, behaviors=[], hands=[], listener=EventListenerInterface()):
-        self._num_players = num_players
+        self.num_players = num_players
 
         if listener is None:
             self._listener = EventListenerInterface()
@@ -96,7 +102,7 @@ class SeatCEOEnv(gym.Env):
         self.action_space = self._action_space_lead
 
         if self._hands is None or len(self._hands) == 0:
-            deck = Deck(self._num_players)
+            deck = Deck(self.num_players)
             self._hands = deck.deal()
 
         self._round = Round(self._players, self._hands, self._listener)
@@ -182,7 +188,7 @@ class SeatCEOEnv(gym.Env):
             obs[self.obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
 
         # Add the cards in other players' hands
-        for p in range(1, self._num_players):
+        for p in range(1, self.num_players):
             obs[self.obs_index_other_player_card_count + p] = state.cards_remaining[p]
 
         # Add the trick state
@@ -219,7 +225,7 @@ class SeatCEOEnv(gym.Env):
             obs[self.obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
 
         # Add the cards in other players' hands
-        for p in range(1, self._num_players):
+        for p in range(1, self.num_players):
             obs[self.obs_index_other_player_card_count + p] = state.cards_remaining[p]
 
         # Add the trick state

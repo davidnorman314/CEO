@@ -6,6 +6,7 @@ from CEO.cards.hand import *
 import CEO.cards.round as rd
 import CEO.cards.player as player
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from stable_baselines3.common.env_checker import check_env
 
 from gym_ceo.envs.actions import Actions
@@ -72,6 +73,33 @@ def test_SeatCEOEnv_check_env():
     print("Checking SeatCEOEnv. Seed 2")
     random.seed(2)
     env = SeatCEOEnv(listener=listener)
+    check_env(env, True, True)
+
+
+def test_SeatCEOFeaturesEnv_check_env():
+    """
+    Test SeatCEOFeaturesEnv using the Gym check_env
+    """
+
+    listener = EventListenerInterface()
+    listener = PrintAllEventListener()
+
+    print("Checking SeatCEOFeaturesEnv. Seed 0")
+    random.seed(0)
+    full_env = SeatCEOEnv(listener=listener)
+    env = SeatCEOFeaturesEnv(full_env)
+    check_env(env, True, True)
+
+    print("Checking SeatCEOFeaturesEnv. Seed 1")
+    random.seed(1)
+    full_env = SeatCEOEnv(listener=listener)
+    env = SeatCEOFeaturesEnv(full_env)
+    check_env(env, True, True)
+
+    print("Checking SeatCEOFeaturesEnv. Seed 2")
+    random.seed(2)
+    full_env = SeatCEOEnv(listener=listener)
+    env = SeatCEOFeaturesEnv(full_env)
     check_env(env, True, True)
 
 
