@@ -61,7 +61,7 @@ class SeatCEOEnv(gym.Env):
                 self._players.append(Player(name, behaviors[i]))
 
         # Thirteen dimensions for the cards in the hand.
-        # num_players - 1 dimensions for the number of cards in the other player's hands
+        # (num_players - 1) dimensions for the number of cards in the other player's hands
         # One dimension for the current value of the trick
         # One dimension for the number of cards in the trick
         # One dimension for the starting player on the trick
@@ -72,7 +72,7 @@ class SeatCEOEnv(gym.Env):
             dtype=np.int32,
         )
 
-        self.action_space = self._action_space_lead
+        self.action_space = self._action_space_play
 
     def reset(self):
         self._listener.start_round(self._players)
@@ -91,7 +91,9 @@ class SeatCEOEnv(gym.Env):
         return self._make_observation(gen_tuple)
 
     def step(self, action):
-        assert isinstance(action, int) or isinstance(action, np.int32)
+        assert (
+            isinstance(action, int) or isinstance(action, np.int32) or isinstance(action, np.int64)
+        )
 
         cv = self._actions.play(
             self._cur_hand, self._cur_trick_value, self._cur_trick_count, action
