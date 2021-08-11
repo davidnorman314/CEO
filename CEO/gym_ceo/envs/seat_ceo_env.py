@@ -23,6 +23,16 @@ class SeatCEOEnv(gym.Env):
         dtype=np.int32,
     )
 
+    action_space: Discrete
+
+    # The indices into the observation array where the various features start
+    obs_index_hand_cards: int
+    obs_index_other_player_card_count: int
+    obs_index_other_player_card_count: int
+    obs_index_cur_trick_value: int
+    obs_index_cur_trick_count: int
+    obs_index_start_player: int
+
     _num_players: int
     _round: Round
     _listener: EventListenerInterface
@@ -65,14 +75,21 @@ class SeatCEOEnv(gym.Env):
         # One dimension for the current value of the trick
         # One dimension for the number of cards in the trick
         # One dimension for the starting player on the trick
-        self._observation_dimension = 13 + num_players - 1 + 3
+        self.obs_index_hand_cards = 0
+        self.obs_index_other_player_card_count = self.obs_index_hand_cards + 13
+        self.obs_index_cur_trick_value = self.obs_index_other_player_card_count + num_players - 1
+        self.obs_index_cur_trick_count = self.obs_index_cur_trick_value + 1
+        self.obs_index_start_player = self.obs_index_cur_trick_count + 1
+
+        self._observation_dimension = self.obs_index_start_player + 1
+
         self.observation_space = Box(
             low=np.array([0] * self._observation_dimension),
             high=np.array([13] * self._observation_dimension),
             dtype=np.int32,
         )
 
-        self.action_space = self._action_space_play
+        self.action_space = self._action_space_lead
 
     def reset(self):
         self._listener.start_round(self._players)
@@ -94,6 +111,8 @@ class SeatCEOEnv(gym.Env):
         assert (
             isinstance(action, int) or isinstance(action, np.int32) or isinstance(action, np.int64)
         )
+
+        assert action < self.action_space.n
 
         cv = self._actions.play(
             self._cur_hand, self._cur_trick_value, self._cur_trick_count, action
@@ -157,29 +176,19 @@ class SeatCEOEnv(gym.Env):
 
         # Create the return array
         obs = np.zeros(self._observation_dimension)
-        i = 0
 
         # Add the cards in our hand
         for v in range(13):
-            obs[i] = cur_hand.count(CardValue(v))
-            i += 1
+            obs[self.obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
 
         # Add the cards in other players' hands
         for p in range(1, self._num_players):
-            obs[i] = state.cards_remaining[p]
-            i += 1
+            obs[self.obs_index_other_player_card_count + p] = state.cards_remaining[p]
 
         # Add the trick state
-        obs[i] = 0
-        i += 1
-
-        obs[i] = 0
-        i += 1
-
-        obs[i] = 0
-        i += 1
-
-        assert i == self._observation_dimension
+        obs[self.obs_index_cur_trick_value] = 0
+        obs[self.obs_index_cur_trick_count] = 0
+        obs[self.obs_index_start_player] = 0
 
         return obs
 
@@ -204,28 +213,18 @@ class SeatCEOEnv(gym.Env):
 
         # Create the return array
         obs = np.zeros(self._observation_dimension)
-        i = 0
 
         # Add the cards in our hand
         for v in range(13):
-            obs[i] = cur_hand.count(CardValue(v))
-            i += 1
+            obs[self.obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
 
         # Add the cards in other players' hands
         for p in range(1, self._num_players):
-            obs[i] = state.cards_remaining[p]
-            i += 1
+            obs[self.obs_index_other_player_card_count + p] = state.cards_remaining[p]
 
         # Add the trick state
-        obs[i] = cur_card_value.value
-        i += 1
-
-        obs[i] = cur_card_count
-        i += 1
-
-        obs[i] = starting_player
-        i += 1
-
-        assert i == self._observation_dimension
+        obs[self.obs_index_cur_trick_value] = cur_card_value.value
+        obs[self.obs_index_cur_trick_count] = cur_card_count
+        obs[self.obs_index_start_player] = starting_player
 
         return obs
