@@ -21,10 +21,12 @@ class QLearning:
     _Q: np.ndarray
     _action_index: int
     _train_episodes: int
+    _max_action_value: int
 
     def __init__(self, env: gym.Env, train_episodes=100000):
         self._env = env
         self._train_episodes = train_episodes
+        self._max_action_value = env.max_action_value
 
         # Extract the space
         obs_space = env.observation_space
@@ -79,7 +81,7 @@ class QLearning:
                 exp_exp_sample = random.uniform(0, 1)
 
                 if exp_exp_sample > epsilon:
-                    action = np.argmax(self._Q[state, :])
+                    action = np.argmax(self._Q[(*state, slice(None))])
                     # print("q action", action, type(action))
                     # print("  expected reward", self._Q[state, action])
                 else:
@@ -104,7 +106,7 @@ class QLearning:
                 # print("done", done)
 
                 if new_state is not None:
-                    new_state_value = np.max(self._Q[new_state_tuple, :])
+                    new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
                 else:
                     new_state_value = 0
 
