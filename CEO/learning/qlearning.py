@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import random
+from collections import deque
 
 import cProfile
 from pstats import SortKey
@@ -50,9 +51,6 @@ class QLearning:
 
     def train(self):
         # Creating lists to keep track of reward and epsilon values
-        training_rewards = []
-        epsilons = []
-
         alpha = 0.7  # learning rate
         discount_factor = 0.8
         epsilon = 1
@@ -66,22 +64,32 @@ class QLearning:
         print("Starting training with", self._train_episodes, "episodes")
 
         # Training the agent
+        total_training_reward = 0
+        recent_episode_rewards = deque()
+        max_recent_episode_rewards = 5000
         for episode in range(1, self._train_episodes + 1):
-            print("episode", episode)
             # Reseting the environment each time as per requirement
             state = self._env.reset()
             state = state.astype(int)
 
             # Starting the tracker for the rewards
-            total_training_rewards = 0
+            episode_reward = 0
 
             # Run until the episode is finished
             while True:
                 # Choose if we will explore or exploit
                 exp_exp_sample = random.uniform(0, 1)
 
+                state_tuple = tuple(state.astype(int))
+
                 if exp_exp_sample > epsilon:
-                    action = np.argmax(self._Q[(*state, slice(None))])
+                    action = np.argmax(self._Q[(*state_tuple, slice(None))])
+
+                    # Clip the action, if necessary. This biases the exploration
+                    # toward leading the lowest card.
+                    if action >= env.action_space.n:
+                        action = env.action_space.n - 1
+
                     # print("q action", action, type(action))
                     # print("  expected reward", self._Q[state, action])
                 else:
@@ -91,13 +99,11 @@ class QLearning:
                 # Perform the action
                 new_state, reward, done, info = self._env.step(action)
 
-                if new_state is None:
-                    assert done
-
-                # Fix the array types
-                state_tuple = tuple(state.astype(int))
                 if new_state is not None:
                     new_state_tuple = tuple(new_state.astype(int))
+
+                if new_state is None:
+                    assert done
 
                 # Update the Q-table using the Bellman equation
                 # print("state", state)
@@ -121,7 +127,7 @@ class QLearning:
                 # print("State shape", state.shape)
 
                 # Increasing our total reward and updating the state
-                total_training_rewards += reward
+                episode_reward += reward
                 state = new_state
 
                 # See if the episode is finished
@@ -132,19 +138,19 @@ class QLearning:
             # Cutting down on exploration by reducing the epsilon
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
 
-            # Update the total reward
-            training_rewards.append(total_training_rewards)
+            # Save the reward
+            total_training_reward += episode_reward
+            recent_episode_rewards.append(episode_reward)
+            if len(recent_episode_rewards) > max_recent_episode_rewards:
+                recent_episode_rewards.popleft()
 
-            # Save epsilon
-            epsilons.append(epsilon)
-
-            if episode > 0 and episode % 2 == 0:
-                total_reward = sum(training_rewards)
-                ave_training_rewards = total_reward / episode
+            if episode > 0 and episode % 1000 == 0:
+                ave_training_rewards = total_training_reward / episode
+                recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
 
                 print(
-                    "Episode {} Ave rewards {} Total rewards {}".format(
-                        episode, ave_training_rewards, total_reward
+                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f}".format(
+                        episode, ave_training_rewards, recent_rewards
                     )
                 )
 
