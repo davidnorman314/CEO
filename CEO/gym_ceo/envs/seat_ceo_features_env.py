@@ -15,7 +15,7 @@ from CEO.cards.simplebehavior import BasicBehavior
 from CEO.cards.player import Player
 
 
-class BottomHalfMinCards:
+class BottomHalfTableMinCards:
     """
     Feature giving the minimum number of cards for players in the bottom half of the table.
     """
@@ -39,6 +39,167 @@ class BottomHalfMinCards:
 
         dest_obs[dest_start_index] = feature_value
 
+    dim = 1
+    max_value = 5
+
+
+class HandCardCount:
+    """
+    Feature giving the number of cards of a given value in the hand
+    """
+
+    dim = 1
+    max_value = 4
+    full_obs_index: int
+
+    def __init__(self, full_env: SeatCEOEnv, card_value_index: int):
+        self.full_obs_index = full_env.obs_index_hand_cards + card_value_index
+
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+        feature_value = min(full_obs[self.full_obs_index], self.max_value)
+        dest_obs[dest_start_index] = feature_value
+
+
+class OtherPlayerHandCount:
+    """
+    Feature giving the number of cards in another players hand
+    """
+
+    dim = 1
+    max_value = 5
+    full_obs_index: int
+
+    def __init__(self, full_env: SeatCEOEnv, other_player_index: int):
+        self.full_obs_index = full_env.obs_index_other_player_card_count + other_player_index
+
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+        feature_value = min(full_obs[self.full_obs_index], self.max_value)
+        dest_obs[dest_start_index] = feature_value
+
+
+class SinglesUnderValueCount:
+    """
+    Feature giving the number of singles in the hand below a certain card value
+    """
+
+    dim = 1
+    max_value = 3
+
+    _start_check_index: int
+    _end_check_index: int
+
+    def __init__(self, full_env: SeatCEOEnv, threshold: int):
+        self._start_check_index = full_env.obs_index_hand_cards
+        self._end_check_index = full_env.obs_index_hand_cards + threshold
+
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+        single_count = 0
+        for i in range(self._start_check_index, self._end_check_index):
+            card_count = full_obs[i]
+            if card_count == 1:
+                single_count += 1
+
+        return min(single_count, self.max_value)
+
+
+class DoublesUnderValueCount:
+    """
+    Feature giving the number of singles in the hand below a certain card value
+    """
+
+    dim = 1
+    max_value = 3
+
+    _start_check_index: int
+    _end_check_index: int
+
+    def __init__(self, full_env: SeatCEOEnv, threshold: int):
+        self._start_check_index = full_env.obs_index_hand_cards
+        self._end_check_index = full_env.obs_index_hand_cards + threshold
+
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+        double_count = 0
+        for i in range(self._start_check_index, self._end_check_index):
+            card_count = full_obs[i]
+            if card_count == 2:
+                double_count += 1
+
+        return min(double_count, self.max_value)
+
+
+class TriplesUnderValueCount:
+    """
+    Feature giving the number of singles in the hand below a certain card value
+    """
+
+    dim = 1
+    max_value = 2
+
+    _start_check_index: int
+    _end_check_index: int
+
+    def __init__(self, full_env: SeatCEOEnv, threshold: int):
+        self._start_check_index = full_env.obs_index_hand_cards
+        self._end_check_index = full_env.obs_index_hand_cards + threshold
+
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+        triple_count = 0
+        for i in range(self._start_check_index, self._end_check_index):
+            card_count = full_obs[i]
+            if card_count >= 3:
+                triple_count += 1
+
+        return min(triple_count, self.max_value)
+
+
+class CurTrickValue:
+    """
+    Feature giving the current trick's value.
+    0 - Below all cards in hand. This also means that the player should lead.
+    1 - Above one card value in hand
+    2 - Above two card values in hand
+    3 - Above three card values in hand
+    4 - Other
+    5 - Below two card values in hand (there are two values that can be played.)
+    6 - Below one card value in hand (there is one value that can be played.)
+    """
+
+    dim = 1
+    max_value = 6
+
+    _obs_index_cur_trick_count: int
+    _obs_index_cur_trick_value: int
+    _obs_index_hand_cards: int
+
+    def __init__(self, full_env: SeatCEOEnv):
+        self._obs_index_cur_trick_count = full_env.obs_index_cur_trick_count
+        self._obs_index_cur_trick_value = full_env.obs_index_cur_trick_value
+        self._obs_index_hand_cards = full_env.obs_index_hand_cards
+        pass
+
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+        if full_obs[self._obs_index_cur_trick_count] == 0:
+            # We should lead
+            return 0
+        else:
+            cur_trick_value = full_obs[self._obs_index_cur_trick_value]
+            hand_below_count = 0
+            hand_above_count = 0
+            for i in range(13):
+                count = full_obs[self._obs_index_hand_cards + i]
+                if count > 0:
+                    if cur_trick_value < i:
+                        hand_below_count += 1
+                    else:
+                        hand_above_count += 1
+
+            if hand_below_count <= 3:
+                return hand_below_count
+            elif hand_above_count <= 2:
+                return self.max_value - hand_above_count - 1
+            else:
+                return 4
+
 
 class SeatCEOFeaturesEnv(gym.Env):
     """
@@ -54,7 +215,7 @@ class SeatCEOFeaturesEnv(gym.Env):
     action_space: Discrete
 
     # Objects to calculate the features
-    _feature_calculators = []
+    _feature_calculators: list
 
     _observation_dimension: int
 
@@ -62,15 +223,36 @@ class SeatCEOFeaturesEnv(gym.Env):
         self.full_env = full_env
         self.action_space = full_env.action_space
 
-        self._feature_calculators.append(BottomHalfMinCards(full_env))
+        self._feature_calculators = []
+        self._feature_calculators.append(BottomHalfTableMinCards(full_env))
+        self._feature_calculators.append(HandCardCount(full_env, 12))  # Aces
+        self._feature_calculators.append(HandCardCount(full_env, 11))  # Kings
+        self._feature_calculators.append(HandCardCount(full_env, 10))  # Queens
+        self._feature_calculators.append(HandCardCount(full_env, 9))  # Jacks
+
+        self._feature_calculators.append(SinglesUnderValueCount(full_env, 9))
+        self._feature_calculators.append(DoublesUnderValueCount(full_env, 9))
+        self._feature_calculators.append(TriplesUnderValueCount(full_env, 9))
+
+        self._feature_calculators.append(CurTrickValue(full_env))
+
+        half_players = full_env.num_players // 2
+        for i in range(half_players - 1):
+            feature = OtherPlayerHandCount(full_env, i)
+            self._feature_calculators.append(feature)
 
         # Calculate the observation space
         obs_space_low = []
         obs_space_high = []
+        obs_space_possible_values = 1
         for calculator in self._feature_calculators:
             for i in range(calculator.dim):
                 obs_space_low.append(0)
                 obs_space_high.append(calculator.max_value)
+                obs_space_possible_values = obs_space_possible_values * (calculator.max_value + 1)
+            print(
+                "Calculator", type(calculator), "dim", calculator.dim, "max", calculator.max_value
+            )
         self.observation_space = Box(
             low=np.array(obs_space_low),
             high=np.array(obs_space_high),
@@ -78,6 +260,13 @@ class SeatCEOFeaturesEnv(gym.Env):
         )
 
         self._observation_dimension = len(obs_space_high)
+        print(
+            "SeatCEOFeatures env has",
+            self._observation_dimension,
+            "dimensional observation space with ",
+            obs_space_possible_values,
+            "possible values",
+        )
 
     def reset(self):
         full_obs = self.full_env.reset()
