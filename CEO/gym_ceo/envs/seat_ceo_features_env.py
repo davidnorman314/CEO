@@ -213,6 +213,7 @@ class SeatCEOFeaturesEnv(gym.Env):
 
     observation_space: Box
     action_space: Discrete
+    max_action_value: int
 
     # Objects to calculate the features
     _feature_calculators: list
@@ -222,6 +223,7 @@ class SeatCEOFeaturesEnv(gym.Env):
     def __init__(self, full_env: SeatCEOEnv):
         self.full_env = full_env
         self.action_space = full_env.action_space
+        self.max_action_value = full_env.max_action_value
 
         self._feature_calculators = []
         self._feature_calculators.append(BottomHalfTableMinCards(full_env))

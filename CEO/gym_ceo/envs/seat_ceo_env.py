@@ -29,6 +29,7 @@ class SeatCEOEnv(gym.Env):
     )
 
     action_space: Discrete
+    max_action_value: int
 
     # The indices into the observation array where the various features start
     obs_index_hand_cards: int
@@ -96,6 +97,7 @@ class SeatCEOEnv(gym.Env):
         )
 
         self.action_space = self._action_space_lead
+        self.max_action_value = max(self._action_space_lead.n, self._action_space_play.n)
 
     def reset(self):
         self._listener.start_round(self._players)
