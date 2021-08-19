@@ -189,9 +189,9 @@ class SeatCEOEnv(gym.Env):
         for v in range(13):
             obs[self.obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
 
-        # Add the cards in other players' hands
+        # Add the cards in other players' hands. Don't include the agent's hand.
         for p in range(1, self.num_players):
-            obs[self.obs_index_other_player_card_count + p] = state.cards_remaining[p]
+            obs[self.obs_index_other_player_card_count + p - 1] = state.cards_remaining[p]
 
         # Add the trick state
         obs[self.obs_index_cur_trick_value] = 0
@@ -226,9 +226,9 @@ class SeatCEOEnv(gym.Env):
         for v in range(13):
             obs[self.obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
 
-        # Add the cards in other players' hands
+        # Add the cards in other players' hands. Don't include the agent's hand.
         for p in range(1, self.num_players):
-            obs[self.obs_index_other_player_card_count + p] = state.cards_remaining[p]
+            obs[self.obs_index_other_player_card_count + p - 1] = state.cards_remaining[p]
 
         # Add the trick state
         obs[self.obs_index_cur_trick_value] = cur_card_value.value

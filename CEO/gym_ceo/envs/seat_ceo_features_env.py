@@ -27,20 +27,24 @@ class BottomHalfTableMinCards:
     _end_check_index: int
 
     def __init__(self, full_env: SeatCEOEnv):
+        # Note that the agent's hand card count is not included in the observation.
         self._start_check_index = (
-            full_env.num_players // 2 + full_env.obs_index_other_player_card_count
+            full_env.num_players // 2 - 1 + full_env.obs_index_other_player_card_count
         )
-        self._end_check_index = full_env.num_players + full_env.obs_index_other_player_card_count
+        self._end_check_index = (
+            full_env.num_players - 1 + full_env.obs_index_other_player_card_count
+        )
+        print(full_env.obs_index_other_player_card_count)
 
     def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
         feature_value = self.max_value
         for i in range(self._start_check_index, self._end_check_index):
             feature_value = min(feature_value, full_obs[i])
 
-        dest_obs[dest_start_index] = feature_value
+        # If another player is out, then CEO goes to the bottom of the table
+        assert feature_value != 0
 
-    dim = 1
-    max_value = 5
+        dest_obs[dest_start_index] = feature_value
 
 
 class HandCardCount:
@@ -68,13 +72,22 @@ class OtherPlayerHandCount:
     dim = 1
     max_value = 5
     full_obs_index: int
+    other_player_index: int
 
     def __init__(self, full_env: SeatCEOEnv, other_player_index: int):
+        self.other_player_index = other_player_index
         self.full_obs_index = full_env.obs_index_other_player_card_count + other_player_index
 
     def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
         feature_value = min(full_obs[self.full_obs_index], self.max_value)
         dest_obs[dest_start_index] = feature_value
+
+        # If another player is out, then CEO goes to the bottom of the table
+        if feature_value == 0:
+            print(full_obs)
+            print("full obs index", self.full_obs_index)
+            print("other player index", self.other_player_index)
+        assert feature_value != 0
 
 
 class SinglesUnderValueCount:
