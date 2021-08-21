@@ -172,7 +172,7 @@ class CurTrickValue:
     1 - Above one card value in hand
     2 - Above two card values in hand
     3 - Above three card values in hand
-    4 - Other
+    4 - Other: Above four or more cards in the hand and less than three or more.
     5 - Below two card values in hand (there are two values that can be played.)
     6 - Below one card value in hand (there is one value that can be played.)
     """
@@ -201,15 +201,17 @@ class CurTrickValue:
             for i in range(13):
                 count = full_obs[self._obs_index_hand_cards + i]
                 if count > 0:
-                    if cur_trick_value < i:
+                    if cur_trick_value >= i:
                         hand_below_count += 1
                     else:
                         hand_above_count += 1
 
+            assert hand_above_count != 0
+
             if hand_below_count <= 3:
                 return hand_below_count
             elif hand_above_count <= 2:
-                return self.max_value - hand_above_count - 1
+                return self.max_value - hand_above_count + 1
             else:
                 return 4
 
@@ -239,22 +241,23 @@ class SeatCEOFeaturesEnv(gym.Env):
         self.max_action_value = full_env.max_action_value
 
         self._feature_calculators = []
-        self._feature_calculators.append(BottomHalfTableMinCards(full_env))
-        self._feature_calculators.append(HandCardCount(full_env, 12))  # Aces
-        self._feature_calculators.append(HandCardCount(full_env, 11))  # Kings
-        self._feature_calculators.append(HandCardCount(full_env, 10))  # Queens
-        self._feature_calculators.append(HandCardCount(full_env, 9))  # Jacks
-
-        self._feature_calculators.append(SinglesUnderValueCount(full_env, 9))
-        self._feature_calculators.append(DoublesUnderValueCount(full_env, 9))
-        self._feature_calculators.append(TriplesUnderValueCount(full_env, 9))
-
-        self._feature_calculators.append(CurTrickValue(full_env))
 
         half_players = full_env.num_players // 2
         for i in range(half_players - 1):
             feature = OtherPlayerHandCount(full_env, i)
             self._feature_calculators.append(feature)
+
+        # self._feature_calculators.append(BottomHalfTableMinCards(full_env))
+
+        self._feature_calculators.append(HandCardCount(full_env, 12))  # Aces
+        self._feature_calculators.append(HandCardCount(full_env, 11))  # Kings
+        self._feature_calculators.append(HandCardCount(full_env, 10))  # Queens
+        self._feature_calculators.append(HandCardCount(full_env, 9))  # Jacks
+        self._feature_calculators.append(SinglesUnderValueCount(full_env, 9))
+        self._feature_calculators.append(DoublesUnderValueCount(full_env, 9))
+        self._feature_calculators.append(TriplesUnderValueCount(full_env, 9))
+
+        self._feature_calculators.append(CurTrickValue(full_env))
 
         # Calculate the observation space
         obs_space_low = []

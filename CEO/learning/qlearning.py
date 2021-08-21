@@ -54,9 +54,9 @@ class QLearning:
         alpha = 0.7  # learning rate
         discount_factor = 0.8
         epsilon = 1
-        max_epsilon = 1
+        max_epsilon = 0.5
         min_epsilon = 0.01
-        decay = 0.0001
+        decay = 0.00001
 
         test_episodes = 100
         max_steps = 100
@@ -66,21 +66,23 @@ class QLearning:
         # Training the agent
         total_training_reward = 0
         recent_episode_rewards = deque()
+        recent_explore_counts = deque()
+        recent_exploit_counts = deque()
         max_recent_episode_rewards = 5000
         for episode in range(1, self._train_episodes + 1):
             # Reseting the environment each time as per requirement
             state = self._env.reset()
-            state = state.astype(int)
+            state_tuple = tuple(state.astype(int))
 
             # Starting the tracker for the rewards
             episode_reward = 0
+            episode_explore_count = 0
+            episode_exploit_count = 0
 
             # Run until the episode is finished
             while True:
                 # Choose if we will explore or exploit
                 exp_exp_sample = random.uniform(0, 1)
-
-                state_tuple = tuple(state.astype(int))
 
                 if exp_exp_sample > epsilon:
                     action = np.argmax(self._Q[(*state_tuple, slice(None))])
@@ -90,17 +92,18 @@ class QLearning:
                     if action >= env.action_space.n:
                         action = env.action_space.n - 1
 
+                    episode_exploit_count += 1
+
                     # print("q action", action, type(action))
                     # print("  expected reward", self._Q[state, action])
                 else:
                     action = self._env.action_space.sample()
+
+                    episode_explore_count += 1
                     # print("e action", action, type(action))
 
                 # Perform the action
                 new_state, reward, done, info = self._env.step(action)
-
-                if new_state is not None:
-                    new_state_tuple = tuple(new_state.astype(int))
 
                 if new_state is None:
                     assert done
@@ -112,8 +115,10 @@ class QLearning:
                 # print("done", done)
 
                 if new_state is not None:
+                    new_state_tuple = tuple(new_state.astype(int))
                     new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
                 else:
+                    new_state_tuple = None
                     new_state_value = 0
 
                 state_action_tuple = state_tuple + (action,)
@@ -129,6 +134,7 @@ class QLearning:
                 # Increasing our total reward and updating the state
                 episode_reward += reward
                 state = new_state
+                state_tuple = new_state_tuple
 
                 # See if the episode is finished
                 if done == True:
@@ -141,18 +147,39 @@ class QLearning:
             # Save the reward
             total_training_reward += episode_reward
             recent_episode_rewards.append(episode_reward)
+            recent_exploit_counts.append(episode_exploit_count)
+            recent_explore_counts.append(episode_explore_count)
             if len(recent_episode_rewards) > max_recent_episode_rewards:
                 recent_episode_rewards.popleft()
+                recent_explore_counts.popleft()
+                recent_exploit_counts.popleft()
 
             if episode > 0 and episode % 1000 == 0:
                 ave_training_rewards = total_training_reward / episode
                 recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
+                recent_explore_rate = sum(recent_explore_counts) / (
+                    sum(recent_exploit_counts) + sum(recent_explore_counts)
+                )
 
                 print(
-                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f}".format(
-                        episode, ave_training_rewards, recent_rewards
+                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} Explore rate {:.3f}".format(
+                        episode, ave_training_rewards, recent_rewards, recent_explore_rate
                     )
                 )
+
+            if episode > 0 and episode % 20000 == 0:
+                zero_count = 0
+                pos_count = 0
+                neg_count = 0
+                for val in np.nditer(self._Q):
+                    if val == 0:
+                        zero_count += 1
+                    elif val > 0:
+                        pos_count += 1
+                    else:
+                        neg_count += 1
+
+                print("  pos", pos_count, "neg", neg_count, "zero", zero_count)
 
 
 # Main function
