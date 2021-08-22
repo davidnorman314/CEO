@@ -170,7 +170,7 @@ class SeatCEOEnv(gym.Env):
         )
 
         if cv is None and self._cur_trick_value is None:
-            print("Action", action, "returned None to play on trick. Hand", hand)
+            print("Action", action, "returned None to play on trick. Hand", self._cur_hand)
             assert cv is not None
 
         reward = 0

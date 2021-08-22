@@ -52,8 +52,8 @@ class QLearning:
 
     def train(self):
         # Creating lists to keep track of reward and epsilon values
-        alpha = 0.7  # learning rate
-        discount_factor = 0.8
+        alpha = 0.2  # learning rate
+        discount_factor = 0.7
         epsilon = 1
         max_epsilon = 0.5
         min_epsilon = 0.01
@@ -69,7 +69,8 @@ class QLearning:
         recent_episode_rewards = deque()
         recent_explore_counts = deque()
         recent_exploit_counts = deque()
-        max_recent_episode_rewards = 5000
+        max_recent_episode_rewards = 10000
+        states_visited = 0
         for episode in range(1, self._train_episodes + 1):
             # Reseting the environment each time as per requirement
             state = self._env.reset()
@@ -91,20 +92,24 @@ class QLearning:
                 # Choose if we will explore or exploit
                 exp_exp_sample = random.uniform(0, 1)
 
-                if exp_exp_sample > epsilon:
-                    action = np.argmax(self._Q[(*state_tuple, slice(None))])
+                exploit_action = np.argmax(self._Q[(*state_tuple, slice(None))])
 
-                    # Clip the action, if necessary. This biases the exploration
-                    # toward leading the lowest card.
-                    if action >= env.action_space.n:
-                        action = env.action_space.n - 1
+                # Clip the action, if necessary. This biases the exploration
+                # toward leading the lowest card.
+                if exploit_action >= env.action_space.n:
+                    exploit_action = env.action_space.n - 1
 
+                explore_action = self._env.action_space.sample()
+
+                if exp_exp_sample > epsilon or exploit_action == explore_action:
                     episode_exploit_count += 1
+
+                    action = exploit_action
 
                     # print("q action", action, type(action))
                     # print("  expected reward", self._Q[state, action])
                 else:
-                    action = self._env.action_space.sample()
+                    action = explore_action
 
                     episode_explore_count += 1
                     # print("e action", action, type(action))
@@ -132,11 +137,14 @@ class QLearning:
                 # Update the Q-table using the Bellman equation
                 episode_states.append(state_action_tuple)
                 episode_value_before.append(self._Q[state_action_tuple])
+                if self._Q[state_action_tuple] == 0:
+                    states_visited += 1
                 self._Q[state_action_tuple] = self._Q[state_action_tuple] + alpha * (
                     reward + discount_factor * new_state_value - self._Q[state_action_tuple]
                 )
                 episode_value_after.append(self._Q[state_action_tuple])
                 episode_hands.append(copy.deepcopy(info))
+
                 # print("hand 2", info["hand"])
                 # print("New q", type(self._Q[state_action_tuple]))
                 # print("Q shape", self._Q.shape)
@@ -166,7 +174,7 @@ class QLearning:
                 recent_explore_counts.popleft()
                 recent_exploit_counts.popleft()
 
-            if episode > 0 and episode % 1000 == 0:
+            if episode > 0 and episode % 2000 == 0:
                 ave_training_rewards = total_training_reward / episode
                 recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
                 recent_explore_rate = sum(recent_explore_counts) / (
@@ -174,12 +182,16 @@ class QLearning:
                 )
 
                 print(
-                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} Explore rate {:.3f}".format(
-                        episode, ave_training_rewards, recent_rewards, recent_explore_rate
+                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} Explore rate {:.3f} States visited {}".format(
+                        episode,
+                        ave_training_rewards,
+                        recent_rewards,
+                        recent_explore_rate,
+                        states_visited,
                     )
                 )
 
-            if episode > 0 and episode % 10000 == 0:
+            if episode > 0 and episode % 20000 == 0:
                 # Log the states for this episode
                 print("Episode info")
                 for i in range(len(episode_states)):
