@@ -158,24 +158,21 @@ class SimpleBehaviorBase:
             return ret
 
         # We don't have enough singles and don't have a pair, so we need to pass the singles and
-        # cards from the lowest triple.
-        seen_lowest_triple = False
+        # cards from the lowest other group.
+        seen_lowest_large_group = False
         ret = []
 
         for i in range(13):
             cv = CardValue(i)
             if hand.count(cv) == 1:
                 ret.append(cv)
-            elif hand.count(cv) > 3 or hand.count(cv) == 0:
+            elif hand.count(cv) == 0:
                 pass
             else:
-                assert hand.count(cv) == 3
+                if not seen_lowest_large_group:
+                    ret.extend([cv] * (count - single_count))
 
-                if not seen_lowest_triple:
-                    for i in range(count - single_count):
-                        ret.append(cv)
-
-                    seen_lowest_triple = True
+                    seen_lowest_large_group = True
                 else:
                     continue
 
