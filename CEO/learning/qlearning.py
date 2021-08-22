@@ -234,8 +234,8 @@ if __name__ == "__main__":
         kwargs["train_episodes"] = args.train_episodes
 
     random.seed(0)
-    listener = EventListenerInterface()
     listener = PrintAllEventListener()
+    listener = EventListenerInterface()
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
 
