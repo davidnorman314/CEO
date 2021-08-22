@@ -181,6 +181,7 @@ class SeatCEOEnv(gym.Env):
         self._cur_trick_count = None
         self._cur_trick_value = None
         self._cur_hand = cur_hand
+        self._info["hand"] = cur_hand
 
         # Create the return array
         obs = np.zeros(self._observation_dimension)
@@ -214,6 +215,7 @@ class SeatCEOEnv(gym.Env):
         self._cur_trick_count = cur_card_count
         self._cur_trick_value = cur_card_value
         self._cur_hand = cur_hand
+        self._info["hand"] = cur_hand
 
         # See if we must pass, i.e., there is no choice of action
         if cur_hand.max_card_value().value <= cur_card_value.value:

@@ -112,7 +112,7 @@ class SinglesUnderValueCount:
             if card_count == 1:
                 single_count += 1
 
-        return min(single_count, self.max_value)
+        dest_obs[dest_start_index] = min(single_count, self.max_value)
 
 
 class DoublesUnderValueCount:
@@ -137,7 +137,7 @@ class DoublesUnderValueCount:
             if card_count == 2:
                 double_count += 1
 
-        return min(double_count, self.max_value)
+        dest_obs[dest_start_index] = min(double_count, self.max_value)
 
 
 class TriplesUnderValueCount:
@@ -162,7 +162,7 @@ class TriplesUnderValueCount:
             if card_count >= 3:
                 triple_count += 1
 
-        return min(triple_count, self.max_value)
+        dest_obs[dest_start_index] = min(triple_count, self.max_value)
 
 
 class CurTrickValue:
