@@ -173,6 +173,9 @@ class BasicBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
     Class implementing a simple, non-optimal behavior
     """
 
+    def __init__(self):
+        self.is_reinforcement_learning = False
+
     def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
         return self.pass_singles(hand, count)
 

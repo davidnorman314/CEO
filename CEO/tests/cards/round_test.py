@@ -71,6 +71,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         self.to_play_next_index = 0
         self.trick_states = []
         self.cards_remaining = []
+        self.is_reinforcement_learning = False
 
     def pass_cards(self, hand: hand.Hand, count: int) -> list[hand.CardValue]:
         raise NotImplemented
@@ -108,6 +109,36 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         self.to_play_next_index += 1
 
         return ret
+
+
+class MockAsyncBehavior(player.PlayerBehaviorInterface):
+    """
+    Class used for RL behavior
+    """
+
+    to_pass = list()
+
+    def __init__(self):
+        self.is_reinforcement_learning = True
+        self.to_pass = []
+
+    def pass_cards(self, hand: hand.Hand, count: int) -> list[hand.CardValue]:
+        ret = self.to_pass[0]
+        self.to_pass.pop(0)
+
+    def lead(self, player_position: int, hand: hand.Hand, state: rd.RoundState) -> hand.CardValue:
+        assert not "This should not be called"
+
+    def play_on_trick(
+        self,
+        starting_position: int,
+        player_position: int,
+        hand: hand.Hand,
+        cur_trick_value: hand.CardValue,
+        cur_trick_count: int,
+        state: rd.RoundState,
+    ) -> hand.CardValue:
+        assert not "This should not be called"
 
 
 def test_SimpleRound():
@@ -864,43 +895,6 @@ def test_CEODoesNotGoOutFirst_Lead():
     assert round.get_next_round_order() == [3, 2, 1, 0]
 
 
-def test_AsyncTest():
-    """
-    Test async methods
-    """
-
-    async_round = rd.AsyncTest()
-
-    async_round.inc = 0
-    assert list(async_round.test_async()) == [1, 2, 3, 100, 200]
-
-    gen = async_round.test_async()
-    async_round.inc = 10
-    assert next(gen) == 11
-
-    async_round.inc = 20
-    assert next(gen) == 22
-
-    async_round.inc = 30
-    assert next(gen) == 33
-
-    assert next(gen) == 100
-
-    assert next(gen) == 200
-
-    with pytest.raises(StopIteration):
-        next(gen)
-
-    # Create CardValue objects for ease of use later
-    cv0 = hand.CardValue(0)
-    cv1 = hand.CardValue(1)
-    cv2 = hand.CardValue(2)
-    cv3 = hand.CardValue(3)
-    cv4 = hand.CardValue(4)
-    cv5 = hand.CardValue(5)
-    cv6 = hand.CardValue(6)
-
-
 def test_AsyncRound():
     """
     Test playing a quick round of CEO using the generator interface for a player behavior.
@@ -962,7 +956,7 @@ def test_AsyncRound():
     player1 = player.Player("Player1", behavior1)
     player2 = player.Player("Player2", behavior2)
     player3 = player.Player("Player3", behavior3)
-    player4 = player.Player("Player4", None)
+    player4 = player.Player("Player4", MockAsyncBehavior())
 
     # Play the round. Player 4 is asynchronous
     listener = el.PrintAllEventListener()

@@ -10,8 +10,35 @@ from CEO.cards.round import Round, RoundState
 from CEO.cards.eventlistener import EventListenerInterface
 from CEO.cards.deck import Deck
 from CEO.cards.hand import Hand, CardValue
-from CEO.cards.simplebehavior import BasicBehavior
-from CEO.cards.player import Player
+from CEO.cards.simplebehavior import BasicBehavior, SimpleBehaviorBase
+from CEO.cards.player import Player, PlayerBehaviorInterface
+from CEO.cards.passcards import PassCards
+
+
+class RLBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
+    """
+    Class used for RL behavior
+    """
+
+    def __init__(self):
+        self.is_reinforcement_learning = True
+
+    def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
+        return self.pass_singles(hand, count)
+
+    def lead(self, player_position: int, hand: Hand, state: RoundState) -> CardValue:
+        assert not "This should not be called"
+
+    def play_on_trick(
+        self,
+        starting_position: int,
+        player_position: int,
+        hand: Hand,
+        cur_trick_value: CardValue,
+        cur_trick_count: int,
+        state: RoundState,
+    ) -> CardValue:
+        assert not "This should not be called"
 
 
 class SeatCEOEnv(gym.Env):
@@ -48,6 +75,8 @@ class SeatCEOEnv(gym.Env):
     _actions: Actions
     _info = dict()
 
+    _skip_passing: bool
+
     _action_space_lead = Discrete(Actions.action_lead_count)
     _action_space_play = Discrete(Actions.action_play_count)
 
@@ -55,8 +84,16 @@ class SeatCEOEnv(gym.Env):
     _cur_trick_count: int
     _cur_trick_value: CardValue
 
-    def __init__(self, num_players=6, behaviors=[], hands=[], listener=EventListenerInterface()):
+    def __init__(
+        self,
+        num_players=6,
+        behaviors=[],
+        hands=[],
+        listener=EventListenerInterface(),
+        skip_passing=False,
+    ):
         self.num_players = num_players
+        self._skip_passing = skip_passing
 
         if listener is None:
             self._listener = EventListenerInterface()
@@ -68,7 +105,7 @@ class SeatCEOEnv(gym.Env):
         self._hands = hands
 
         self._players = []
-        self._players.append(Player("RL", None))
+        self._players.append(Player("RL", RLBehavior()))
         for i in range(num_players - 1):
             name = "Basic" + str(i + 1)
 
@@ -103,9 +140,15 @@ class SeatCEOEnv(gym.Env):
         self._listener.start_round(self._players)
         self.action_space = self._action_space_lead
 
+        # Deal the cards
         if self._hands is None or len(self._hands) == 0:
             deck = Deck(self.num_players)
             self._hands = deck.deal()
+
+        # Pass cards
+        if not self._skip_passing:
+            passcards = PassCards(self._players, self._hands, self._listener)
+            passcards.do_card_passing()
 
         self._round = Round(self._players, self._hands, self._listener)
         self._gen = self._round.play_generator()

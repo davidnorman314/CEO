@@ -3,20 +3,6 @@ from CEO.cards.player import *
 from CEO.cards.eventlistener import *
 
 
-class AsyncTest:
-    inc: int
-
-    def test_async(self):
-        yield 1 + self.inc
-        yield 2 + self.inc
-        yield 3 + self.inc
-        yield from self.sub_async()
-
-    def sub_async(self):
-        yield 100
-        yield 200
-
-
 class Round:
     """
     Class representing on round in a game of CEO
@@ -72,12 +58,11 @@ class Round:
 
         self._listener.before_lead(starting_player, cur_player, cur_hand, state)
 
-        if cur_player.behavoir is not None:
+        if not cur_player.behavoir.is_reinforcement_learning:
             cur_card_value = cur_player.behavoir.lead(starting_player, cur_hand, state)
         else:
             cur_card_value = yield "lead", starting_player, cur_hand, state
-        if cur_card_value is None:
-            a = 1
+
         assert cur_card_value is not None
 
         cur_card_count = cur_hand.count(cur_card_value)
@@ -114,7 +99,7 @@ class Round:
                 state,
             )
 
-            if cur_player.behavoir is not None:
+            if not cur_player.behavoir.is_reinforcement_learning:
                 new_card_value = cur_player.behavoir.play_on_trick(
                     starting_player, cur_index, cur_hand, cur_card_value, cur_card_count, state
                 )

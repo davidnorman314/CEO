@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import random
+import copy
 from collections import deque
 
 import cProfile
@@ -79,6 +80,12 @@ class QLearning:
             episode_explore_count = 0
             episode_exploit_count = 0
 
+            # Per-episode logging
+            episode_states = []
+            episode_value_before = []
+            episode_value_after = []
+            episode_hands = []
+
             # Run until the episode is finished
             while True:
                 # Choose if we will explore or exploit
@@ -102,13 +109,11 @@ class QLearning:
                     episode_explore_count += 1
                     # print("e action", action, type(action))
 
+                state_action_tuple = state_tuple + (action,)
+
                 # Perform the action
                 new_state, reward, done, info = self._env.step(action)
 
-                if new_state is None:
-                    assert done
-
-                # Update the Q-table using the Bellman equation
                 # print("state", state)
                 # print("state_tuple", state_tuple)
                 # print("action", action)
@@ -118,14 +123,21 @@ class QLearning:
                     new_state_tuple = tuple(new_state.astype(int))
                     new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
                 else:
+                    assert done
+                    assert reward != 0
+
                     new_state_tuple = None
                     new_state_value = 0
 
-                state_action_tuple = state_tuple + (action,)
-
+                # Update the Q-table using the Bellman equation
+                episode_states.append(state_action_tuple)
+                episode_value_before.append(self._Q[state_action_tuple])
                 self._Q[state_action_tuple] = self._Q[state_action_tuple] + alpha * (
                     reward + discount_factor * new_state_value - self._Q[state_action_tuple]
                 )
+                episode_value_after.append(self._Q[state_action_tuple])
+                episode_hands.append(copy.deepcopy(info))
+                # print("hand 2", info["hand"])
                 # print("New q", type(self._Q[state_action_tuple]))
                 # print("Q shape", self._Q.shape)
                 # print("State len", len(state))
@@ -167,7 +179,20 @@ class QLearning:
                     )
                 )
 
-            if episode > 0 and episode % 20000 == 0:
+            if episode > 0 and episode % 10000 == 0:
+                # Log the states for this episode
+                print("Episode info")
+                for i in range(len(episode_states)):
+                    print(
+                        i,
+                        episode_states[i],
+                        episode_value_before[i],
+                        episode_value_after[i],
+                        episode_hands[i],
+                    )
+                print("Reward", episode_reward)
+
+            if episode > 0 and episode % 50000 == 0:
                 zero_count = 0
                 pos_count = 0
                 neg_count = 0
@@ -210,6 +235,7 @@ if __name__ == "__main__":
 
     random.seed(0)
     listener = EventListenerInterface()
+    listener = PrintAllEventListener()
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
 

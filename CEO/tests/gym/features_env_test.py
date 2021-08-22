@@ -4,6 +4,7 @@ from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListene
 import CEO.cards.deck as deck
 from CEO.cards.hand import *
 import CEO.cards.round as rd
+from CEO.cards.simplebehavior import SimpleBehaviorBase
 import CEO.cards.player as player
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv, TriplesUnderValueCount
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
@@ -14,7 +15,7 @@ from gym_ceo.envs.actions import Actions
 import numpy as np
 
 
-class MockPlayerBehavior(player.PlayerBehaviorInterface):
+class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
     value_to_play: list[CardValue]
     to_play_next_index: int
 
@@ -23,7 +24,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         self.to_play_next_index = 0
 
     def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
-        raise NotImplemented
+        return self.pass_singles(hand, count)
 
     def lead(self, player_position: int, hand: Hand, state) -> CardValue:
 

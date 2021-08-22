@@ -22,6 +22,8 @@ class PlayerBehaviorInterface(ABC):
     Interface implemented by objects that describe the plays made by a player
     """
 
+    is_reinforcement_learning: bool
+
     @abstractmethod
     def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
         """

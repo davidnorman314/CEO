@@ -3,6 +3,7 @@ import random as random
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 import CEO.cards.deck as deck
 from CEO.cards.hand import *
+from CEO.cards.simplebehavior import SimpleBehaviorBase
 import CEO.cards.round as rd
 import CEO.cards.player as player
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
@@ -11,16 +12,17 @@ from stable_baselines3.common.env_checker import check_env
 from gym_ceo.envs.actions import Actions
 
 
-class MockPlayerBehavior(player.PlayerBehaviorInterface):
+class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
     value_to_play: list[CardValue]
     to_play_next_index: int
 
     def __init__(self):
         self.value_to_play = []
         self.to_play_next_index = 0
+        self.is_reinforcement_learning = False
 
     def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
-        raise NotImplemented
+        return self.pass_singles(hand, count)
 
     def lead(self, player_position: int, hand: Hand, state) -> CardValue:
 
@@ -75,9 +77,73 @@ def test_SeatCEOEnv_check_env():
     check_env(env, True, True)
 
 
-def test_SeatCEOEnv():
+def test_SeatCEOEnv_Passing():
     """
-    Test the environment that models a player in the the CEO seat.
+    Test the environment that models a player in the the CEO seat. Here we test that passing
+    cards at the beginning of the round happens. For other tests, see below where passing is
+    disabled.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+
+    # Make the hands.
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 1)
+    hand1.add_cards(cv3, 2)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv2, 1)
+    hand2.add_cards(cv4, 2)
+
+    hand3 = Hand()
+    hand3.add_cards(cv0, 1)
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv5, 2)
+    hand3.add_cards(cv6, 2)
+
+    hand4 = Hand()
+    hand4.add_cards(cv1, 1)
+    hand4.add_cards(cv2, 2)
+    hand4.add_cards(cv3, 1)
+    hand4.add_cards(cv7, 2)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players. These aren't used.
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+    )
+
+    observation = env.reset()
+
+    assert observation[env.obs_index_hand_cards + 0] == 0
+    assert observation[env.obs_index_hand_cards + 1] == 0
+    assert observation[env.obs_index_hand_cards + 7] == 2
+
+
+def test_SeatCEOEnv_NoPassing():
+    """
+    Test the environment that models a player in the the CEO seat. Here we disable passing
+    to make the tests easier.
     """
 
     # Create CardValue objects for ease of use later
@@ -88,7 +154,7 @@ def test_SeatCEOEnv():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
 
-    # Make the hands
+    # Make the hands. Note that we disable passing below
     hand1 = Hand()
     hand1.add_cards(cv0, 1)
     hand1.add_cards(cv3, 2)
@@ -132,7 +198,11 @@ def test_SeatCEOEnv():
     behaviors = [behavior2, behavior3, behavior4]
 
     env = SeatCEOEnv(
-        num_players=4, behaviors=behaviors, hands=hands, listener=PrintAllEventListener()
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
     )
 
     observation = env.reset()
@@ -213,7 +283,11 @@ def test_SeatCEOEnv_CanNotPlay_TwoTricks():
     behaviors = [behavior2, behavior3, behavior4]
 
     env = SeatCEOEnv(
-        num_players=4, behaviors=behaviors, hands=hands, listener=PrintAllEventListener()
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
     )
 
     observation = env.reset()
@@ -293,7 +367,11 @@ def test_SeatCEOEnv_CanNotPlay_ThreeTricks():
     behaviors = [behavior2, behavior3, behavior4]
 
     env = SeatCEOEnv(
-        num_players=4, behaviors=behaviors, hands=hands, listener=PrintAllEventListener()
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
     )
 
     observation = env.reset()
