@@ -192,7 +192,9 @@ class QLearning:
                     )
                 print("Reward", episode_reward)
 
-            if episode > 0 and episode % 50000 == 0:
+            if episode > 0 and episode % 100000 == 0:
+                # Iterate over the entire Q array and count the number of each type of element.
+                # This is very slow.
                 zero_count = 0
                 pos_count = 0
                 neg_count = 0

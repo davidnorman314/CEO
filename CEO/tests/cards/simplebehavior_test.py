@@ -19,6 +19,12 @@ def test_SimpleBehaviorBase_pass_singles():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+    cv12 = CardValue(12)
 
     # Create the object
     behavior = SimpleBehaviorBase()
@@ -176,6 +182,16 @@ def test_SimpleBehaviorBase_pass_singles():
     hand.add_cards(cv5, 5)
 
     assert behavior.pass_singles(hand, 3) == [cv1, cv1, cv3]
+
+    # Test when there aren't any singles but there are triples and quadruples.
+    hand = Hand()
+    hand.add_cards(cv1, 2)
+    hand.add_cards(cv2, 4)
+    hand.add_cards(cv4, 3)
+    hand.add_cards(cv8, 3)
+    hand.add_cards(cv10, 4)
+
+    assert behavior.pass_singles(hand, 3) == [cv4, cv4, cv4]
 
 
 def test_SimpleBehaviorBase_play_lowest_or_pass():

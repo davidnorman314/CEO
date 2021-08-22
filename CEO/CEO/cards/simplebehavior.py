@@ -66,15 +66,43 @@ class SimpleBehaviorBase:
 
     def pass_singles(self, hand: Hand, count: int) -> list[CardValue]:
         """
-        Function that passes the three lowest singles in a hand.
+        Function that passes the lowest singles in a hand.
+        If there aren't enough singles, then a card from the lowest
+        pair will be passed.
+        """
+        try:
+            return self._pass_singles_internal(hand, count)
+        except AssertionError:
+            # If there is an assertion, print out the state so that we can debug it.
+            print("Can't find", count, "cards to pass:", hand)
+
+            raise
+
+    def _pass_singles_internal(self, hand: Hand, count: int) -> list[CardValue]:
+        """
+        Function that passes the lowest singles in a hand.
         If there aren't enough singles, then a card from the lowest
         pair will be passed.
         """
         ret = []
 
+        triple_count = 0
+        quad_count = 0
+        pair_count = 0
         for i in range(13):
             cv = CardValue(i)
-            if hand.count(cv) != 1:
+            ct = hand.count(cv)
+
+            if ct == 2:
+                pair_count += 1
+                continue
+            elif ct == 3:
+                triple_count += 1
+                continue
+            elif ct == 4:
+                quad_count += 1
+                continue
+            elif hand.count(cv) != 1:
                 continue
 
             ret.append(cv)
@@ -114,6 +142,20 @@ class SimpleBehaviorBase:
 
             if len(ret) == count:
                 return ret
+
+        # See if we should just pass the lowest triple
+        if single_count == 0 and triple_count > 0 and count == 3:
+            ret = []
+
+            for i in range(13):
+                cv = CardValue(i)
+                if hand.count(cv) != 3:
+                    continue
+
+                ret = [cv] * count
+                break
+
+            return ret
 
         # We don't have enough singles and don't have a pair, so we need to pass the singles and
         # cards from the lowest triple.
