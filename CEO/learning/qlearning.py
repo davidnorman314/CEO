@@ -5,6 +5,7 @@ import argparse
 import random
 import copy
 import math
+from learning.learning_base import LearningBase, EpisodeInfo
 from collections import deque
 
 import cProfile
@@ -15,53 +16,16 @@ from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
 
-class EpisodeInfo:
-    state: np.ndarray
-    state_visit_count: int
-    alpha: float
-    value_before: float
-    value_after: float
-    hand: object
-    action_type: str
-
-
-class QLearning:
+class QLearning(LearningBase):
     """
     Class implementing q-learning for an OpenAI gym
     """
 
-    _env: gym.Env
-    _Q: np.ndarray
-    _state_count: np.ndarray
-    _action_index: int
     _train_episodes: int
-    _max_action_value: int
 
     def __init__(self, env: gym.Env, train_episodes=100000):
-        self._env = env
+        super().__init__(env)
         self._train_episodes = train_episodes
-        self._max_action_value = env.max_action_value
-
-        # Extract the space
-        obs_space = env.observation_space
-        obs_shape = obs_space.shape
-        assert len(obs_shape) == 1
-
-        print("Observation space", obs_space)
-        print("Observation space shape", obs_shape)
-        print("Action space", env.action_space)
-
-        # Initialize the Q-table
-        q_dims = ()
-        for dim in obs_space.high:
-            q_dims = q_dims + (dim + 1,)
-        q_dims = q_dims + (env.max_action_value,)
-        self._action_index = len(obs_space.low)
-
-        self._Q = np.zeros(q_dims, dtype=np.float32)
-        self._state_count = np.zeros(q_dims, dtype=np.int32)
-        print("Q dims", q_dims)
-        print("Q table size", self._Q.nbytes // (1024 * 1024), "mb")
 
     def train(self):
         # Creating lists to keep track of reward and epsilon values
