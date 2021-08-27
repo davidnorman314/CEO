@@ -4,6 +4,7 @@ import numpy as np
 import argparse
 import random
 import copy
+import math
 from collections import deque
 
 import cProfile
@@ -14,6 +15,16 @@ from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
 
+class EpisodeInfo:
+    state: np.ndarray
+    state_visit_count: int
+    alpha: float
+    value_before: float
+    value_after: float
+    hand: object
+    action_type: str
+
+
 class QLearning:
     """
     Class implementing q-learning for an OpenAI gym
@@ -21,6 +32,7 @@ class QLearning:
 
     _env: gym.Env
     _Q: np.ndarray
+    _state_count: np.ndarray
     _action_index: int
     _train_episodes: int
     _max_action_value: int
@@ -47,12 +59,12 @@ class QLearning:
         self._action_index = len(obs_space.low)
 
         self._Q = np.zeros(q_dims, dtype=np.float32)
+        self._state_count = np.zeros(q_dims, dtype=np.int32)
         print("Q dims", q_dims)
         print("Q table size", self._Q.nbytes // (1024 * 1024), "mb")
 
     def train(self):
         # Creating lists to keep track of reward and epsilon values
-        alpha = 0.2  # learning rate
         discount_factor = 0.7
         epsilon = 1
         max_epsilon = 0.5
@@ -81,11 +93,8 @@ class QLearning:
             episode_explore_count = 0
             episode_exploit_count = 0
 
-            # Per-episode logging
-            episode_states = []
-            episode_value_before = []
-            episode_value_after = []
-            episode_hands = []
+            # Information about the episode
+            episode_infos: list[EpisodeInfo] = []
 
             # Run until the episode is finished
             while True:
@@ -105,11 +114,13 @@ class QLearning:
                     episode_exploit_count += 1
 
                     action = exploit_action
+                    action_type = "-------"
 
                     # print("q action", action, type(action))
                     # print("  expected reward", self._Q[state, action])
                 else:
                     action = explore_action
+                    action_type = "explore"
 
                     episode_explore_count += 1
                     # print("e action", action, type(action))
@@ -135,15 +146,31 @@ class QLearning:
                     new_state_value = 0
 
                 # Update the Q-table using the Bellman equation
-                episode_states.append(state_action_tuple)
-                episode_value_before.append(self._Q[state_action_tuple])
-                if self._Q[state_action_tuple] == 0:
+                episode_info = EpisodeInfo()
+                episode_infos.append(episode_info)
+
+                episode_info.state = state_action_tuple
+                episode_info.value_before = self._Q[state_action_tuple]
+
+                self._state_count[state_action_tuple] += 1
+                state_visit_count = self._state_count[state_action_tuple]
+                if state_visit_count == 1:
                     states_visited += 1
+
+                # Calculate the learning rate based on the state count.
+                # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
+                # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
+                alpha = 1.0 / (state_visit_count ** 0.85)
+
                 self._Q[state_action_tuple] = self._Q[state_action_tuple] + alpha * (
                     reward + discount_factor * new_state_value - self._Q[state_action_tuple]
                 )
-                episode_value_after.append(self._Q[state_action_tuple])
-                episode_hands.append(copy.deepcopy(info))
+
+                episode_info.value_after = self._Q[state_action_tuple]
+                episode_info.hand = copy.deepcopy(info)
+                episode_info.action_type = action_type
+                episode_info.alpha = alpha
+                episode_info.state_visit_count = state_visit_count
 
                 # print("hand 2", info["hand"])
                 # print("New q", type(self._Q[state_action_tuple]))
@@ -194,15 +221,26 @@ class QLearning:
             if episode > 0 and episode % 20000 == 0:
                 # Log the states for this episode
                 print("Episode info")
-                for i in range(len(episode_states)):
+                for info in episode_infos:
+                    max_visit_count = max(map(lambda info: info.state_visit_count, episode_infos))
+                    visit_chars = math.ceil(math.log10(max_visit_count))
+
+                    format_str = "{action:2} value {val_before:6.3f} -> {val_after:6.3f} visit {visit_count:#w#} -> {alpha:.3e} {hand}"
+                    format_str = format_str.replace("#w#", str(visit_chars))
+
                     print(
-                        i,
-                        episode_states[i],
-                        episode_value_before[i],
-                        episode_value_after[i],
-                        episode_hands[i],
+                        format_str.format(
+                            action=info.action_type,
+                            val_before=info.value_before,
+                            val_after=info.value_after,
+                            hand=info.hand,
+                            state=info.state,
+                            alpha=info.alpha,
+                            visit_count=info.state_visit_count,
+                        )
                     )
                 print("Reward", episode_reward)
+                print("Epsilon {:.5f}".format(epsilon))
 
             if episode > 0 and episode % 100000 == 0:
                 # Iterate over the entire Q array and count the number of each type of element.
