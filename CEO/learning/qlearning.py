@@ -38,7 +38,7 @@ class QLearning(LearningBase):
         test_episodes = 100
         max_steps = 100
 
-        print("Starting training with", self._train_episodes, "episodes")
+        print("Training with", self._train_episodes, "episodes")
 
         # Training the agent
         total_training_reward = 0
@@ -206,7 +206,7 @@ class QLearning(LearningBase):
                 print("Reward", episode_reward)
                 print("Epsilon {:.5f}".format(epsilon))
 
-            if episode > 0 and episode % 100000 == 0:
+            if False and episode > 0 and episode % 100000 == 0:
                 # Iterate over the entire Q array and count the number of each type of element.
                 # This is very slow.
                 zero_count = 0
@@ -238,7 +238,7 @@ if __name__ == "__main__":
         "--episodes",
         dest="train_episodes",
         type=int,
-        default=1000,
+        default=100000,
         help="The number of rounds to play",
     )
 
