@@ -165,6 +165,32 @@ class TriplesUnderValueCount:
         dest_obs[dest_start_index] = min(triple_count, self.max_value)
 
 
+class TrickPosition:
+    """
+    Feature giving the position the player is for the trick: lead, in the middle, or
+    last one to play.
+    """
+
+    dim = 1
+    max_value = 2
+    full_start_player_index: int
+    num_player: int
+
+    def __init__(self, full_env: SeatCEOEnv):
+        self.full_start_player_index = full_env.obs_index_start_player
+        self.num_player = full_env.num_players
+
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+        start_player = full_obs[self.full_start_player_index]
+
+        if start_player == 0:
+            return 0
+        elif start_player == self.num_player - 1:
+            return 2
+        else:
+            return 1
+
+
 class CurTrickValue:
     """
     Feature giving the current trick's value.
@@ -249,14 +275,14 @@ class SeatCEOFeaturesEnv(gym.Env):
 
         # self._feature_calculators.append(BottomHalfTableMinCards(full_env))
 
-        self._feature_calculators.append(HandCardCount(full_env, 12))  # Aces
-        self._feature_calculators.append(HandCardCount(full_env, 11))  # Kings
-        self._feature_calculators.append(HandCardCount(full_env, 10))  # Queens
-        self._feature_calculators.append(HandCardCount(full_env, 9))  # Jacks
-        self._feature_calculators.append(SinglesUnderValueCount(full_env, 9))
-        self._feature_calculators.append(DoublesUnderValueCount(full_env, 9))
-        self._feature_calculators.append(TriplesUnderValueCount(full_env, 9))
+        min_card_exact_feature = 9
+        for i in range(min_card_exact_feature, 13):
+            self._feature_calculators.append(HandCardCount(full_env, i))
+        self._feature_calculators.append(SinglesUnderValueCount(full_env, min_card_exact_feature))
+        self._feature_calculators.append(DoublesUnderValueCount(full_env, min_card_exact_feature))
+        self._feature_calculators.append(TriplesUnderValueCount(full_env, min_card_exact_feature))
 
+        self._feature_calculators.append(TrickPosition(full_env))
         self._feature_calculators.append(CurTrickValue(full_env))
 
         # Calculate the observation space
