@@ -184,8 +184,10 @@ class TrickPosition:
         start_player = full_obs[self.full_start_player_index]
 
         if start_player == 0:
+            # The agent leads
             return 0
-        elif start_player == self.num_player - 1:
+        elif start_player == 1:
+            # The agent is the last player on the trick
             return 2
         else:
             return 1
