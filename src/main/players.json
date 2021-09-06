@@ -1,0 +1,39 @@
+{
+    "players": [
+        {
+            "name": "Basic2",
+            "behavior": "BasicBehavior",
+            "behaviorArgs": {}
+        },
+        {
+            "name": "Basic3",
+            "behavior": "BasicBehavior",
+            "behaviorArgs": {}
+        },
+        {
+            "name": "Basic4",
+            "behavior": "BasicBehavior",
+            "behaviorArgs": {}
+        },
+        {
+            "name": "Basic5",
+            "behavior": "BasicBehavior",
+            "behaviorArgs": {}
+        },
+        {
+            "name": "Basic6",
+            "behavior": "BasicBehavior",
+            "behaviorArgs": {}
+        },
+        {
+            "name": "Heuristic1",
+            "behavior": "HeuristicBehavior",
+            "behaviorArgs": {}
+        },
+        {
+            "name": "Basic7",
+            "behavior": "BasicBehavior",
+            "behaviorArgs": {}
+        }
+    ]
+}
