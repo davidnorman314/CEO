@@ -135,7 +135,7 @@ class PrintAllEventListener(EventListenerInterface):
 class GameWatchListener(EventListenerInterface):
     """
     Interface that prints information about the game to the console in a format
-    useful to seen how a plater is watching the game.
+    useful to seen how a player is playing the game.
     """
 
     _player_name: str

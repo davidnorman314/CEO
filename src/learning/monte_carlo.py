@@ -15,7 +15,7 @@ from collections import deque
 
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
-from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
+from CEO.cards.eventlistener import EventListenerInterface, GameWatchListener, PrintAllEventListener
 
 
 class MonteCarloLearning(LearningBase):
@@ -192,6 +192,7 @@ def play(episodes: int):
     # Set up the environment
     random.seed(0)
     listener = PrintAllEventListener()
+    listener = GameWatchListener("RL")
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
 
