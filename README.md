@@ -1,7 +1,13 @@
-Run specific tests
-  pytest -s -k game
+# Reinforcement learning for the card game CEO
 
-python -m main.console_game
-python -m main.many_games
+## Run a specific test
+pytest -s -k game
 
-python -m main.many_games --print --count 1
+## Play games from the command line
+`python -m main.console_game`
+
+`python -m main.many_games`
+
+`python -m main.many_games --print --count 1`
+
+

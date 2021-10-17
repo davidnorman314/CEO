@@ -46,6 +46,10 @@ class LearningBase:
         print("Q dims", q_dims)
         print("Q table size", self._Q.nbytes // (1024 * 1024), "mb")
 
+    def set_env(self, env: gym.Env):
+        """Sets the environment used by the agent"""
+        self._env = env
+
     def mean_squared_difference(self, o) -> int:
         """
         Calculates the mean squared difference between this QTable and the

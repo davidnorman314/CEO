@@ -1,6 +1,12 @@
+"""Monte carlo reinforcement learning for CEO.
+
+The program can either train a new model or play games with a trained model.
+"""
+
 import gym
 import random
 import pickle
+import argparse
 from typing import List, Tuple
 from copy import copy, deepcopy
 import numpy as np
@@ -160,59 +166,82 @@ class MonteCarloLearning(LearningBase):
                 print("Iteration ", episode, "delta", err)
 
 
-def main():
+def train_and_save(episodes: int):
+    # Set up the environment
     random.seed(0)
     listener = PrintAllEventListener()
     listener = EventListenerInterface()
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
 
-    episodes = 5000000
     learning = MonteCarloLearning(env)
     learning.train(episodes)
 
-    if False:
-        # Save the results
-        qtable_with_metadata = QTableWithMetadata()
-        qtable_with_metadata.qtable = search.qtable
-        qtable_with_metadata.creation_parameters["episodes"] = episodes
-        qtable_with_metadata.training_info["greedy_count"] = search.greedy_count
-        qtable_with_metadata.training_info["search_count"] = search.search_count
+    # Save the agent in a pickle file. Note that we can't pickle the gym object,
+    # since it is a generator.
+    learning._env = None
+    with open("monte_carlo.pickle", "wb") as f:
+        pickle.dump(learning, f, pickle.HIGHEST_PROTOCOL)
 
-        with open("monte_carlo.pickle", "wb") as f:
-            pickle.dump(qtable_with_metadata, f, pickle.HIGHEST_PROTOCOL)
 
-        # Log the results
-        print("n_hit")
-        for player in range(1, 22):
-            for dealer in range(1, 11):
-                state_info = search.qtable.get_state_info(player, dealer)
-                print("%8i " % state_info.n_hit, sep="", end="")
-            print("")
+def play(episodes: int):
+    # Load the agent
+    with open("monte_carlo.pickle", "rb") as f:
+        learning = pickle.load(f)
 
-        print("n_stick")
-        for player in range(1, 22):
-            for dealer in range(1, 11):
-                state_info = search.qtable.get_state_info(player, dealer)
-                print("%8i " % state_info.n_stick, sep="", end="")
-            print("")
+    # Set up the environment
+    random.seed(0)
+    listener = PrintAllEventListener()
+    base_env = SeatCEOEnv(listener=listener)
+    env = SeatCEOFeaturesEnv(base_env)
 
-        print("q_hit")
-        for player in range(1, 22):
-            for dealer in range(1, 11):
-                state_info = search.qtable.get_state_info(player, dealer)
-                print("%5.2f " % state_info.q_hit, sep="", end="")
-            print("")
+    learning.set_env(env)
+    learning.train(episodes)
 
-        print("q_stick")
-        for player in range(1, 22):
-            for dealer in range(1, 11):
-                state_info = search.qtable.get_state_info(player, dealer)
-                print("%5.2f " % state_info.q_stick, sep="", end="")
-            print("")
 
-        print("greedy_count", search.greedy_count)
-        print("search_count", search.search_count)
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--profile",
+        dest="profile",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Do profiling.",
+    )
+
+    parser.add_argument(
+        "--train",
+        dest="train",
+        action="store_const",
+        const=True,
+        help="Train a new agent",
+    )
+    parser.add_argument(
+        "--episodes",
+        dest="episodes",
+        type=int,
+        default=100000,
+        help="The number of rounds to play",
+    )
+
+    parser.add_argument(
+        "--play",
+        dest="play",
+        action="store_const",
+        const=True,
+        help="Have a trained agent play games",
+    )
+
+    args = parser.parse_args()
+    # print(args)
+
+    if args.train:
+        train_and_save(args.episodes)
+    elif args.play:
+        play(args.episodes)
+    else:
+        parser.print_usage()
 
 
 if __name__ == "__main__":
