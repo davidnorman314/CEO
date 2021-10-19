@@ -39,6 +39,9 @@ class Round:
 
             starting_player = yield from self._play_trick(starting_player)
 
+        next_round_players = [self._players[i] for i in self.get_next_round_order()]
+        self._listener.end_round(next_round_players)
+
     def _play_trick(self, starting_player: int):
         # Calculate the order of the other players after the player that leads.
         # Note that play_order is an iterator.
@@ -162,6 +165,10 @@ class Round:
                 self._hands[0].remove_cards(cv, count)
 
     def get_next_round_order(self) -> list[int]:
+        if len(self._next_round_order) == len(self._players):
+            return self._next_round_order
+
+        # Construct the next round order
         if self._ceo_to_bottom:
             self._next_round_order.append(0)
             self._ceo_to_bottom = False
