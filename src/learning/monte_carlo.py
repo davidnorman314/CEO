@@ -16,6 +16,8 @@ from collections import deque
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, GameWatchListener, PrintAllEventListener
+from CEO.cards.deck import Deck
+from CEO.cards.hand import Hand, CardValue
 
 
 class MonteCarloLearning(LearningBase):
@@ -56,10 +58,10 @@ class MonteCarloLearning(LearningBase):
 
         return action
 
-    def do_episode(self) -> Tuple[List[tuple], List[int], float]:
+    def do_episode(self, hands: list[Hand] = None) -> Tuple[List[tuple], List[int], float]:
         """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
         # Reseting the environment each time as per requirement
-        state = self._env.reset()
+        state = self._env.reset(hands)
         state_tuple = tuple(state.astype(int))
 
         # Starting the tracker for the rewards
@@ -191,13 +193,24 @@ def play(episodes: int):
 
     # Set up the environment
     random.seed(0)
+
     listener = PrintAllEventListener()
     listener = GameWatchListener("RL")
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
-
     learning.set_env(env)
-    learning.train(episodes)
+
+    # Play the episodes
+    for count in range(episodes):
+        print("Playing episode", count + 1)
+        deck = Deck(base_env.num_players)
+        hands = deck.deal()
+
+        states, actions, reward = learning.do_episode(hands)
+
+        if reward < 0:
+            for i in range(len(states)):
+                print(i, "state", states[i], "action", actions[i])
 
 
 def main():

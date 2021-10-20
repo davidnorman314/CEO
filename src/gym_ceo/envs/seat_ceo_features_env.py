@@ -314,8 +314,8 @@ class SeatCEOFeaturesEnv(gym.Env):
             "possible values",
         )
 
-    def reset(self):
-        full_obs = self.full_env.reset()
+    def reset(self, hands: list[Hand] = None):
+        full_obs = self.full_env.reset(hands)
         self.action_space = self.full_env.action_space
 
         return self._make_observation(full_obs)

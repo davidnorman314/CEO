@@ -136,12 +136,14 @@ class SeatCEOEnv(gym.Env):
         self.action_space = self._action_space_lead
         self.max_action_value = max(self._action_space_lead.n, self._action_space_play.n)
 
-    def reset(self):
+    def reset(self, hands: list[Hand] = None):
         self._listener.start_round(self._players)
         self.action_space = self._action_space_lead
 
         # Deal the cards
-        if self._hands is None or len(self._hands) == 0:
+        if hands is not None:
+            self._hands = hands
+        elif self._hands is None or len(self._hands) == 0:
             deck = Deck(self.num_players)
             self._hands = deck.deal()
 
