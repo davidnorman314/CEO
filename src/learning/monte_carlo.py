@@ -238,6 +238,19 @@ def play_round(round_pickle_file: str):
 
     states, actions, reward = learning.do_episode(hands)
 
+    for i in range(len(states)):
+        print(i, "state", states[i], "action", actions[i])
+
+        for a in range(base_env.max_action_value):
+            print(
+                "  action",
+                a,
+                "value",
+                learning._Q[(*states[i], a)],
+                "count",
+                learning._state_count[(*states[i], a)],
+            )
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
