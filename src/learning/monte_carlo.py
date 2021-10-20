@@ -205,12 +205,38 @@ def play(episodes: int):
         print("Playing episode", count + 1)
         deck = Deck(base_env.num_players)
         hands = deck.deal()
+        save_hands = deepcopy(hands)
 
         states, actions, reward = learning.do_episode(hands)
 
         if reward < 0:
+            file = "play_hands/hands" + str(count + 1) + ".pickle"
+            with open(file, "wb") as f:
+                pickle.dump(save_hands, f, pickle.HIGHEST_PROTOCOL)
+
             for i in range(len(states)):
                 print(i, "state", states[i], "action", actions[i])
+
+
+def play_round(round_pickle_file: str):
+    # Load the agent
+    with open("monte_carlo.pickle", "rb") as f:
+        learning = pickle.load(f)
+
+    # Load the hands
+    with open(round_pickle_file, "rb") as f:
+        hands = pickle.load(f)
+
+    # Set up the environment
+    random.seed(0)
+
+    listener = PrintAllEventListener()
+    listener = GameWatchListener("RL")
+    base_env = SeatCEOEnv(listener=listener)
+    env = SeatCEOFeaturesEnv(base_env)
+    learning.set_env(env)
+
+    states, actions, reward = learning.do_episode(hands)
 
 
 def main():
@@ -247,11 +273,21 @@ def main():
         help="Have a trained agent play games",
     )
 
+    parser.add_argument(
+        "--play-round",
+        dest="play_round_file",
+        type=str,
+        default=None,
+        help="The name of a pickle file containing a list of hands",
+    )
+
     args = parser.parse_args()
     # print(args)
 
     if args.train:
         train_and_save(args.episodes)
+    elif args.play_round_file:
+        play_round(args.play_round_file)
     elif args.play:
         play(args.episodes)
     else:
