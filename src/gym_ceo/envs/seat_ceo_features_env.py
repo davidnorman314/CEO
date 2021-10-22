@@ -244,6 +244,39 @@ class CurTrickValue:
                 return 4
 
 
+class CurTrickCount:
+    """
+    Feature giving the number of cards in the current trick's.
+    0 - The trick consists of singles. This also means that we should lead.
+    1 - The trick consists of doubles
+    2 - The trick consists of triples
+    3 - The trick consists of quadruples or larger.
+    """
+
+    dim = 1
+    max_value = 3
+
+    _obs_index_cur_trick_count: int
+
+    def __init__(self, full_env: SeatCEOEnv):
+        self._obs_index_cur_trick_count = full_env.obs_index_cur_trick_count
+        pass
+
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+        cur_trick_cards = full_obs[self._obs_index_cur_trick_count]
+
+        # See if we should lead
+        if cur_trick_cards == 0:
+            return 0
+
+        obs = cur_trick_cards - 1
+
+        if obs > self.max_value:
+            obs = self.max_value
+
+        return obs
+
+
 class SeatCEOFeaturesEnv(gym.Env):
     """
     Environment for a player in the CEO seat. This environment reduces the observation space
@@ -286,6 +319,7 @@ class SeatCEOFeaturesEnv(gym.Env):
 
         self._feature_calculators.append(TrickPosition(full_env))
         self._feature_calculators.append(CurTrickValue(full_env))
+        self._feature_calculators.append(CurTrickCount(full_env))
 
         # Calculate the observation space
         obs_space_low = []
