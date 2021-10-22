@@ -32,7 +32,7 @@ class MonteCarloLearning(LearningBase):
 
     def _pick_action(self, state_tuple: tuple):
         # The number of times we have visited this state
-        n_state = np.sum(self._Q[(*state_tuple, slice(None))])
+        n_state = np.sum(self._state_count[(*state_tuple, slice(None))])
         max_value = np.max(self._Q[(*state_tuple, slice(None))])
         min_value = np.min(self._Q[(*state_tuple, slice(None))])
 
@@ -42,6 +42,8 @@ class MonteCarloLearning(LearningBase):
 
         # Pick the greedy choice if the random number is large and the q values are different.
         do_greedy = rand >= epsilon and max_value != min_value
+
+        # print(n_state, epsilon, rand, do_greedy)
 
         # Pick the action
         if do_greedy:
@@ -148,18 +150,27 @@ class MonteCarloLearning(LearningBase):
             if len(recent_episode_rewards) > max_recent_episode_rewards:
                 recent_episode_rewards.popleft()
 
+            last_search = 0
+            last_greedy = 0
             if episode > 0 and episode % 2000 == 0:
                 ave_training_rewards = total_training_reward / (episode + 1)
                 recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
+                recent_search_count = self.search_count - last_search
+                recent_greedy_count = self.greedy_count - last_greedy
+                search_ratio = recent_search_count / (recent_search_count + recent_greedy_count)
 
                 print(
-                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} States visited {}".format(
+                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} States visited {} Search ratio {:.3f}".format(
                         episode,
                         ave_training_rewards,
                         recent_rewards,
                         states_visited,
+                        search_ratio,
                     )
                 )
+
+                last_search = self.search_count
+                last_greedy = self.greedy_count
 
             if episode > 0 and episode % 2000 == 0:
                 err = self.mean_squared_difference(prev_qtable)
