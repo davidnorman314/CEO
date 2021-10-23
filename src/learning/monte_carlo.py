@@ -24,13 +24,20 @@ class MonteCarloLearning(LearningBase):
     greedy_count: int
     search_count: int
 
-    def __init__(self, env: gym.Env):
+    _base_env: gym.Env
+
+    def __init__(self, env: gym.Env, base_env: gym.Env):
         super().__init__(env)
+
+        self._base_env = base_env
 
         self.greedy_count = 0
         self.search_count = 0
 
-    def _pick_action(self, state_tuple: tuple):
+    def set_base_env(self, base_env: gym.Env):
+        self._base_env = base_env
+
+    def _pick_action(self, state_tuple: tuple, do_greedy: bool):
         # The number of times we have visited this state
         n_state = np.sum(self._state_count[(*state_tuple, slice(None))])
         max_value = np.max(self._Q[(*state_tuple, slice(None))])
@@ -40,8 +47,9 @@ class MonteCarloLearning(LearningBase):
         epsilon = n_state / (100 + n_state)
         rand = random.uniform(0, 1)
 
-        # Pick the greedy choice if the random number is large and the q values are different.
-        do_greedy = rand >= epsilon and max_value != min_value
+        if not do_greedy:
+            # Pick the greedy choice if the random number is large and the q values are different.
+            do_greedy = rand >= epsilon and max_value != min_value
 
         # print(n_state, epsilon, rand, do_greedy)
 
@@ -60,7 +68,9 @@ class MonteCarloLearning(LearningBase):
 
         return action
 
-    def do_episode(self, hands: list[Hand] = None) -> Tuple[List[tuple], List[int], float]:
+    def do_episode(
+        self, do_greedy: bool = False, hands: list[Hand] = None, log_state: bool = False
+    ) -> Tuple[List[tuple], List[int], float]:
         """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
         # Reseting the environment each time as per requirement
         state = self._env.reset(hands)
@@ -76,7 +86,21 @@ class MonteCarloLearning(LearningBase):
 
         # Run until the episode is finished
         while True:
-            action = self._pick_action(state_tuple)
+            action = self._pick_action(state_tuple, do_greedy)
+
+            if log_state:
+                print("State", state_tuple)
+                print("Action", action)
+
+                for a in range(self._base_env.max_action_value):
+                    print(
+                        "  action",
+                        a,
+                        "value",
+                        self._Q[(*state_tuple, a)],
+                        "count",
+                        self._state_count[(*state_tuple, a)],
+                    )
 
             state_action_tuple = state_tuple + (action,)
 
@@ -188,7 +212,7 @@ def train_and_save(episodes: int):
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
 
-    learning = MonteCarloLearning(env)
+    learning = MonteCarloLearning(env, base_env)
     learning.train(episodes)
 
     # Save the agent in a pickle file. Note that we can't pickle the gym object,
@@ -211,6 +235,7 @@ def play(episodes: int):
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
     learning.set_env(env)
+    learning.set_base_env(base_env)
 
     # Play the episodes
     for count in range(episodes):
@@ -219,7 +244,7 @@ def play(episodes: int):
         hands = deck.deal()
         save_hands = deepcopy(hands)
 
-        states, actions, reward = learning.do_episode(hands)
+        states, actions, reward = learning.do_episode(True, hands, True)
 
         if reward < 0:
             file = "play_hands/hands" + str(count + 1) + ".pickle"
@@ -248,7 +273,7 @@ def play_round(round_pickle_file: str):
     env = SeatCEOFeaturesEnv(base_env)
     learning.set_env(env)
 
-    states, actions, reward = learning.do_episode(hands)
+    states, actions, reward = learning.do_episode(True, hands, True)
 
     for i in range(len(states)):
         print(i, "state", states[i], "action", actions[i])
