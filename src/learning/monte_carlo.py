@@ -218,6 +218,7 @@ def train_and_save(episodes: int):
     # Save the agent in a pickle file. Note that we can't pickle the gym object,
     # since it is a generator.
     learning._env = None
+    learning._base_env = None
     with open("monte_carlo.pickle", "wb") as f:
         pickle.dump(learning, f, pickle.HIGHEST_PROTOCOL)
 
