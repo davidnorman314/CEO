@@ -120,7 +120,8 @@ class MonteCarloLearning(LearningBase):
         return episode_states, episode_actions, episode_reward
 
     def train(self, episodes: int):
-        prev_qtable = deepcopy(self._Q)
+        # prev_qtable = deepcopy(self._Q)
+        prev_qtable = None
 
         total_training_reward = 0
         recent_episode_rewards = deque()
@@ -172,7 +173,7 @@ class MonteCarloLearning(LearningBase):
                 last_search = self.search_count
                 last_greedy = self.greedy_count
 
-            if episode > 0 and episode % 2000 == 0:
+            if prev_qtable is not None and episode > 0 and episode % 2000 == 0:
                 err = self.mean_squared_difference(prev_qtable)
                 prev_qtable = deepcopy(self._Q)
 
