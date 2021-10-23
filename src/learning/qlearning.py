@@ -262,3 +262,6 @@ if __name__ == "__main__":
         cProfile.run("qlearning.train()", sort=SortKey.CUMULATIVE)
     else:
         qlearning.train()
+
+    # Save the agent in a pickle file.
+    qlearning.pickle("qlearning", "qlearning.pickle")

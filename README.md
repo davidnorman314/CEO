@@ -10,4 +10,8 @@ pytest -s -k game
 
 `python -m main.many_games --print --count 1`
 
+## Train agents
 
+`python -m learning.qlearning --episodes 1000000`
+
+`python -m learning.monte_carlo --train --episodes 1000000`

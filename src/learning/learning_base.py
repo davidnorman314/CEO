@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+import pickle
 
 
 class EpisodeInfo:
@@ -49,6 +50,16 @@ class LearningBase:
     def set_env(self, env: gym.Env):
         """Sets the environment used by the agent"""
         self._env = env
+
+    def pickle(self, typestr: str, filename: str):
+        pickle_dict = dict()
+        pickle_dict["Q"] = self._Q
+        pickle_dict["StateCount"] = self._state_count
+        pickle_dict["Type"] = typestr
+        pickle_dict["MaxActionValue"] = self._max_action_value
+
+        with open(filename, "wb") as f:
+            pickle.dump(pickle_dict, f, pickle.HIGHEST_PROTOCOL)
 
     def mean_squared_difference(self, o) -> int:
         """
