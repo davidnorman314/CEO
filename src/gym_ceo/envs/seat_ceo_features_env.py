@@ -185,12 +185,12 @@ class TrickPosition:
 
         if start_player == 0:
             # The agent leads
-            return 0
+            dest_obs[dest_start_index] = 0
         elif start_player == 1:
             # The agent is the last player on the trick
-            return 2
+            dest_obs[dest_start_index] = 2
         else:
-            return 1
+            dest_obs[dest_start_index] = 1
 
 
 class CurTrickValue:
@@ -221,7 +221,8 @@ class CurTrickValue:
     def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
         if full_obs[self._obs_index_cur_trick_count] == 0:
             # We should lead
-            return 0
+            dest_obs[dest_start_index] = 0
+            return
         else:
             cur_trick_value = full_obs[self._obs_index_cur_trick_value]
             hand_below_count = 0
@@ -237,11 +238,11 @@ class CurTrickValue:
             assert hand_above_count != 0
 
             if hand_below_count <= 3:
-                return hand_below_count
+                dest_obs[dest_start_index] = hand_below_count
             elif hand_above_count <= 2:
-                return self.max_value - hand_above_count + 1
+                dest_obs[dest_start_index] = self.max_value - hand_above_count + 1
             else:
-                return 4
+                dest_obs[dest_start_index] = 4
 
 
 class CurTrickCount:
@@ -267,14 +268,15 @@ class CurTrickCount:
 
         # See if we should lead
         if cur_trick_cards == 0:
-            return 0
+            dest_obs[dest_start_index] = 0
+            return
 
         obs = cur_trick_cards - 1
 
         if obs > self.max_value:
             obs = self.max_value
 
-        return obs
+        dest_obs[dest_start_index] = obs
 
 
 class SeatCEOFeaturesEnv(gym.Env):
@@ -374,7 +376,9 @@ class SeatCEOFeaturesEnv(gym.Env):
 
         i = 0
         for calculator in self._feature_calculators:
-            calculator.calc(full_obs, obs, i)
+            ret = calculator.calc(full_obs, obs, i)
+            assert ret is None
+
             i = i + calculator.dim
 
         return obs
