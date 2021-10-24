@@ -169,8 +169,7 @@ class GameWatchListener(EventListenerInterface):
         to_index: int,
         to_player: Player,
     ):
-
-        if from_player.name != self._player_name or to_player.name != self._player_name:
+        if from_player.name != self._player_name and to_player.name != self._player_name:
             # The information is for another player's pass, so we can't see it.
             return
 
