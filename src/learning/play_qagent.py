@@ -227,7 +227,7 @@ def main():
     )
 
     parser.add_argument(
-        "--play-round",
+        "--play-round-file",
         dest="play_round_file",
         type=str,
         default=None,
