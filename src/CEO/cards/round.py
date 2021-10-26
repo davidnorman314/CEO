@@ -63,8 +63,10 @@ class Round:
 
         if not cur_player.behavoir.is_reinforcement_learning:
             cur_card_value = cur_player.behavoir.lead(starting_player, cur_hand, state)
+            assert cur_card_value is not None
         else:
             cur_card_value = yield "lead", starting_player, cur_hand, state
+            assert cur_card_value is not None
 
         assert cur_card_value is not None
 
@@ -76,6 +78,10 @@ class Round:
 
         if self._hands[starting_player].is_empty():
             self._check_ceo_done()
+
+        # Debugging
+        if cur_card_count <= 0:
+            print("Error: Player", cur_player.name, "lead no cards")
 
         assert cur_card_value is not None
         assert cur_card_count > 0
@@ -121,6 +127,9 @@ class Round:
                 self._listener.pass_on_trick(cur_index, cur_player)
                 continue
 
+            # Debugging
+            if new_card_value.value <= cur_card_value.value:
+                print("Player", cur_player.name, "plays", new_card_value, "on", cur_card_value)
             assert new_card_value.value > cur_card_value.value
 
             self._play_cards(cur_index, new_card_value, cur_card_count)

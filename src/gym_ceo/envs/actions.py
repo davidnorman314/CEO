@@ -5,13 +5,14 @@ from CEO.cards.simplebehavior import SimpleBehaviorBase
 
 class Actions(SimpleBehaviorBase):
 
-    play_highest_num = 0
-    play_second_lowest_num = 1
-    play_lowest_num = 2
-    pass_on_trick_num = 3
+    play_highest_num = 100
+    play_second_lowest_num = 101
+    play_lowest_num = 102
+    pass_on_trick_num = 103
 
-    action_lead_count = 3
-    action_play_count = 4
+    max_action_count = 4
+
+    action_play_one_legal_count = 2
 
     def lead(self):
         pass

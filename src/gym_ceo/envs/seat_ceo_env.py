@@ -41,6 +41,18 @@ class RLBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
         assert not "This should not be called"
 
 
+class CEOActionSpace(Discrete):
+    actions: list[int]
+
+    def __init__(self, actions: list[int]):
+        super(CEOActionSpace, self).__init__(len(actions))
+
+        self.actions = actions
+
+    def find_full_action(self, full_action: int) -> int:
+        return self.actions.index(full_action)
+
+
 class SeatCEOEnv(gym.Env):
     """
     Environment for a player in the CEO seat. This environment contains all the information
@@ -55,8 +67,10 @@ class SeatCEOEnv(gym.Env):
         dtype=np.int32,
     )
 
-    action_space: Discrete
-    max_action_value: int
+    action_space: CEOActionSpace
+
+    # The maximum possible action space size
+    max_action_space_size: int
 
     # The indices into the observation array where the various features start
     obs_index_hand_cards: int
@@ -77,8 +91,27 @@ class SeatCEOEnv(gym.Env):
 
     _skip_passing: bool
 
-    _action_space_lead = Discrete(Actions.action_lead_count)
-    _action_space_play = Discrete(Actions.action_play_count)
+    action_space_lead = CEOActionSpace(
+        [
+            Actions.play_highest_num,
+            Actions.play_second_lowest_num,
+            Actions.play_lowest_num,
+        ]
+    )
+    action_space_play = CEOActionSpace(
+        [
+            Actions.play_highest_num,
+            Actions.play_second_lowest_num,
+            Actions.play_lowest_num,
+            Actions.pass_on_trick_num,
+        ]
+    )
+    action_space_one_legal_play = CEOActionSpace(
+        [
+            Actions.play_highest_num,
+            Actions.pass_on_trick_num,
+        ]
+    )
 
     _cur_hand: Hand
     _cur_trick_count: int
@@ -133,12 +166,14 @@ class SeatCEOEnv(gym.Env):
             dtype=np.int32,
         )
 
-        self.action_space = self._action_space_lead
-        self.max_action_value = max(self._action_space_lead.n, self._action_space_play.n)
+        self.action_space = self.action_space_lead
+        self.max_action_value = max(
+            self.action_space_lead.n, self.action_space_play.n, self.action_space_one_legal_play.n
+        )
 
     def reset(self, hands: list[Hand] = None):
         self._listener.start_round(self._players)
-        self.action_space = self._action_space_lead
+        self.action_space = self.action_space_lead
 
         # Deal the cards
         if hands is not None:
@@ -160,6 +195,9 @@ class SeatCEOEnv(gym.Env):
 
         return self._make_observation(gen_tuple)
 
+    def step_full_action(self, full_action):
+        self.step(self.action_space.find_full_action(full_action))
+
     def step(self, action):
         assert (
             isinstance(action, int) or isinstance(action, np.int32) or isinstance(action, np.int64)
@@ -167,12 +205,21 @@ class SeatCEOEnv(gym.Env):
 
         assert action < self.action_space.n
 
+        full_action = self.action_space.actions[action]
+
         cv = self._actions.play(
-            self._cur_hand, self._cur_trick_value, self._cur_trick_count, action
+            self._cur_hand, self._cur_trick_value, self._cur_trick_count, full_action
         )
 
         if cv is None and self._cur_trick_value is None:
-            print("Action", action, "returned None to play on trick. Hand", self._cur_hand)
+            print(
+                "Action",
+                action,
+                "full action",
+                full_action,
+                "returned None to play on trick. Hand",
+                self._cur_hand,
+            )
             assert cv is not None
 
         reward = 0
@@ -212,10 +259,10 @@ class SeatCEOEnv(gym.Env):
 
     def _make_observation(self, gen_tuple):
         if gen_tuple[0] == "lead":
-            self.action_space = self._action_space_lead
+            self.action_space = self.action_space_lead
             return self._make_observation_lead(gen_tuple)
         elif gen_tuple[0] == "play":
-            self.action_space = self._action_space_play
+            self.action_space = self.action_space_play
             return self._make_observation_play(gen_tuple)
         else:
             assert "Unexpected action" == ""
