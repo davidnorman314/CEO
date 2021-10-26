@@ -212,7 +212,7 @@ def test_SeatCEOEnv_NoPassing():
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
     observation, reward, done, info = env.step(action)
 
-    assert env.action_space == env.action_space_play
+    assert env.action_space == env.action_space_one_legal_play
     assert not done
     assert reward == 0
 
@@ -312,7 +312,7 @@ def test_SeatCEOEnv_CEOLeadsAndNoOnePlays():
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
     observation, reward, done, info = env.step(action)
 
-    assert env.action_space == env.action_space_play
+    assert env.action_space == env.action_space_one_legal_play
     assert not done
     assert reward == 0
 
@@ -402,9 +402,8 @@ def test_SeatCEOEnv_ActionSpace():
     assert not done
     assert reward == 0
 
-    # assert env.action_space == SeatCEOEnv.action_space_one_legal_play
-    # assert env.action_space.n == 2
-    assert env.action_space == SeatCEOEnv.action_space_play
+    assert env.action_space == SeatCEOEnv.action_space_one_legal_play
+    assert env.action_space.n == 2
     action = 0
     assert env.action_space.actions[action] != ActionEnum.PASS_ON_TRICK_NUM
     observation, reward, done, info = env.step(action)

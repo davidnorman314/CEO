@@ -52,6 +52,12 @@ class CEOActionSpace(Discrete):
     def find_full_action(self, full_action: int) -> int:
         return self.actions.index(full_action)
 
+    def __eq__(self, other):
+        if not super(CEOActionSpace, self).__eq__(other):
+            return False
+
+        return self.actions == other.actions
+
 
 class SeatCEOEnv(gym.Env):
     """
@@ -117,6 +123,8 @@ class SeatCEOEnv(gym.Env):
     _cur_trick_count: int
     _cur_trick_value: CardValue
 
+    _simple_behavior_base: SimpleBehaviorBase
+
     def __init__(
         self,
         num_players=6,
@@ -167,9 +175,9 @@ class SeatCEOEnv(gym.Env):
         )
 
         self.action_space = self.action_space_lead
-        self.max_action_value = max(
-            self.action_space_lead.n, self.action_space_play.n, self.action_space_one_legal_play.n
-        )
+        self.max_action_value = len(ActionEnum)
+
+        self._simple_behavior_base = SimpleBehaviorBase()
 
     def reset(self, hands: list[Hand] = None):
         self._listener.start_round(self._players)
@@ -262,7 +270,6 @@ class SeatCEOEnv(gym.Env):
             self.action_space = self.action_space_lead
             return self._make_observation_lead(gen_tuple)
         elif gen_tuple[0] == "play":
-            self.action_space = self.action_space_play
             return self._make_observation_play(gen_tuple)
         else:
             assert "Unexpected action" == ""
@@ -309,9 +316,19 @@ class SeatCEOEnv(gym.Env):
         self._cur_hand = cur_hand
         self._info["hand"] = cur_hand
 
+        playable_card_values = len(
+            self._simple_behavior_base.get_playable_cards(cur_hand, cur_card_value, cur_card_count)
+        )
+
         # See if we must pass, i.e., there is no choice of action
-        if cur_hand.max_card_value().value <= cur_card_value.value:
+        if playable_card_values == 0:
             return None
+
+        # Set up the action space
+        if playable_card_values == 1:
+            self.action_space = self.action_space_one_legal_play
+        else:
+            self.action_space = self.action_space_play
 
         # Create the return array
         obs = np.zeros(self._observation_dimension)

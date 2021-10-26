@@ -79,7 +79,7 @@ class Hand:
     def is_empty(self) -> bool:
         return sum(self._cards) == 0
 
-    def card_count(self) -> bool:
+    def card_count(self) -> int:
         return sum(self._cards)
 
     def count(self, card_value: CardValue) -> int:
