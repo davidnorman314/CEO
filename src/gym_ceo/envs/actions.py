@@ -2,15 +2,19 @@ from CEO.cards.player import *
 from CEO.cards.hand import *
 from CEO.cards.simplebehavior import SimpleBehaviorBase
 
+from enum import Enum
+
+
+class ActionEnum(Enum):
+    PLAY_HIGHEST_NUM = 100
+    PLAY_SECOND_LOWEST_NUM = 101
+    PLAY_LOWEST_NUM = 102
+    PASS_ON_TRICK_NUM = 103
+
 
 class Actions(SimpleBehaviorBase):
 
-    play_highest_num = 100
-    play_second_lowest_num = 101
-    play_lowest_num = 102
-    pass_on_trick_num = 103
-
-    max_action_count = 4
+    max_action_count = len(ActionEnum)
 
     action_play_one_legal_count = 2
 
@@ -20,7 +24,7 @@ class Actions(SimpleBehaviorBase):
     def play(
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, action_number: int
     ):
-        if action_number == self.pass_on_trick_num:
+        if action_number == ActionEnum.PASS_ON_TRICK_NUM:
             if cur_trick_value is None:
                 print("Action pass for lead")
                 print(" Hand", hand)
@@ -28,15 +32,15 @@ class Actions(SimpleBehaviorBase):
                 assert cur_trick_count is not None
 
             return self.pass_on_trick(hand, cur_trick_value, cur_trick_count)
-        elif action_number == self.play_lowest_num:
+        elif action_number == ActionEnum.PLAY_LOWEST_NUM:
             # ret = self.play_lowest(hand, cur_trick_value, cur_trick_count)
             ret = self.play_lowest_without_breaking_sets(hand, cur_trick_value, cur_trick_count)
-        elif action_number == self.play_second_lowest_num:
+        elif action_number == ActionEnum.PLAY_SECOND_LOWEST_NUM:
             # ret = self.play_second_lowest(hand, cur_trick_value, cur_trick_count)
             ret = self.play_second_lowest_without_breaking_sets(
                 hand, cur_trick_value, cur_trick_count
             )
-        elif action_number == self.play_highest_num:
+        elif action_number == ActionEnum.PLAY_HIGHEST_NUM:
             ret = self.play_highest(hand, cur_trick_value, cur_trick_count)
         else:
             print("invalid action ", str(action_number))

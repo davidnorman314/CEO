@@ -4,7 +4,7 @@ from gym import error, spaces, utils
 from gym.spaces import Box, Discrete
 from gym.utils import seeding
 
-from gym_ceo.envs.actions import Actions
+from gym_ceo.envs.actions import Actions, ActionEnum
 
 from CEO.cards.round import Round, RoundState
 from CEO.cards.eventlistener import EventListenerInterface
@@ -42,7 +42,7 @@ class RLBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
 
 
 class CEOActionSpace(Discrete):
-    actions: list[int]
+    actions: list[ActionEnum]
 
     def __init__(self, actions: list[int]):
         super(CEOActionSpace, self).__init__(len(actions))
@@ -93,23 +93,23 @@ class SeatCEOEnv(gym.Env):
 
     action_space_lead = CEOActionSpace(
         [
-            Actions.play_highest_num,
-            Actions.play_second_lowest_num,
-            Actions.play_lowest_num,
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PLAY_SECOND_LOWEST_NUM,
+            ActionEnum.PLAY_LOWEST_NUM,
         ]
     )
     action_space_play = CEOActionSpace(
         [
-            Actions.play_highest_num,
-            Actions.play_second_lowest_num,
-            Actions.play_lowest_num,
-            Actions.pass_on_trick_num,
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PLAY_SECOND_LOWEST_NUM,
+            ActionEnum.PLAY_LOWEST_NUM,
+            ActionEnum.PASS_ON_TRICK_NUM,
         ]
     )
     action_space_one_legal_play = CEOActionSpace(
         [
-            Actions.play_highest_num,
-            Actions.pass_on_trick_num,
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PASS_ON_TRICK_NUM,
         ]
     )
 

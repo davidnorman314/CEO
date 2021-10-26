@@ -7,9 +7,8 @@ from CEO.cards.simplebehavior import SimpleBehaviorBase
 import CEO.cards.round as rd
 import CEO.cards.player as player
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.actions import Actions, ActionEnum
 from stable_baselines3.common.env_checker import check_env
-
-from gym_ceo.envs.actions import Actions
 
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
@@ -210,14 +209,14 @@ def test_SeatCEOEnv_NoPassing():
     assert env.action_space == env.action_space_lead
 
     # Lead lowest
-    action = env.action_space.find_full_action(Actions.play_lowest_num)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
     observation, reward, done, info = env.step(action)
 
     assert env.action_space == env.action_space_play
     assert not done
     assert reward == 0
 
-    action = env.action_space.find_full_action(Actions.play_highest_num)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
     observation, reward, done, info = env.step(action)
 
     assert reward > 0
@@ -302,7 +301,7 @@ def test_SeatCEOEnv_CEOLeadsAndNoOnePlays():
     assert env.action_space == env.action_space_lead
 
     # Lead highest
-    action = env.action_space.find_full_action(Actions.play_highest_num)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
     observation, reward, done, info = env.step(action)
 
     assert env.action_space == env.action_space_lead
@@ -310,14 +309,14 @@ def test_SeatCEOEnv_CEOLeadsAndNoOnePlays():
     assert reward == 0
 
     # Lead lowest
-    action = env.action_space.find_full_action(Actions.play_lowest_num)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
     observation, reward, done, info = env.step(action)
 
     assert env.action_space == env.action_space_play
     assert not done
     assert reward == 0
 
-    action = env.action_space.find_full_action(Actions.play_highest_num)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
     observation, reward, done, info = env.step(action)
 
     assert reward > 0
@@ -397,7 +396,7 @@ def test_SeatCEOEnv_ActionSpace():
     # Lead lowest
     assert env.action_space == SeatCEOEnv.action_space_lead
     action = 2
-    assert env.action_space.actions[action] == Actions.play_lowest_num
+    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_NUM
     observation, reward, done, info = env.step(action)
 
     assert not done
@@ -407,7 +406,7 @@ def test_SeatCEOEnv_ActionSpace():
     # assert env.action_space.n == 2
     assert env.action_space == SeatCEOEnv.action_space_play
     action = 0
-    assert env.action_space.actions[action] != Actions.pass_on_trick_num
+    assert env.action_space.actions[action] != ActionEnum.PASS_ON_TRICK_NUM
     observation, reward, done, info = env.step(action)
 
     assert reward > 0
@@ -485,7 +484,7 @@ def test_SeatCEOEnv_CanNotPlay_TwoTricks():
     observation = env.reset()
 
     # Lead lowest
-    action = env.action_space.find_full_action(Actions.play_lowest_num)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
     observation, reward, done, info = env.step(action)
 
     assert reward < 0
@@ -570,7 +569,7 @@ def test_SeatCEOEnv_CanNotPlay_ThreeTricks():
     observation = env.reset()
 
     # Lead lowest
-    action = env.action_space.find_full_action(Actions.play_lowest_num)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
     observation, reward, done, info = env.step(action)
 
     assert done
