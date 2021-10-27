@@ -138,7 +138,8 @@ def play(agent_file_name: str, episodes: int):
     agent = create_agent(agent_file_name, env, base_env)
 
     # Play the episodes
-    total_reward = 0
+    total_wins = 0
+    total_losses = 0
     for count in range(episodes):
         print("Playing episode", count + 1)
         deck = Deck(base_env.num_players)
@@ -147,7 +148,10 @@ def play(agent_file_name: str, episodes: int):
 
         states, actions, reward = agent.do_episode(hands, True)
 
-        total_reward += reward
+        if reward > 0.0:
+            total_wins += 1
+        else:
+            total_losses += 1
 
         if reward < 0:
             file = "play_hands/hands" + str(count + 1) + ".pickle"
@@ -157,7 +161,17 @@ def play(agent_file_name: str, episodes: int):
             for i in range(len(states)):
                 print(i, "state", states[i], "action", actions[i])
 
-    print("Episodes", episodes, "Total reward", total_reward)
+    pct_win = total_wins / (total_wins + total_losses)
+    print(
+        "Episodes",
+        episodes,
+        "Total wins",
+        total_wins,
+        "Total losses",
+        total_losses,
+        "Percent wins",
+        pct_win,
+    )
 
 
 def play_round(agent_file_name: str, round_pickle_file: str):
