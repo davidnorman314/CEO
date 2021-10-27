@@ -118,6 +118,13 @@ class SeatCEOEnv(gym.Env):
             ActionEnum.PASS_ON_TRICK_NUM,
         ]
     )
+    action_space_two_legal_play = CEOActionSpace(
+        [
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PLAY_LOWEST_NUM,
+            ActionEnum.PASS_ON_TRICK_NUM,
+        ]
+    )
 
     _cur_hand: Hand
     _cur_trick_count: int
@@ -327,6 +334,8 @@ class SeatCEOEnv(gym.Env):
         # Set up the action space
         if playable_card_values == 1:
             self.action_space = self.action_space_one_legal_play
+        elif playable_card_values == 2:
+            self.action_space = self.action_space_two_legal_play
         else:
             self.action_space = self.action_space_play
 

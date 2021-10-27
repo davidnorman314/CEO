@@ -323,9 +323,11 @@ def test_SeatCEOEnv_CEOLeadsAndNoOnePlays():
     assert done
 
 
-def test_SeatCEOEnv_ActionSpace():
+def test_SeatCEOEnv_ActionSpace_Play_SingleCard():
     """
     Test that the action space changes based on the cards available to play.
+    Here we test where there is a single card value that can be played on
+    a trick.
     """
 
     # Create CardValue objects for ease of use later
@@ -406,6 +408,112 @@ def test_SeatCEOEnv_ActionSpace():
     assert env.action_space.n == 2
     action = 0
     assert env.action_space.actions[action] != ActionEnum.PASS_ON_TRICK_NUM
+    observation, reward, done, info = env.step(action)
+
+    assert reward > 0
+    assert done
+
+
+def test_SeatCEOEnv_ActionSpace_Play_TwoCards():
+    """
+    Test that the action space changes based on the cards available to play.
+    Here we test where there are two card values that can be played on
+    a trick.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+
+    # Test where there are two cards that can be played
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv3, 2)
+    hand1.add_cards(cv9, 2)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv4, 2)
+    hand2.add_cards(cv6, 3)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv5, 2)
+    hand3.add_cards(cv4, 3)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+    hand4.add_cards(cv2, 2)
+    hand4.add_cards(cv5, 3)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    # action: Lead lowest = cv0
+    behavior2.value_to_play.append(cv1)
+    behavior3.value_to_play.append(cv2)
+    behavior4.value_to_play.append(cv3)
+
+    behavior4.value_to_play.append(cv2)
+    # action: Play double card = cv9
+    behavior2.value_to_play.append(None)
+    behavior3.value_to_play.append(None)
+
+    # action: Lead cv3
+    behavior2.value_to_play.append(cv4)
+    behavior3.value_to_play.append(cv5)
+    behavior4.value_to_play.append(None)
+
+    behavior3.value_to_play.append(cv4)
+    behavior4.value_to_play.append(cv5)
+    behavior2.value_to_play.append(cv6)
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+    )
+
+    observation = env.reset()
+
+    # Lead lowest
+    assert env.action_space == SeatCEOEnv.action_space_lead
+    action = 2
+    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_NUM
+    observation, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0
+
+    # Play highest
+    assert env.action_space == SeatCEOEnv.action_space_two_legal_play
+    assert env.action_space.n == 3
+    action = 0
+    assert env.action_space.actions[action] == ActionEnum.PLAY_HIGHEST_NUM
+    observation, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0
+
+    # Lead only card
+    assert env.action_space == SeatCEOEnv.action_space_lead
+    action = 0
     observation, reward, done, info = env.step(action)
 
     assert reward > 0
