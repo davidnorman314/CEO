@@ -13,7 +13,7 @@ import numpy as np
 from learning.learning_base import LearningBase
 from collections import deque
 
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.seat_ceo_env import CEOActionSpace, SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, GameWatchListener, PrintAllEventListener
 from CEO.cards.deck import Deck
@@ -22,7 +22,7 @@ from CEO.cards.hand import Hand, CardValue
 
 class MonteCarloLearning(LearningBase):
     greedy_count: int
-    search_count: int
+    explore_count: int
 
     _base_env: gym.Env
 
@@ -32,16 +32,17 @@ class MonteCarloLearning(LearningBase):
         self._base_env = base_env
 
         self.greedy_count = 0
-        self.search_count = 0
+        self.explore_count = 0
 
     def set_base_env(self, base_env: gym.Env):
         self._base_env = base_env
 
-    def _pick_action(self, state_tuple: tuple, do_greedy: bool):
+    def _pick_action(
+        self, state_tuple: tuple, action_space: CEOActionSpace, do_greedy: bool
+    ) -> int:
         # The number of times we have visited this state
-        n_state = np.sum(self._state_count[(*state_tuple, slice(None))])
-        max_value = np.max(self._Q[(*state_tuple, slice(None))])
-        min_value = np.min(self._Q[(*state_tuple, slice(None))])
+        n_state = self._qtable.visit_count(state_tuple, action_space)
+        min_value, max_value = self._qtable.min_max_value(state_tuple, action_space)
 
         # Decide if we will be greedy
         epsilon = n_state / (100 + n_state)
@@ -56,14 +57,10 @@ class MonteCarloLearning(LearningBase):
         # Pick the action
         if do_greedy:
             self.greedy_count += 1
-            action = np.argmax(self._Q[(*state_tuple, slice(None))])
-
-            # Clip the action, if necessary. This biases the exploration
-            # toward leading the lowest card.
-            if action >= self._env.action_space.n:
-                action = self._env.action_space.n - 1
+            action = self._qtable.greedy_action(state_tuple, action_space)
+            # action = np.argmax(self._Q[(*state_tuple, slice(None))])
         else:
-            self.search_count += 1
+            self.explore_count += 1
             action = self._env.action_space.sample()
 
         return action
@@ -86,7 +83,7 @@ class MonteCarloLearning(LearningBase):
 
         # Run until the episode is finished
         while True:
-            action = self._pick_action(state_tuple, do_greedy)
+            action = self._pick_action(state_tuple, self._env.action_space, do_greedy)
 
             if log_state:
                 print("State", state_tuple)
@@ -103,6 +100,7 @@ class MonteCarloLearning(LearningBase):
                     )
 
             state_action_tuple = state_tuple + (action,)
+            self._qtable.increment_state_visit_count(state_action_tuple)
 
             # Perform the action
             new_state, reward, done, info = self._env.step(action)
@@ -117,7 +115,8 @@ class MonteCarloLearning(LearningBase):
 
             if new_state is not None:
                 new_state_tuple = tuple(new_state.astype(int))
-                new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
+                new_state_value = self._qtable.state_value(new_state_tuple, self._env.action_space)
+                # new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
             else:
                 assert done
                 assert reward != 0
@@ -162,12 +161,19 @@ class MonteCarloLearning(LearningBase):
 
                 state_action_tuple = state + (action,)
 
-                if self._state_count[state_action_tuple] == 0:
+                state_action_count = self._qtable.state_visit_count(state_action_tuple)
+                if state_action_count == 0:
                     states_visited += 1
 
-                self._state_count[state_action_tuple] += 1
-                alpha = 1 / self._state_count[state_action_tuple]
-                self._Q[state_action_tuple] += alpha * (reward - self._Q[state_action_tuple])
+                self._qtable.increment_state_visit_count(state_action_tuple)
+                state_action_count += 1
+
+                state_action_value = self._qtable.state_action_value(state_action_tuple)
+                alpha = 1.0 / state_action_count
+                self._qtable.update_state_visit_value(
+                    state_action_tuple, alpha * (reward - state_action_value)
+                )
+                # self._Q[state_action_tuple] += alpha * (reward - self._Q[state_action_tuple])
 
             # Update the search status
             total_training_reward += reward
@@ -175,26 +181,28 @@ class MonteCarloLearning(LearningBase):
             if len(recent_episode_rewards) > max_recent_episode_rewards:
                 recent_episode_rewards.popleft()
 
-            last_search = 0
+            last_explore = 0
             last_greedy = 0
             if episode > 0 and episode % 2000 == 0:
                 ave_training_rewards = total_training_reward / (episode + 1)
                 recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
-                recent_search_count = self.search_count - last_search
+                recent_explore_count = self.explore_count - last_explore
                 recent_greedy_count = self.greedy_count - last_greedy
-                search_ratio = recent_search_count / (recent_search_count + recent_greedy_count)
+                explore_fraction = recent_explore_count / (
+                    recent_explore_count + recent_greedy_count
+                )
 
                 print(
-                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} States visited {} Search ratio {:.3f}".format(
+                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} States visited {} Explore fraction {:.3f}".format(
                         episode,
                         ave_training_rewards,
                         recent_rewards,
                         states_visited,
-                        search_ratio,
+                        explore_fraction,
                     )
                 )
 
-                last_search = self.search_count
+                last_explore = self.explore_count
                 last_greedy = self.greedy_count
 
             if prev_qtable is not None and episode > 0 and episode % 2000 == 0:

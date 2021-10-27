@@ -2,6 +2,8 @@ import gym
 import numpy as np
 import pickle
 
+from gym_ceo.envs.seat_ceo_env import CEOActionSpace
+
 
 class EpisodeInfo:
     state: np.ndarray
@@ -13,18 +15,12 @@ class EpisodeInfo:
     action_type: str
 
 
-class LearningBase:
-    """
-    Base class for classes that learn how to play CEO well.
-    """
-
-    _env: gym.Env
+class QTable:
     _Q: np.ndarray
     _max_action_value: int
     _state_count: np.ndarray
 
     def __init__(self, env: gym.Env):
-        self._env = env
         self._max_action_value = env.max_action_value
 
         # Extract the space
@@ -47,16 +43,63 @@ class LearningBase:
         print("Q dims", q_dims)
         print("Q table size", self._Q.nbytes // (1024 * 1024), "mb")
 
+    def visit_count(self, state_tuple: tuple, action_space: CEOActionSpace):
+        return sum(
+            self._state_count[(*state_tuple, action.value)] for action in action_space.actions
+        )
+        # return np.sum(self._state_count[(*state_tuple, slice(None))])
+
+    def state_visit_count(self, state_action_tuple: tuple):
+        return self._state_count[state_action_tuple]
+
+    def state_action_value(self, state_action_tuple: tuple):
+        return self._Q[state_action_tuple]
+
+    def min_max_value(self, state_tuple: tuple, action_space: CEOActionSpace):
+        max_value = max(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
+        min_value = min(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
+
+        return (min_value, max_value)
+
+    def greedy_action(self, state_tuple: tuple, action_space: CEOActionSpace):
+        lookup_value = lambda i: self._Q[(*state_tuple, i)]
+        return max(range(action_space.n), key=lookup_value)
+
+    def state_value(self, state_tuple: tuple, action_space: CEOActionSpace):
+        return max(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
+
+        lookup_value = lambda i: self._Q[(*state_tuple, i)]
+        return max(range(action_space.n), key=lookup_value)
+
+    def increment_state_visit_count(self, state_action_tuple: tuple):
+        self._state_count[state_action_tuple] += 1
+
+    def update_state_visit_value(self, state_action_tuple: tuple, delta: float):
+        self._Q[state_action_tuple] += delta
+
+
+class LearningBase:
+    """
+    Base class for classes that learn how to play CEO well.
+    """
+
+    _env: gym.Env
+    _qtable: QTable
+
+    def __init__(self, env: gym.Env):
+        self._env = env
+        self._qtable = QTable(env)
+
     def set_env(self, env: gym.Env):
         """Sets the environment used by the agent"""
         self._env = env
 
     def pickle(self, typestr: str, filename: str):
         pickle_dict = dict()
-        pickle_dict["Q"] = self._Q
-        pickle_dict["StateCount"] = self._state_count
+        pickle_dict["Q"] = self._qtable._Q
+        pickle_dict["StateCount"] = self._qtable._state_count
         pickle_dict["Type"] = typestr
-        pickle_dict["MaxActionValue"] = self._max_action_value
+        pickle_dict["MaxActionValue"] = self._qtable._max_action_value
 
         with open(filename, "wb") as f:
             pickle.dump(pickle_dict, f, pickle.HIGHEST_PROTOCOL)

@@ -6,10 +6,10 @@ from enum import Enum
 
 
 class ActionEnum(Enum):
-    PLAY_HIGHEST_NUM = 100
-    PLAY_SECOND_LOWEST_NUM = 101
-    PLAY_LOWEST_NUM = 102
-    PASS_ON_TRICK_NUM = 103
+    PLAY_HIGHEST_NUM = 0
+    PLAY_SECOND_LOWEST_NUM = 1
+    PLAY_LOWEST_NUM = 2
+    PASS_ON_TRICK_NUM = 3
 
 
 class Actions(SimpleBehaviorBase):

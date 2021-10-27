@@ -65,12 +65,8 @@ class QLearning(LearningBase):
                 # Choose if we will explore or exploit
                 exp_exp_sample = random.uniform(0, 1)
 
-                exploit_action = np.argmax(self._Q[(*state_tuple, slice(None))])
-
-                # Clip the action, if necessary. This biases the exploration
-                # toward leading the lowest card.
-                if exploit_action >= env.action_space.n:
-                    exploit_action = env.action_space.n - 1
+                exploit_action = self._qtable.greedy_action(state_tuple, self._env.action_space)
+                # exploit_action = np.argmax(self._Q[(*state_tuple, slice(None))])
 
                 explore_action = self._env.action_space.sample()
 
@@ -101,7 +97,10 @@ class QLearning(LearningBase):
 
                 if new_state is not None:
                     new_state_tuple = tuple(new_state.astype(int))
-                    new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
+                    new_state_value = self._qtable.state_value(
+                        new_state_tuple, self._env.action_space
+                    )
+                    # new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
                 else:
                     assert done
                     assert reward != 0
@@ -114,10 +113,13 @@ class QLearning(LearningBase):
                 episode_infos.append(episode_info)
 
                 episode_info.state = state_action_tuple
-                episode_info.value_before = self._Q[state_action_tuple]
+                episode_info.value_before = self._qtable.state_action_value(state_action_tuple)
+                # episode_info.value_before = self._Q[state_action_tuple]
 
-                self._state_count[state_action_tuple] += 1
-                state_visit_count = self._state_count[state_action_tuple]
+                self._qtable.increment_state_visit_count(state_action_tuple)
+                # self._state_count[state_action_tuple] += 1
+                state_visit_count = self._qtable.state_visit_count(state_action_tuple)
+                # state_visit_count = self._state_count[state_action_tuple]
                 if state_visit_count == 1:
                     states_visited += 1
 
@@ -126,11 +128,14 @@ class QLearning(LearningBase):
                 # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
                 alpha = 1.0 / (state_visit_count ** 0.85)
 
-                self._Q[state_action_tuple] = self._Q[state_action_tuple] + alpha * (
-                    reward + discount_factor * new_state_value - self._Q[state_action_tuple]
-                )
+                state_action_value = self._qtable.state_action_value(state_action_tuple)
+                delta = alpha * (reward + discount_factor * new_state_value - state_action_value)
+                self._qtable.update_state_visit_value(state_action_tuple, delta)
+                # self._Q[state_action_tuple] = self._Q[state_action_tuple] + alpha * (
+                #    reward + discount_factor * new_state_value - self._Q[state_action_tuple]
+                # )
 
-                episode_info.value_after = self._Q[state_action_tuple]
+                episode_info.value_after = self._qtable.state_action_value(state_action_tuple)
                 episode_info.hand = copy.deepcopy(info)
                 episode_info.action_type = action_type
                 episode_info.alpha = alpha
