@@ -100,7 +100,6 @@ class MonteCarloLearning(LearningBase):
                     )
 
             state_action_tuple = state_tuple + (action,)
-            self._qtable.increment_state_visit_count(state_action_tuple)
 
             # Perform the action
             new_state, reward, done, info = self._env.step(action)
