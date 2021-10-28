@@ -37,9 +37,11 @@ class MonteCarloLearning(LearningBase):
     def set_base_env(self, base_env: gym.Env):
         self._base_env = base_env
 
-    def _pick_action(
-        self, state_tuple: tuple, action_space: CEOActionSpace, do_greedy: bool
-    ) -> int:
+    def _pick_action(self, state_tuple: tuple, action_space: CEOActionSpace) -> int:
+        # If the action space only has one action, return it
+        if action_space.n == 1:
+            return 0
+
         # The number of times we have visited this state
         n_state = self._qtable.visit_count(state_tuple, action_space)
         min_value, max_value = self._qtable.min_max_value(state_tuple, action_space)
@@ -48,9 +50,8 @@ class MonteCarloLearning(LearningBase):
         epsilon = n_state / (100 + n_state)
         rand = random.uniform(0, 1)
 
-        if not do_greedy:
-            # Pick the greedy choice if the random number is large and the q values are different.
-            do_greedy = rand >= epsilon and max_value != min_value
+        # Pick the greedy choice if the random number is small and the q values are different.
+        do_greedy = rand <= epsilon and max_value != min_value
 
         # print(n_state, epsilon, rand, do_greedy)
 
@@ -65,12 +66,10 @@ class MonteCarloLearning(LearningBase):
 
         return action
 
-    def do_episode(
-        self, do_greedy: bool = False, hands: list[Hand] = None, log_state: bool = False
-    ) -> Tuple[List[tuple], List[int], float]:
+    def do_episode(self, log_state: bool = False) -> Tuple[List[tuple], List[int], float]:
         """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
         # Reseting the environment each time as per requirement
-        state = self._env.reset(hands)
+        state = self._env.reset()
         state_tuple = tuple(state.astype(int))
 
         # Starting the tracker for the rewards
@@ -83,7 +82,7 @@ class MonteCarloLearning(LearningBase):
 
         # Run until the episode is finished
         while True:
-            action = self._pick_action(state_tuple, self._env.action_space, do_greedy)
+            action = self._pick_action(state_tuple, self._env.action_space)
 
             if log_state:
                 print("State", state_tuple)
@@ -226,73 +225,6 @@ def train_and_save(episodes: int):
     learning.pickle("monte_carlo", "monte_carlo.pickle")
 
 
-def play(episodes: int):
-    # Load the agent
-    with open("monte_carlo.pickle", "rb") as f:
-        learning = pickle.load(f)
-
-    # Set up the environment
-    random.seed(0)
-
-    listener = PrintAllEventListener()
-    listener = GameWatchListener("RL")
-    base_env = SeatCEOEnv(listener=listener)
-    env = SeatCEOFeaturesEnv(base_env)
-    learning.set_env(env)
-    learning.set_base_env(base_env)
-
-    # Play the episodes
-    for count in range(episodes):
-        print("Playing episode", count + 1)
-        deck = Deck(base_env.num_players)
-        hands = deck.deal()
-        save_hands = deepcopy(hands)
-
-        states, actions, reward = learning.do_episode(True, hands, True)
-
-        if reward < 0:
-            file = "play_hands/hands" + str(count + 1) + ".pickle"
-            with open(file, "wb") as f:
-                pickle.dump(save_hands, f, pickle.HIGHEST_PROTOCOL)
-
-            for i in range(len(states)):
-                print(i, "state", states[i], "action", actions[i])
-
-
-def play_round(round_pickle_file: str):
-    # Load the agent
-    with open("monte_carlo.pickle", "rb") as f:
-        learning = pickle.load(f)
-
-    # Load the hands
-    with open(round_pickle_file, "rb") as f:
-        hands = pickle.load(f)
-
-    # Set up the environment
-    random.seed(0)
-
-    listener = PrintAllEventListener()
-    listener = GameWatchListener("RL")
-    base_env = SeatCEOEnv(listener=listener)
-    env = SeatCEOFeaturesEnv(base_env)
-    learning.set_env(env)
-
-    states, actions, reward = learning.do_episode(True, hands, True)
-
-    for i in range(len(states)):
-        print(i, "state", states[i], "action", actions[i])
-
-        for a in range(base_env.max_action_value):
-            print(
-                "  action",
-                a,
-                "value",
-                learning._Q[(*states[i], a)],
-                "count",
-                learning._state_count[(*states[i], a)],
-            )
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -319,31 +251,11 @@ def main():
         help="The number of rounds to play",
     )
 
-    parser.add_argument(
-        "--play",
-        dest="play",
-        action="store_const",
-        const=True,
-        help="Have a trained agent play games",
-    )
-
-    parser.add_argument(
-        "--play-round",
-        dest="play_round_file",
-        type=str,
-        default=None,
-        help="The name of a pickle file containing a list of hands",
-    )
-
     args = parser.parse_args()
     # print(args)
 
     if args.train:
         train_and_save(args.episodes)
-    elif args.play_round_file:
-        play_round(args.play_round_file)
-    elif args.play:
-        play(args.episodes)
     else:
         parser.print_usage()
 
