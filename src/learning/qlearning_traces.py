@@ -33,15 +33,15 @@ class QLearningTraces(LearningBase):
         self._train_episodes = train_episodes
 
     def _pick_action(self, state_tuple: tuple, epsilon: float):
+        # If there is only one action, return it
+        if self._env.action_space.n == 1:
+            return 0, 0
+
         # Choose if we will explore or exploit
         exp_exp_sample = random.uniform(0, 1)
 
-        exploit_action = np.argmax(self._Q[(*state_tuple, slice(None))])
-
-        # Clip the action, if necessary. This biases the exploration
-        # toward leading the lowest card.
-        if exploit_action >= self._env.action_space.n:
-            exploit_action = self._env.action_space.n - 1
+        exploit_action = self._qtable.greedy_action(state_tuple, self._env.action_space)
+        # exploit_action = np.argmax(self._Q[(*state_tuple, slice(None))])
 
         explore_action = self._env.action_space.sample()
 
@@ -107,12 +107,15 @@ class QLearningTraces(LearningBase):
                 episode_info = EpisodeInfo()
                 episode_infos.append(episode_info)
                 episode_info.state = state_action_tuple
-                episode_info.value_before = self._Q[state_action_tuple]
+                episode_info.value_before = self._qtable.state_action_value(state_action_tuple)
+                # episode_info.value_before = self._Q[state_action_tuple]
                 if state_action_tuple not in episode_value_before:
-                    episode_value_before[state_action_tuple] = episode_info.value_after
+                    episode_value_before[state_action_tuple] = episode_info.value_before
 
-                self._state_count[state_action_tuple] += 1
-                state_visit_count = self._state_count[state_action_tuple]
+                self._qtable.increment_state_visit_count(state_action_tuple)
+                # self._state_count[state_action_tuple] += 1
+                state_visit_count = self._qtable.state_visit_count(state_action_tuple)
+                # state_visit_count = self._state_count[state_action_tuple]
                 if state_visit_count == 1:
                     states_visited += 1
 
@@ -121,23 +124,38 @@ class QLearningTraces(LearningBase):
 
                 if state_prime is not None:
                     state_prime_tuple = tuple(state_prime.astype(int))
-                    state_prime_value = np.max(self._Q[(*state_prime_tuple, slice(None))])
+                    state_prime_value = self._qtable.state_value(
+                        state_prime_tuple, self._env.action_space
+                    )
+                    # state_prime_value = np.max(self._Q[(*state_prime_tuple, slice(None))])
 
                     # Pick the next action
                     action_prime, is_exploit = self._pick_action(state_tuple, epsilon)
 
                     # Pick the action with the highest estimated reward
-                    action_star = np.argmax(self._Q[(*state_prime_tuple, slice(None))])
-                    action_star_value = self._Q[(*state_prime_tuple, action_star)]
+                    action_star = self._qtable.greedy_action(
+                        state_prime_tuple, self._env.action_space
+                    )
+                    # action_star = np.argmax(self._Q[(*state_prime_tuple, slice(None))])
+                    action_star_value = self._qtable.state_action_value(
+                        (*state_prime_tuple, action_star)
+                    )
+                    # action_star_value = self._Q[(*state_prime_tuple, action_star)]
                     if action_star_value == state_prime_value:
                         action_star = action_prime
 
                     # Calculate the update value
                     delta = (
                         reward
-                        + discount_factor * self._Q[(*state_prime_tuple, action_star)]
-                        - self._Q[(*state_tuple, action)]
+                        + discount_factor
+                        * self._qtable.state_action_value((*state_prime_tuple, action_star))
+                        - self._qtable.state_action_value((*state_tuple, action))
                     )
+                    # delta = (
+                    #     reward
+                    #     + discount_factor * self._Q[(*state_prime_tuple, action_star)]
+                    #     - self._Q[(*state_tuple, action)]
+                    # )
                 else:
                     assert done
                     assert reward != 0
@@ -148,7 +166,8 @@ class QLearningTraces(LearningBase):
                     action_prime = None
 
                     # Calculate the update value
-                    delta = reward - self._Q[(*state_tuple, action)]
+                    delta = reward - self._qtable.state_action_value((*state_tuple, action))
+                    # delta = reward - self._Q[(*state_tuple, action)]
 
                 # Update the eligibility trace for this state
                 if state_action_tuple not in eligibility_traces:
@@ -163,19 +182,26 @@ class QLearningTraces(LearningBase):
 
                 # Update Q and the traces
                 for update_tuple in eligibility_traces.keys():
-                    self._Q[update_tuple] += alpha * delta * eligibility_traces[update_tuple]
+                    self._qtable.update_state_visit_value(
+                        update_tuple, alpha * delta * eligibility_traces[update_tuple]
+                    )
+                    # self._Q[update_tuple] += alpha * delta * eligibility_traces[update_tuple]
                     if action_prime == action_star:
                         eligibility_traces[update_tuple] *= discount_factor * lambda_val
                     else:
                         eligibility_traces[update_tuple] = 0
 
-                    episode_value_after[update_tuple] = self._Q[update_tuple]
+                    episode_value_after[update_tuple] = self._qtable.state_action_value(
+                        update_tuple
+                    )
+                    # episode_value_after[update_tuple] = self._Q[update_tuple]
 
                 state = state_prime
                 action = action_prime
 
                 # Save information from after the update
-                episode_info.value_after = self._Q[state_action_tuple]
+                episode_info.value_after = self._qtable.state_action_value(state_action_tuple)
+                # episode_info.value_after = self.self._Q[state_action_tuple]
                 episode_info.hand = copy.deepcopy(info)
                 episode_info.action_type = action_type
                 episode_info.alpha = alpha
