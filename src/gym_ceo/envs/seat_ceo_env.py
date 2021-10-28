@@ -104,6 +104,17 @@ class SeatCEOEnv(gym.Env):
             ActionEnum.PLAY_LOWEST_NUM,
         ]
     )
+    action_space_one_legal_lead = CEOActionSpace(
+        [
+            ActionEnum.PLAY_HIGHEST_NUM,
+        ]
+    )
+    action_space_two_legal_lead = CEOActionSpace(
+        [
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PLAY_LOWEST_NUM,
+        ]
+    )
     action_space_play = CEOActionSpace(
         [
             ActionEnum.PLAY_HIGHEST_NUM,
@@ -274,7 +285,6 @@ class SeatCEOEnv(gym.Env):
 
     def _make_observation(self, gen_tuple):
         if gen_tuple[0] == "lead":
-            self.action_space = self.action_space_lead
             return self._make_observation_lead(gen_tuple)
         elif gen_tuple[0] == "play":
             return self._make_observation_play(gen_tuple)
@@ -288,6 +298,19 @@ class SeatCEOEnv(gym.Env):
         self._cur_trick_value = None
         self._cur_hand = cur_hand
         self._info["hand"] = cur_hand
+
+        playable_card_values = 0
+        for cv in range(13):
+            if cur_hand.count(CardValue(cv)) > 0:
+                playable_card_values += 1
+
+        # Set up the action space
+        if playable_card_values == 1:
+            self.action_space = self.action_space_one_legal_lead
+        elif playable_card_values == 2:
+            self.action_space = self.action_space_two_legal_lead
+        else:
+            self.action_space = self.action_space_lead
 
         # Create the return array
         obs = np.zeros(self._observation_dimension)
