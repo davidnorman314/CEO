@@ -11,7 +11,7 @@ import numpy as np
 from learning.learning_base import LearningBase
 from collections import deque
 
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, GameWatchListener, PrintAllEventListener
 from CEO.cards.deck import Deck
@@ -51,6 +51,7 @@ class QAgent(LearningBase):
         """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
         # Reseting the environment each time as per requirement
         state = self._env.reset(hands)
+        info = dict()
         state_tuple = tuple(state.astype(int))
 
         episode_states = []
@@ -62,10 +63,23 @@ class QAgent(LearningBase):
             action = self._pick_action(state_tuple)
 
             if log_state:
-                print("State", state_tuple)
-                print("Action", action)
+                action_space = self._env.action_space
+                action_index_to_name = dict()
+                for i in range(len(action_space.actions)):
+                    action_index_to_name[i] = action_space.actions[i].name
 
+                print("State", state_tuple)
+                print("Obs info:")
+                for key, value in info.items():
+                    print(" ", key, "->", value)
+
+                print("Selected action", action)
+                print("Action values")
                 for a in range(self._base_env.max_action_value):
+                    name = ""
+                    if a in action_index_to_name:
+                        name = action_index_to_name[a]
+
                     print(
                         "  action",
                         a,
@@ -73,6 +87,7 @@ class QAgent(LearningBase):
                         self._Q[(*state_tuple, a)],
                         "count",
                         self._state_count[(*state_tuple, a)],
+                        name,
                     )
 
             state_action_tuple = state_tuple + (action,)

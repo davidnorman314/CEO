@@ -36,7 +36,7 @@ class BottomHalfTableMinCards:
         )
         print(full_env.obs_index_other_player_card_count)
 
-    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int, info: dict):
         feature_value = self.max_value
         for i in range(self._start_check_index, self._end_check_index):
             feature_value = min(feature_value, full_obs[i])
@@ -45,6 +45,7 @@ class BottomHalfTableMinCards:
         assert feature_value != 0
 
         dest_obs[dest_start_index] = feature_value
+        info["BottomHalfTableMinCards"] = feature_value
 
 
 class HandCardCount:
@@ -55,13 +56,16 @@ class HandCardCount:
     dim = 1
     max_value = 4
     full_obs_index: int
+    card_value_index: int
 
     def __init__(self, full_env: SeatCEOEnv, card_value_index: int):
         self.full_obs_index = full_env.obs_index_hand_cards + card_value_index
+        self.card_value_index = card_value_index
 
-    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int, info: dict):
         feature_value = min(full_obs[self.full_obs_index], self.max_value)
         dest_obs[dest_start_index] = feature_value
+        info["HandCardCount " + str(self.card_value_index)] = feature_value
 
 
 class OtherPlayerHandCount:
@@ -78,9 +82,10 @@ class OtherPlayerHandCount:
         self.other_player_index = other_player_index
         self.full_obs_index = full_env.obs_index_other_player_card_count + other_player_index
 
-    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int, info: dict):
         feature_value = min(full_obs[self.full_obs_index], self.max_value)
         dest_obs[dest_start_index] = feature_value
+        info["OtherPlayerHandCount " + str(self.other_player_index)] = feature_value
 
         # If another player is out, then CEO goes to the bottom of the table
         if feature_value == 0:
@@ -105,7 +110,7 @@ class SinglesUnderValueCount:
         self._start_check_index = full_env.obs_index_hand_cards
         self._end_check_index = full_env.obs_index_hand_cards + threshold
 
-    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int, info: dict):
         single_count = 0
         for i in range(self._start_check_index, self._end_check_index):
             card_count = full_obs[i]
@@ -113,6 +118,7 @@ class SinglesUnderValueCount:
                 single_count += 1
 
         dest_obs[dest_start_index] = min(single_count, self.max_value)
+        info["SinglesUnderValueCount"] = dest_obs[dest_start_index]
 
 
 class DoublesUnderValueCount:
@@ -130,7 +136,7 @@ class DoublesUnderValueCount:
         self._start_check_index = full_env.obs_index_hand_cards
         self._end_check_index = full_env.obs_index_hand_cards + threshold
 
-    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int, info: dict):
         double_count = 0
         for i in range(self._start_check_index, self._end_check_index):
             card_count = full_obs[i]
@@ -138,6 +144,7 @@ class DoublesUnderValueCount:
                 double_count += 1
 
         dest_obs[dest_start_index] = min(double_count, self.max_value)
+        info["DoublesUnderValueCount"] = dest_obs[dest_start_index]
 
 
 class TriplesUnderValueCount:
@@ -155,7 +162,7 @@ class TriplesUnderValueCount:
         self._start_check_index = full_env.obs_index_hand_cards
         self._end_check_index = full_env.obs_index_hand_cards + threshold
 
-    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int, info: dict):
         triple_count = 0
         for i in range(self._start_check_index, self._end_check_index):
             card_count = full_obs[i]
@@ -163,6 +170,7 @@ class TriplesUnderValueCount:
                 triple_count += 1
 
         dest_obs[dest_start_index] = min(triple_count, self.max_value)
+        info["TriplesUnderValueCount"] = dest_obs[dest_start_index]
 
 
 class TrickPosition:
@@ -180,17 +188,20 @@ class TrickPosition:
         self.full_start_player_index = full_env.obs_index_start_player
         self.num_player = full_env.num_players
 
-    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int, info: dict):
         start_player = full_obs[self.full_start_player_index]
 
         if start_player == 0:
             # The agent leads
             dest_obs[dest_start_index] = 0
+            info["Trick position"] = "lead"
         elif start_player == 1:
             # The agent is the last player on the trick
             dest_obs[dest_start_index] = 2
+            info["Trick position"] = "last"
         else:
             dest_obs[dest_start_index] = 1
+            info["Trick position"] = "not lead and not last"
 
 
 class CurTrickValue:
@@ -218,10 +229,11 @@ class CurTrickValue:
         self._obs_index_hand_cards = full_env.obs_index_hand_cards
         pass
 
-    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int, info: dict):
         if full_obs[self._obs_index_cur_trick_count] == 0:
             # We should lead
             dest_obs[dest_start_index] = 0
+            info["CurTrickValue"] = "lead"
             return
         else:
             cur_trick_value = full_obs[self._obs_index_cur_trick_value]
@@ -239,10 +251,13 @@ class CurTrickValue:
 
             if hand_below_count <= 3:
                 dest_obs[dest_start_index] = hand_below_count
+                info["CurTrickValue"] = "hand_below_count " + str(hand_below_count)
             elif hand_above_count <= 2:
                 dest_obs[dest_start_index] = self.max_value - hand_above_count + 1
+                info["CurTrickValue"] = "hand_below_count " + str(dest_obs[dest_start_index])
             else:
                 dest_obs[dest_start_index] = 4
+                info["CurTrickValue"] = "Other"
 
 
 class CurTrickCount:
@@ -263,12 +278,13 @@ class CurTrickCount:
         self._obs_index_cur_trick_count = full_env.obs_index_cur_trick_count
         pass
 
-    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int):
+    def calc(self, full_obs: np.array, dest_obs: np.array, dest_start_index: int, info: dict):
         cur_trick_cards = full_obs[self._obs_index_cur_trick_count]
 
         # See if we should lead
         if cur_trick_cards == 0:
             dest_obs[dest_start_index] = 0
+            info["CurTrickCount"] = "lead"
             return
 
         obs = cur_trick_cards - 1
@@ -277,6 +293,7 @@ class CurTrickCount:
             obs = self.max_value
 
         dest_obs[dest_start_index] = obs
+        info["CurTrickCount"] = obs
 
 
 class SeatCEOFeaturesEnv(gym.Env):
@@ -354,13 +371,15 @@ class SeatCEOFeaturesEnv(gym.Env):
         full_obs = self.full_env.reset(hands)
         self.action_space = self.full_env.action_space
 
-        return self._make_observation(full_obs)
+        info = dict()
+        return self._make_observation(full_obs, info)
 
     def step(self, action):
         full_obs, reward, done, info = self.full_env.step(action)
         self.action_space = self.full_env.action_space
 
-        return self._make_observation(full_obs), reward, done, info
+        obs = self._make_observation(full_obs, info)
+        return obs, reward, done, info
 
     def render(self, mode="human"):
         pass
@@ -368,7 +387,7 @@ class SeatCEOFeaturesEnv(gym.Env):
     def close(self):
         pass
 
-    def _make_observation(self, full_obs):
+    def _make_observation(self, full_obs, info: dict):
         if full_obs is None:
             return None
 
@@ -376,7 +395,7 @@ class SeatCEOFeaturesEnv(gym.Env):
 
         i = 0
         for calculator in self._feature_calculators:
-            ret = calculator.calc(full_obs, obs, i)
+            ret = calculator.calc(full_obs, obs, i, info)
             assert ret is None
 
             i = i + calculator.dim
