@@ -30,18 +30,9 @@ class QAgent(LearningBase):
         self._state_count = state_count
 
     def _pick_action(self, state_tuple: tuple):
-        # The number of times we have visited this state
-        n_state = np.sum(self._state_count[(*state_tuple, slice(None))])
-        max_value = np.max(self._Q[(*state_tuple, slice(None))])
-        min_value = np.min(self._Q[(*state_tuple, slice(None))])
-
         # Do the greedy action
-        action = np.argmax(self._Q[(*state_tuple, slice(None))])
-
-        # Clip the action, if necessary. This biases the exploration
-        # toward leading the lowest card.
-        if action >= self._env.action_space.n:
-            action = self._env.action_space.n - 1
+        lookup_value = lambda i: self._Q[(*state_tuple, i)]
+        action = max(range(self._env.action_space.n), key=lookup_value)
 
         return action
 
