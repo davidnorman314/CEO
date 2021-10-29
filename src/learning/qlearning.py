@@ -33,7 +33,7 @@ class QLearning(LearningBase):
         epsilon = 1
         max_epsilon = 0.5
         min_epsilon = 0.01
-        decay = 0.00001
+        decay = 0.000001
 
         test_episodes = 100
         max_steps = 100
