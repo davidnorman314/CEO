@@ -8,7 +8,6 @@ import argparse
 from typing import List, Tuple
 from copy import copy, deepcopy
 import numpy as np
-from learning.learning_base import LearningBase
 from collections import deque
 
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
@@ -18,13 +17,13 @@ from CEO.cards.deck import Deck
 from CEO.cards.hand import Hand, CardValue
 
 
-class QAgent(LearningBase):
+class QAgent:
     _base_env: gym.Env
+    _env: gym.Env
 
     def __init__(self, q: np.ndarray, state_count: np.ndarray, env: gym.Env, base_env: gym.Env):
-        super().__init__(env)
-
         self._base_env = base_env
+        self._env = env
 
         self._Q = q
         self._state_count = state_count
