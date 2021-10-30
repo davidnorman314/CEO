@@ -11,7 +11,7 @@ from collections import deque
 import cProfile
 from pstats import SortKey
 
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, ActionEnum, CEOActionSpace
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
@@ -32,10 +32,10 @@ class QLearningTraces(LearningBase):
         super().__init__(env)
         self._train_episodes = train_episodes
 
-    def _pick_action(self, state_tuple: tuple, epsilon: float):
+    def _pick_action(self, state_tuple: tuple, epsilon: float) -> ActionEnum:
         # If there is only one action, return it
         if self._env.action_space.n == 1:
-            return 0, 0
+            return self._env.action_space.actions[0], 0
 
         # Choose if we will explore or exploit
         exp_exp_sample = random.uniform(0, 1)
@@ -43,7 +43,8 @@ class QLearningTraces(LearningBase):
         exploit_action = self._qtable.greedy_action(state_tuple, self._env.action_space)
         # exploit_action = np.argmax(self._Q[(*state_tuple, slice(None))])
 
-        explore_action = self._env.action_space.sample()
+        explore_action_index = self._env.action_space.sample()
+        explore_action = self._env.action_space.actions[explore_action_index]
 
         if exp_exp_sample > epsilon or exploit_action == explore_action:
             is_exploit = True
@@ -51,6 +52,8 @@ class QLearningTraces(LearningBase):
         else:
             is_exploit = False
             action = explore_action
+
+        assert isinstance(action, ActionEnum)
 
         return action, is_exploit
 
@@ -120,7 +123,8 @@ class QLearningTraces(LearningBase):
                     states_visited += 1
 
                 # Perform the action
-                state_prime, reward, done, info = self._env.step(action)
+                action_index = self._env.action_space.actions.index(action)
+                state_prime, reward, done, info = self._env.step(action_index)
 
                 if state_prime is not None:
                     state_prime_tuple = tuple(state_prime.astype(int))

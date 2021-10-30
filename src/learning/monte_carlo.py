@@ -10,9 +10,11 @@ import argparse
 from typing import List, Tuple
 from copy import copy, deepcopy
 import numpy as np
+from numpy.lib.arraysetops import isin
 from learning.learning_base import LearningBase
 from collections import deque
 
+from gym_ceo.envs.actions import ActionEnum
 from gym_ceo.envs.seat_ceo_env import CEOActionSpace, SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, GameWatchListener, PrintAllEventListener
@@ -37,10 +39,10 @@ class MonteCarloLearning(LearningBase):
     def set_base_env(self, base_env: gym.Env):
         self._base_env = base_env
 
-    def _pick_action(self, state_tuple: tuple, action_space: CEOActionSpace) -> int:
+    def _pick_action(self, state_tuple: tuple, action_space: CEOActionSpace) -> ActionEnum:
         # If the action space only has one action, return it
         if action_space.n == 1:
-            return 0
+            return action_space.actions[0]
 
         # The number of times we have visited this state
         n_state = self._qtable.visit_count(state_tuple, action_space)
@@ -62,7 +64,11 @@ class MonteCarloLearning(LearningBase):
             # action = np.argmax(self._Q[(*state_tuple, slice(None))])
         else:
             self.explore_count += 1
-            action = self._env.action_space.sample()
+            action_space = self._env.action_space
+            action_index = action_space.sample()
+            action = action_space.actions[action_index]
+
+        assert isinstance(action, ActionEnum)
 
         return action
 
@@ -101,7 +107,8 @@ class MonteCarloLearning(LearningBase):
             state_action_tuple = state_tuple + (action,)
 
             # Perform the action
-            new_state, reward, done, info = self._env.step(action)
+            action_index = self._env.action_space.actions.index(action)
+            new_state, reward, done, info = self._env.step(action_index)
 
             episode_states.append(state_tuple)
             episode_actions.append(action)

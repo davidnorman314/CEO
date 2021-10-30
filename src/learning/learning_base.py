@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 
 from gym_ceo.envs.seat_ceo_env import CEOActionSpace
+from gym_ceo.envs.actions import ActionEnum
 
 
 class EpisodeInfo:
@@ -50,10 +51,10 @@ class QTable:
         # return np.sum(self._state_count[(*state_tuple, slice(None))])
 
     def state_visit_count(self, state_action_tuple: tuple):
-        return self._state_count[state_action_tuple]
+        return self._state_count[(*state_action_tuple[:-1], state_action_tuple[-1].value)]
 
     def state_action_value(self, state_action_tuple: tuple):
-        return self._Q[state_action_tuple]
+        return self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)]
 
     def min_max_value(self, state_tuple: tuple, action_space: CEOActionSpace):
         max_value = max(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
@@ -61,9 +62,9 @@ class QTable:
 
         return (min_value, max_value)
 
-    def greedy_action(self, state_tuple: tuple, action_space: CEOActionSpace):
-        lookup_value = lambda i: self._Q[(*state_tuple, i)]
-        return max(range(action_space.n), key=lookup_value)
+    def greedy_action(self, state_tuple: tuple, action_space: CEOActionSpace) -> ActionEnum:
+        lookup_value = lambda action: self._Q[(*state_tuple, action.value)]
+        return max(action_space.actions, key=lookup_value)
 
     def state_value(self, state_tuple: tuple, action_space: CEOActionSpace):
         return max(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
@@ -72,10 +73,10 @@ class QTable:
         return max(range(action_space.n), key=lookup_value)
 
     def increment_state_visit_count(self, state_action_tuple: tuple):
-        self._state_count[state_action_tuple] += 1
+        self._state_count[(*state_action_tuple[:-1], state_action_tuple[-1].value)] += 1
 
     def update_state_visit_value(self, state_action_tuple: tuple, delta: float):
-        self._Q[state_action_tuple] += delta
+        self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)] += delta
 
 
 class LearningBase:

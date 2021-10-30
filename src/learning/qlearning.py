@@ -11,7 +11,8 @@ from collections import deque
 import cProfile
 from pstats import SortKey
 
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
+from gym_ceo.envs.actions import ActionEnum
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
@@ -68,7 +69,8 @@ class QLearning(LearningBase):
                 exploit_action = self._qtable.greedy_action(state_tuple, self._env.action_space)
                 # exploit_action = np.argmax(self._Q[(*state_tuple, slice(None))])
 
-                explore_action = self._env.action_space.sample()
+                explore_action_index = self._env.action_space.sample()
+                explore_action = self._env.action_space.actions[explore_action_index]
 
                 if exp_exp_sample > epsilon or exploit_action == explore_action:
                     episode_exploit_count += 1
@@ -88,7 +90,8 @@ class QLearning(LearningBase):
                 state_action_tuple = state_tuple + (action,)
 
                 # Perform the action
-                new_state, reward, done, info = self._env.step(action)
+                action_index = self._env.action_space.actions.index(action)
+                new_state, reward, done, info = self._env.step(action_index)
 
                 # print("state", state)
                 # print("state_tuple", state_tuple)
