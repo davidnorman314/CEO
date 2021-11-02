@@ -16,6 +16,8 @@ pytest -s -k game
 
 `python -m learning.monte_carlo --train --episodes 1000000`
 
+`python -m learning.monte_carlo --train --episodes 5000 --processes 3`
+
 ## Use trained agents to play
 
 `python -m learning.play_qagent --play --agent-file monte_carlo.pickle --episodes 200 > log.txt`

@@ -3,6 +3,7 @@
 The program can either train a new model or play games with a trained model.
 """
 
+from os import stat
 import gym
 import random
 import pickle
@@ -13,6 +14,7 @@ import numpy as np
 from numpy.lib.arraysetops import isin
 from learning.learning_base import LearningBase
 from collections import deque
+from multiprocessing import RawArray, Pool
 
 from gym_ceo.envs.actions import ActionEnum
 from gym_ceo.envs.seat_ceo_env import CEOActionSpace, SeatCEOEnv
@@ -22,24 +24,38 @@ from CEO.cards.deck import Deck
 from CEO.cards.hand import Hand, CardValue
 
 
-class MonteCarloLearning(LearningBase):
+class SearchStatistics:
     greedy_count: int
     explore_count: int
 
-    _base_env: gym.Env
-
-    def __init__(self, env: gym.Env, base_env: gym.Env):
-        super().__init__(env)
-
-        self._base_env = base_env
-
+    def __init__(self):
         self.greedy_count = 0
         self.explore_count = 0
+
+    def add(self, other):
+        self.greedy_count += other.greedy_count
+        self.explore_count += other.explore_count
+
+
+class MonteCarloLearning(LearningBase):
+
+    _base_env: gym.Env
+
+    def __init__(self, env: gym.Env, base_env: gym.Env, **kwargs):
+        """Constructor for a learning object.
+        The kwargs are passed to the QTable constructor so it can be initialized
+        for multiprocessing.
+        """
+        super().__init__(env, **kwargs)
+
+        self._base_env = base_env
 
     def set_base_env(self, base_env: gym.Env):
         self._base_env = base_env
 
-    def _pick_action(self, state_tuple: tuple, action_space: CEOActionSpace) -> ActionEnum:
+    def _pick_action(
+        self, state_tuple: tuple, action_space: CEOActionSpace, statistics: SearchStatistics
+    ) -> ActionEnum:
         # If the action space only has one action, return it
         if action_space.n == 1:
             return action_space.actions[0]
@@ -59,11 +75,11 @@ class MonteCarloLearning(LearningBase):
 
         # Pick the action
         if do_greedy:
-            self.greedy_count += 1
+            statistics.greedy_count += 1
             action = self._qtable.greedy_action(state_tuple, action_space)
             # action = np.argmax(self._Q[(*state_tuple, slice(None))])
         else:
-            self.explore_count += 1
+            statistics.explore_count += 1
             action_space = self._env.action_space
             action_index = action_space.sample()
             action = action_space.actions[action_index]
@@ -72,8 +88,13 @@ class MonteCarloLearning(LearningBase):
 
         return action
 
-    def do_episode(self, log_state: bool = False) -> Tuple[List[tuple], List[int], float]:
+    def do_episode(
+        self, log_state: bool = False
+    ) -> Tuple[List[tuple], List[int], float, SearchStatistics]:
         """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
+
+        statistics = SearchStatistics()
+
         # Reseting the environment each time as per requirement
         state = self._env.reset()
         state_tuple = tuple(state.astype(int))
@@ -88,7 +109,7 @@ class MonteCarloLearning(LearningBase):
 
         # Run until the episode is finished
         while True:
-            action = self._pick_action(state_tuple, self._env.action_space)
+            action = self._pick_action(state_tuple, self._env.action_space, statistics)
 
             if log_state:
                 print("State", state_tuple)
@@ -145,9 +166,9 @@ class MonteCarloLearning(LearningBase):
                 # print("Reward", reward)
                 break
 
-        return episode_states, episode_actions, episode_reward
+        return episode_states, episode_actions, episode_reward, statistics
 
-    def train(self, episodes: int):
+    def train(self, episodes: int, process_count: int):
         # prev_qtable = deepcopy(self._Q)
         prev_qtable = None
 
@@ -155,51 +176,86 @@ class MonteCarloLearning(LearningBase):
         recent_episode_rewards = deque()
         max_recent_episode_rewards = 10000
         states_visited = 0
+        episodes_per_work_task = 50
+        episode_count = 0
 
-        for episode in range(episodes):
-            states, actions, reward = self.do_episode()
+        statistics = SearchStatistics()
 
-            # Update q
-            for i in range(len(actions)):
-                state = states[i]
-                action = actions[i]
+        last_status_log = 0
+        last_explore = 0
+        last_greedy = 0
 
-                state_action_tuple = state + (action,)
+        pool = None
+        if process_count > 1:
+            q_raw_array, state_count_raw_array = self._qtable.get_shared_arrays()
 
-                state_action_count = self._qtable.state_visit_count(state_action_tuple)
-                if state_action_count == 0:
-                    states_visited += 1
+            pool = Pool(
+                processes=process_count,
+                initializer=init_worker,
+                initargs=(q_raw_array, state_count_raw_array),
+            )
 
-                self._qtable.increment_state_visit_count(state_action_tuple)
-                state_action_count += 1
+        while episode_count < episodes:
 
-                state_action_value = self._qtable.state_action_value(state_action_tuple)
-                alpha = 1.0 / state_action_count
-                self._qtable.update_state_visit_value(
-                    state_action_tuple, alpha * (reward - state_action_value)
-                )
-                # self._Q[state_action_tuple] += alpha * (reward - self._Q[state_action_tuple])
+            episode_results = []
 
-            # Update the search status
-            total_training_reward += reward
-            recent_episode_rewards.append(reward)
-            if len(recent_episode_rewards) > max_recent_episode_rewards:
-                recent_episode_rewards.popleft()
+            if process_count == 1:
+                # Do a single episode in process
+                states, actions, reward, statistics = self.do_episode()
+                episode_results.append((states, actions, reward, statistics))
+            else:
+                # Do many episodes in child processes
+                results = pool.map(worker_func, [episodes_per_work_task] * process_count)
+                for result in results:
+                    episode_results.extend(result)
 
-            last_explore = 0
-            last_greedy = 0
-            if episode > 0 and episode % 2000 == 0:
-                ave_training_rewards = total_training_reward / (episode + 1)
+            # Update q for each episode
+            for states, actions, reward, this_statistics in episode_results:
+                episode_count += 1
+                statistics.add(this_statistics)
+
+                for i in range(len(actions)):
+                    state = states[i]
+                    action = actions[i]
+
+                    state_action_tuple = state + (action,)
+
+                    state_action_count = self._qtable.state_visit_count(state_action_tuple)
+                    if state_action_count == 0:
+                        states_visited += 1
+
+                    self._qtable.increment_state_visit_count(state_action_tuple)
+                    state_action_count += 1
+
+                    state_action_value = self._qtable.state_action_value(state_action_tuple)
+                    alpha = 1.0 / state_action_count
+                    self._qtable.update_state_visit_value(
+                        state_action_tuple, alpha * (reward - state_action_value)
+                    )
+                    # self._Q[state_action_tuple] += alpha * (reward - self._Q[state_action_tuple])
+
+                # Update the search status
+                total_training_reward += reward
+                recent_episode_rewards.append(reward)
+                if len(recent_episode_rewards) > max_recent_episode_rewards:
+                    recent_episode_rewards.popleft()
+
+            # Log information about the search
+            if episode_count - last_status_log >= 2000:
+                last_status_log = episode_count
+                ave_training_rewards = total_training_reward / (episode_count + 1)
                 recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
-                recent_explore_count = self.explore_count - last_explore
-                recent_greedy_count = self.greedy_count - last_greedy
-                explore_fraction = recent_explore_count / (
-                    recent_explore_count + recent_greedy_count
-                )
+                recent_explore_count = statistics.explore_count - last_explore
+                recent_greedy_count = statistics.greedy_count - last_greedy
+                explore_fraction = 0
+                if recent_explore_count + recent_greedy_count > 0:
+                    explore_fraction = recent_explore_count / (
+                        recent_explore_count + recent_greedy_count
+                    )
 
                 print(
                     "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} States visited {} Explore fraction {:.3f}".format(
-                        episode,
+                        episode_count,
                         ave_training_rewards,
                         recent_rewards,
                         states_visited,
@@ -207,29 +263,91 @@ class MonteCarloLearning(LearningBase):
                     )
                 )
 
-                last_explore = self.explore_count
-                last_greedy = self.greedy_count
+                last_explore = statistics.explore_count
+                last_greedy = statistics.greedy_count
 
-            if prev_qtable is not None and episode > 0 and episode % 2000 == 0:
+            if prev_qtable is not None and episode_count > 0 and episode_count % 5000 == 0:
                 err = self.mean_squared_difference(prev_qtable)
                 prev_qtable = deepcopy(self._Q)
 
-                print("Iteration ", episode, "delta", err)
+                print("Iteration ", episode_count, "delta", err)
+
+        print("Finished with", episode_count, "episodes")
+
+        if pool is not None:
+            pool.close()
 
 
-def train_and_save(episodes: int):
-    # Set up the environment
-    random.seed(0)
+def create_environment(**kwargs):
+    """Initialize the environment and learning objects.
+    If kwargs is empty, do normal, single-process learning.
+    If kwargs has parent=True, then create a parent environment for learning
+    using sub-processes to run the episodes.
+    If kwargs has shared_q=RawArray and shared_state_count=RawArray, then create
+    the worker environment using the given shared arrays.
+    """
+
+    env_kwargs = dict()
+    if not kwargs:
+        # Single process
+        pass
+    elif "parent" in kwargs and kwargs["parent"]:
+        env_kwargs["shared"] = True
+    elif "shared_q" in kwargs and "shared_state_count" in kwargs:
+        env_kwargs["shared_q"] = kwargs["shared_q"]
+        env_kwargs["shared_state_count"] = kwargs["shared_state_count"]
+    else:
+        raise Exception("Illegal arguments to create_environment")
+
     listener = PrintAllEventListener()
     listener = EventListenerInterface()
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
 
-    learning = MonteCarloLearning(env, base_env)
-    learning.train(episodes)
+    learning = MonteCarloLearning(env, base_env, **env_kwargs)
+
+    return base_env, env, learning
+
+
+def train_and_save(episodes: int, process_count: int):
+    # Set up the environment
+    random.seed(0)
+
+    env_kwargs = dict()
+    if process_count > 1:
+        env_kwargs["parent"] = True
+    base_env, env, learning = create_environment(**env_kwargs)
+
+    learning.train(episodes, process_count)
 
     # Save the agent in a pickle file.
     learning.pickle("monte_carlo", "monte_carlo.pickle")
+
+
+worker_base_env = None
+worker_env = None
+worker_learning = None
+
+
+def init_worker(q_raw_array: RawArray, state_count_raw_array: RawArray):
+    global worker_base_env
+    global worker_env
+    global worker_learning
+
+    worker_base_env, worker_env, worker_learning = create_environment(
+        shared_q=q_raw_array, shared_state_count=state_count_raw_array
+    )
+
+
+def worker_func(episode_count: int):
+    assert worker_learning is not None
+    episode_results = []
+
+    for episode in range(episode_count):
+        states, actions, reward, statistics = worker_learning.do_episode()
+        episode_results.append((states, actions, reward, statistics))
+
+    return episode_results
 
 
 def main():
@@ -257,12 +375,19 @@ def main():
         default=100000,
         help="The number of rounds to play",
     )
+    parser.add_argument(
+        "--processes",
+        dest="process_count",
+        type=int,
+        default=1,
+        help="The number of parallel processes to use during training",
+    )
 
     args = parser.parse_args()
     # print(args)
 
     if args.train:
-        train_and_save(args.episodes)
+        train_and_save(args.episodes, args.process_count)
     else:
         parser.print_usage()
 
