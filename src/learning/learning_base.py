@@ -33,6 +33,8 @@ class QTable:
         so that they can be shared across processes.
         If kwargs has shared_q=RawArray and shared_state_count=RawArray, then create
         the ndarrays from the passed RawArrays.
+        If kwargs has q and state_count defined, then their values must be ndarrays
+        and they will be used for the arrays.
         """
         self._max_action_value = env.max_action_value
 
@@ -80,6 +82,12 @@ class QTable:
             self.state_count_raw_array = kwargs["shared_state_count"]
 
             init_from_shared = True
+        elif "q" in kwargs and "state_count" in kwargs:
+            # Initialize from the passed arrays
+            self._Q = kwargs["q"]
+            self._state_count = kwargs["state_count"]
+
+            init_from_shared = False
         else:
             raise Exception("Incorrect args in QTable constructor")
 

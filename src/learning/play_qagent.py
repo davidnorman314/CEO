@@ -12,28 +12,27 @@ from collections import deque
 
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
+from gym_ceo.envs.actions import ActionEnum
 from CEO.cards.eventlistener import EventListenerInterface, GameWatchListener, PrintAllEventListener
 from CEO.cards.deck import Deck
 from CEO.cards.hand import Hand, CardValue
+from learning.learning_base import QTable
 
 
 class QAgent:
     _base_env: gym.Env
     _env: gym.Env
 
+    _qtable: QTable
+
     def __init__(self, q: np.ndarray, state_count: np.ndarray, env: gym.Env, base_env: gym.Env):
         self._base_env = base_env
         self._env = env
-
-        self._Q = q
-        self._state_count = state_count
+        self._qtable = QTable(env, q=q, state_count=state_count)
 
     def _pick_action(self, state_tuple: tuple):
         # Do the greedy action
-        lookup_value = lambda i: self._Q[(*state_tuple, i)]
-        action = max(range(self._env.action_space.n), key=lookup_value)
-
-        return action
+        return self._qtable.greedy_action(state_tuple, self._env.action_space)
 
     def do_episode(
         self, hands: list[Hand] = None, log_state: bool = False
@@ -50,43 +49,41 @@ class QAgent:
 
         # Run until the episode is finished
         while True:
-            action = self._pick_action(state_tuple)
+            selected_action = self._pick_action(state_tuple)
 
             if log_state:
                 action_space = self._env.action_space
-                action_index_to_name = dict()
-                for i in range(len(action_space.actions)):
-                    action_index_to_name[i] = action_space.actions[i].name
 
                 print("State", state_tuple)
                 print("Obs info:")
                 for key, value in info.items():
                     print(" ", key, "->", value)
 
-                print("Selected action", action)
+                print("Selected action", selected_action)
                 print("Action values")
                 for a in range(self._base_env.max_action_value):
-                    name = ""
-                    if a in action_index_to_name:
-                        name = action_index_to_name[a]
+                    full_action = ActionEnum(a)
+                    name = full_action.name if full_action in action_space.actions else ""
+                    selected = "selected" if full_action == selected_action else ""
 
                     print(
                         "  action",
                         a,
                         "value",
-                        self._Q[(*state_tuple, a)],
+                        self._qtable.state_action_value((*state_tuple, full_action)),
                         "count",
-                        self._state_count[(*state_tuple, a)],
+                        self._qtable.state_visit_count((*state_tuple, full_action)),
                         name,
                     )
 
-            state_action_tuple = state_tuple + (action,)
+            state_action_tuple = state_tuple + (selected_action,)
 
             # Perform the action
-            new_state, reward, done, info = self._env.step(action)
+            selected_action_index = self._env.action_space.actions.index(selected_action)
+            new_state, reward, done, info = self._env.step(selected_action_index)
 
             episode_states.append(state_tuple)
-            episode_actions.append(action)
+            episode_actions.append(selected_action)
 
             # print("state", state)
             # print("state_tuple", state_tuple)
@@ -95,13 +92,11 @@ class QAgent:
 
             if new_state is not None:
                 new_state_tuple = tuple(new_state.astype(int))
-                new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
             else:
                 assert done
                 assert reward != 0
 
                 new_state_tuple = None
-                new_state_value = 0
 
             # print("hand 2", info["hand"])
             # print("New q", type(self._Q[state_action_tuple]))
@@ -197,18 +192,19 @@ def play_round(agent_file_name: str, round_pickle_file: str):
 
     states, actions, reward = agent.do_episode(hands, True)
 
-    for i in range(len(states)):
-        print(i, "state", states[i], "action", actions[i])
+    if False:
+        for i in range(len(states)):
+            print(i, "state", states[i], "action", actions[i])
 
-        for a in range(base_env.max_action_value):
-            print(
-                "  action",
-                a,
-                "value",
-                agent._Q[(*states[i], a)],
-                "count",
-                agent._state_count[(*states[i], a)],
-            )
+            for a in range(base_env.max_action_value):
+                print(
+                    "  action",
+                    a,
+                    "value",
+                    agent._Q[(*states[i], a)],
+                    "count",
+                    agent._state_count[(*states[i], a)],
+                )
 
 
 def main():
