@@ -7,6 +7,7 @@ from CEO.cards.simplebehavior import SimpleBehaviorBase
 import CEO.cards.round as rd
 import CEO.cards.player as player
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.observation import Observation
 from gym_ceo.envs.actions import Actions, ActionEnum
 from stable_baselines3.common.env_checker import check_env
 
@@ -132,11 +133,12 @@ def test_SeatCEOEnv_Passing():
         listener=PrintAllEventListener(),
     )
 
-    observation = env.reset()
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
 
-    assert observation[env.obs_index_hand_cards + 0] == 0
-    assert observation[env.obs_index_hand_cards + 1] == 0
-    assert observation[env.obs_index_hand_cards + 7] == 2
+    assert observation.get_card_count(0) == 0
+    assert observation.get_card_count(1) == 0
+    assert observation.get_card_count(7) == 2
 
 
 def test_SeatCEOEnv_NoPassing():

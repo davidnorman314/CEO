@@ -5,6 +5,7 @@ from gym.spaces import Box, Discrete
 from gym.utils import seeding
 
 from gym_ceo.envs.actions import Actions, ActionEnum
+from gym_ceo.envs.observation import Observation, ObservationFactory
 
 from CEO.cards.round import Round, RoundState
 from CEO.cards.eventlistener import EventListenerInterface
@@ -61,8 +62,8 @@ class CEOActionSpace(Discrete):
 
 class SeatCEOEnv(gym.Env):
     """
-    Environment for a player in the CEO seat. This environment contains all the information
-    available.
+    Environment for a player in the CEO seat. This environment's observations
+    contains all the information available to a player.
     """
 
     metadata = {"render.modes": ["human"]}
@@ -77,14 +78,6 @@ class SeatCEOEnv(gym.Env):
 
     # The maximum possible action space size
     max_action_space_size: int
-
-    # The indices into the observation array where the various features start
-    obs_index_hand_cards: int
-    obs_index_other_player_card_count: int
-    obs_index_other_player_card_count: int
-    obs_index_cur_trick_value: int
-    obs_index_cur_trick_count: int
-    obs_index_start_player: int
 
     num_players: int
 
@@ -143,6 +136,8 @@ class SeatCEOEnv(gym.Env):
 
     _simple_behavior_base: SimpleBehaviorBase
 
+    observation_factory: ObservationFactory
+
     def __init__(
         self,
         num_players=6,
@@ -173,18 +168,8 @@ class SeatCEOEnv(gym.Env):
             else:
                 self._players.append(Player(name, behaviors[i]))
 
-        # Thirteen dimensions for the cards in the hand.
-        # (num_players - 1) dimensions for the number of cards in the other player's hands
-        # One dimension for the current value of the trick
-        # One dimension for the number of cards in the trick
-        # One dimension for the starting player on the trick
-        self.obs_index_hand_cards = 0
-        self.obs_index_other_player_card_count = self.obs_index_hand_cards + 13
-        self.obs_index_cur_trick_value = self.obs_index_other_player_card_count + num_players - 1
-        self.obs_index_cur_trick_count = self.obs_index_cur_trick_value + 1
-        self.obs_index_start_player = self.obs_index_cur_trick_count + 1
-
-        self._observation_dimension = self.obs_index_start_player + 1
+        self.observation_factory = ObservationFactory(num_players)
+        self._observation_dimension = self.observation_factory.observation_dimension
 
         self.observation_space = Box(
             low=np.array([0] * self._observation_dimension),
@@ -285,11 +270,16 @@ class SeatCEOEnv(gym.Env):
 
     def _make_observation(self, gen_tuple):
         if gen_tuple[0] == "lead":
-            return self._make_observation_lead(gen_tuple)
+            obs = self._make_observation_lead(gen_tuple)
         elif gen_tuple[0] == "play":
-            return self._make_observation_play(gen_tuple)
+            obs = self._make_observation_play(gen_tuple)
         else:
-            assert "Unexpected action" == ""
+            raise Exception("Unexpected action")
+
+        if obs is None:
+            return None
+
+        return obs.get_array()
 
     def _make_observation_lead(self, gen_tuple):
         type_str, starting_player, cur_hand, state = gen_tuple
@@ -299,6 +289,7 @@ class SeatCEOEnv(gym.Env):
         self._cur_hand = cur_hand
         self._info["hand"] = cur_hand
 
+        # Count the number of playable card values.
         playable_card_values = 0
         for cv in range(13):
             if cur_hand.count(CardValue(cv)) > 0:
@@ -312,23 +303,13 @@ class SeatCEOEnv(gym.Env):
         else:
             self.action_space = self.action_space_lead
 
-        # Create the return array
-        obs = np.zeros(self._observation_dimension)
-
-        # Add the cards in our hand
-        for v in range(13):
-            obs[self.obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
-
-        # Add the cards in other players' hands. Don't include the agent's hand.
-        for p in range(1, self.num_players):
-            obs[self.obs_index_other_player_card_count + p - 1] = state.cards_remaining[p]
-
-        # Add the trick state
-        obs[self.obs_index_cur_trick_value] = 0
-        obs[self.obs_index_cur_trick_count] = 0
-        obs[self.obs_index_start_player] = 0
-
-        return obs
+        return Observation(
+            self.observation_factory,
+            type="lead",
+            starting_player=starting_player,
+            cur_hand=cur_hand,
+            state=state,
+        )
 
     def _make_observation_play(self, gen_tuple):
         (
@@ -362,20 +343,13 @@ class SeatCEOEnv(gym.Env):
         else:
             self.action_space = self.action_space_play
 
-        # Create the return array
-        obs = np.zeros(self._observation_dimension)
-
-        # Add the cards in our hand
-        for v in range(13):
-            obs[self.obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
-
-        # Add the cards in other players' hands. Don't include the agent's hand.
-        for p in range(1, self.num_players):
-            obs[self.obs_index_other_player_card_count + p - 1] = state.cards_remaining[p]
-
-        # Add the trick state
-        obs[self.obs_index_cur_trick_value] = cur_card_value.value
-        obs[self.obs_index_cur_trick_count] = cur_card_count
-        obs[self.obs_index_start_player] = starting_player
-
-        return obs
+        return Observation(
+            self.observation_factory,
+            type="play",
+            starting_player=starting_player,
+            cur_index=cur_index,
+            cur_card_value=cur_card_value,
+            cur_card_count=cur_card_count,
+            cur_hand=cur_hand,
+            state=state,
+        )

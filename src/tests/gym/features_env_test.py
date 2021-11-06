@@ -8,6 +8,7 @@ from CEO.cards.simplebehavior import SimpleBehaviorBase
 import CEO.cards.player as player
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv, TriplesUnderValueCount
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.observation import Observation, ObservationFactory
 from stable_baselines3.common.env_checker import check_env
 
 from gym_ceo.envs.actions import Actions
@@ -150,11 +151,15 @@ def test_TriplesUnderValueCount():
     env = SeatCEOEnv(
         num_players=4, behaviors=behaviors, hands=hands, listener=PrintAllEventListener()
     )
+    factory = ObservationFactory(env.num_players)
+
     feature_calc = TriplesUnderValueCount(env, 10)
 
-    observation = env.reset()
+    observation_array = env.reset()
+    observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
-    feature_calc.calc(observation, feature_array, 0)
+    info = dict()
+    feature_calc.calc(observation, feature_array, 0, info)
 
     assert feature_array[0] == 1
