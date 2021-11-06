@@ -206,18 +206,24 @@ class TrickPosition:
 
 class CurTrickValue:
     """
-    Feature giving the current trick's value.
-    0 - Below all cards in hand. This also means that the player should lead.
-    1 - Above one card value in hand
-    2 - Above two card values in hand
-    3 - Above three card values in hand
-    4 - Other: Above four or more cards in the hand and less than three or more.
-    5 - Below two card values in hand (there are two values that can be played.)
-    6 - Below one card value in hand (there is one value that can be played.)
+    Feature giving the current trick's value relative to the cards in the hand.
+    0 - Below all cards in hand and the hand's lowest value can be played without
+        breaking a set.
+        This also means that the player should lead.
+        Note that if doubles are played, then the trick value might be less than
+        all cards in the hand, but the lowest value can't be played if it is
+        a single.
+    1 - Below all cards in hand.
+    2 - Above one card value in hand
+    3 - Above two card values in hand
+    4 - Above three card values in hand
+    5 - Other: Above four or more cards in the hand and less than three or more.
+    6 - Below two card values in hand (there are two values that can be played.)
+    7 - Below one card value in hand (there is one value that can be played.)
     """
 
     dim = 1
-    max_value = 6
+    max_value = 7
 
     _obs_index_cur_trick_count: int
     _obs_index_cur_trick_value: int
@@ -237,26 +243,39 @@ class CurTrickValue:
             return
         else:
             cur_trick_value = full_obs[self._obs_index_cur_trick_value]
+            cur_trick_count = full_obs[self._obs_index_cur_trick_count]
             hand_below_count = 0
             hand_above_count = 0
+            found_lowest = False
             for i in range(13):
                 count = full_obs[self._obs_index_hand_cards + i]
-                if count > 0:
-                    if cur_trick_value >= i:
-                        hand_below_count += 1
-                    else:
-                        hand_above_count += 1
+
+                if count == 0:
+                    continue
+
+                if not found_lowest:
+                    found_lowest = True
+                    if i >= cur_trick_value and count == cur_trick_count:
+                        dest_obs[dest_start_index] = 0
+                        info["CurTrickValue"] = "below all and play lowest without breaking"
+                        return
+
+                if cur_trick_value >= i:
+                    hand_below_count += 1
+                else:
+                    hand_above_count += 1
 
             assert hand_above_count != 0
 
             if hand_below_count <= 3:
-                dest_obs[dest_start_index] = hand_below_count
+                dest_obs[dest_start_index] = hand_below_count + 1
                 info["CurTrickValue"] = "hand_below_count " + str(hand_below_count)
             elif hand_above_count <= 2:
-                dest_obs[dest_start_index] = self.max_value - hand_above_count + 1
-                info["CurTrickValue"] = "hand_below_count " + str(dest_obs[dest_start_index])
+                obs = self.max_value - hand_above_count + 1
+                dest_obs[dest_start_index] = obs
+                info["CurTrickValue"] = "hand_above_count " + str(hand_above_count)
             else:
-                dest_obs[dest_start_index] = 4
+                dest_obs[dest_start_index] = 5
                 info["CurTrickValue"] = "Other"
 
 
