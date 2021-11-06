@@ -7,8 +7,8 @@ from enum import Enum
 
 class ActionEnum(Enum):
     PLAY_HIGHEST_NUM = 0
-    PLAY_SECOND_LOWEST_NUM = 1
-    PLAY_LOWEST_NUM = 2
+    PLAY_SECOND_LOWEST_WITHOUT_BREAK_NUM = 1
+    PLAY_LOWEST_WITHOUT_BREAK_NUM = 2
     PASS_ON_TRICK_NUM = 3
 
 
@@ -32,10 +32,10 @@ class Actions(SimpleBehaviorBase):
                 assert cur_trick_count is not None
 
             return self.pass_on_trick(hand, cur_trick_value, cur_trick_count)
-        elif action_number == ActionEnum.PLAY_LOWEST_NUM:
+        elif action_number == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM:
             # ret = self.play_lowest(hand, cur_trick_value, cur_trick_count)
             ret = self.play_lowest_without_breaking_sets(hand, cur_trick_value, cur_trick_count)
-        elif action_number == ActionEnum.PLAY_SECOND_LOWEST_NUM:
+        elif action_number == ActionEnum.PLAY_SECOND_LOWEST_WITHOUT_BREAK_NUM:
             # ret = self.play_second_lowest(hand, cur_trick_value, cur_trick_count)
             ret = self.play_second_lowest_without_breaking_sets(
                 hand, cur_trick_value, cur_trick_count

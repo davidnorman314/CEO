@@ -211,7 +211,7 @@ def test_SeatCEOEnv_NoPassing():
     assert env.action_space == env.action_space_two_legal_lead
 
     # Lead lowest
-    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
     observation, reward, done, info = env.step(action)
 
     assert env.action_space == env.action_space_one_legal_play
@@ -311,7 +311,7 @@ def test_SeatCEOEnv_CEOLeadsAndNoOnePlays():
     assert reward == 0
 
     # Lead lowest
-    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
     observation, reward, done, info = env.step(action)
 
     assert env.action_space == env.action_space_one_legal_play
@@ -400,7 +400,7 @@ def test_SeatCEOEnv_ActionSpace_Play_SingleCard():
     # Lead lowest
     assert env.action_space == SeatCEOEnv.action_space_two_legal_lead
     action = 1
-    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_NUM
+    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
     observation, reward, done, info = env.step(action)
 
     assert not done
@@ -497,7 +497,7 @@ def test_SeatCEOEnv_ActionSpace_Play_TwoCards():
     # Lead lowest
     assert env.action_space == SeatCEOEnv.action_space_lead
     action = 2
-    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_NUM
+    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
     observation, reward, done, info = env.step(action)
 
     assert not done
@@ -612,7 +612,7 @@ def test_SeatCEOEnv_ActionSpace_Lead_TwoCards():
     # Lead lowest
     assert env.action_space == SeatCEOEnv.action_space_lead
     action = 2
-    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_NUM
+    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
     observation, reward, done, info = env.step(action)
 
     assert not done
@@ -622,7 +622,7 @@ def test_SeatCEOEnv_ActionSpace_Lead_TwoCards():
     assert env.action_space == SeatCEOEnv.action_space_play
     assert env.action_space.n == 4
     action = 2
-    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_NUM
+    assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
     observation, reward, done, info = env.step(action)
 
     assert not done
@@ -717,7 +717,7 @@ def test_SeatCEOEnv_CanNotPlay_TwoTricks():
     observation = env.reset()
 
     # Lead lowest
-    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
     observation, reward, done, info = env.step(action)
 
     assert reward < 0
@@ -802,7 +802,7 @@ def test_SeatCEOEnv_CanNotPlay_ThreeTricks():
     observation = env.reset()
 
     # Lead lowest
-    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_NUM)
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
     observation, reward, done, info = env.step(action)
 
     assert done
