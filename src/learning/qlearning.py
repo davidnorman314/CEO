@@ -190,7 +190,7 @@ class QLearning(LearningBase):
                     )
                 )
 
-            if episode > 0 and episode % 20000 == 0:
+            if False and episode > 0 and episode % 20000 == 0:
                 # Log the states for this episode
                 print("Episode info")
                 for info in episode_infos:
