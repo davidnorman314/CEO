@@ -4,7 +4,7 @@ from gym import error, spaces, utils
 from gym.spaces import Box, Discrete
 from gym.utils import seeding
 
-from gym_ceo.envs.actions import Actions, ActionEnum
+from gym_ceo.envs.actions import Actions, ActionEnum, ActionSpaceFactory, CEOActionSpace
 from gym_ceo.envs.observation import Observation, ObservationFactory
 
 from CEO.cards.round import Round, RoundState
@@ -42,24 +42,6 @@ class RLBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
         assert not "This should not be called"
 
 
-class CEOActionSpace(Discrete):
-    actions: list[ActionEnum]
-
-    def __init__(self, actions: list[int]):
-        super(CEOActionSpace, self).__init__(len(actions))
-
-        self.actions = actions
-
-    def find_full_action(self, full_action: int) -> int:
-        return self.actions.index(full_action)
-
-    def __eq__(self, other):
-        if not super(CEOActionSpace, self).__eq__(other):
-            return False
-
-        return self.actions == other.actions
-
-
 class SeatCEOEnv(gym.Env):
     """
     Environment for a player in the CEO seat. This environment's observations
@@ -75,6 +57,7 @@ class SeatCEOEnv(gym.Env):
     )
 
     action_space: CEOActionSpace
+    _action_space_factory: ActionSpaceFactory
 
     # The maximum possible action space size
     max_action_space_size: int
@@ -89,46 +72,6 @@ class SeatCEOEnv(gym.Env):
     _info = dict()
 
     _skip_passing: bool
-
-    action_space_lead = CEOActionSpace(
-        [
-            ActionEnum.PLAY_HIGHEST_NUM,
-            ActionEnum.PLAY_SECOND_LOWEST_WITHOUT_BREAK_NUM,
-            ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM,
-        ]
-    )
-    action_space_one_legal_lead = CEOActionSpace(
-        [
-            ActionEnum.PLAY_HIGHEST_NUM,
-        ]
-    )
-    action_space_two_legal_lead = CEOActionSpace(
-        [
-            ActionEnum.PLAY_HIGHEST_NUM,
-            ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM,
-        ]
-    )
-    action_space_play = CEOActionSpace(
-        [
-            ActionEnum.PLAY_HIGHEST_NUM,
-            ActionEnum.PLAY_SECOND_LOWEST_WITHOUT_BREAK_NUM,
-            ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM,
-            ActionEnum.PASS_ON_TRICK_NUM,
-        ]
-    )
-    action_space_one_legal_play = CEOActionSpace(
-        [
-            ActionEnum.PLAY_HIGHEST_NUM,
-            ActionEnum.PASS_ON_TRICK_NUM,
-        ]
-    )
-    action_space_two_legal_play = CEOActionSpace(
-        [
-            ActionEnum.PLAY_HIGHEST_NUM,
-            ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM,
-            ActionEnum.PASS_ON_TRICK_NUM,
-        ]
-    )
 
     _cur_hand: Hand
     _cur_trick_count: int
@@ -177,14 +120,15 @@ class SeatCEOEnv(gym.Env):
             dtype=np.int32,
         )
 
-        self.action_space = self.action_space_lead
+        self._action_space_factory = ActionSpaceFactory()
+        self.action_space = ActionSpaceFactory.action_space_lead
         self.max_action_value = len(ActionEnum)
 
         self._simple_behavior_base = SimpleBehaviorBase()
 
     def reset(self, hands: list[Hand] = None):
         self._listener.start_round(self._players)
-        self.action_space = self.action_space_lead
+        self.action_space = ActionSpaceFactory.action_space_lead
 
         # Deal the cards
         if hands is not None:
@@ -289,19 +233,8 @@ class SeatCEOEnv(gym.Env):
         self._cur_hand = cur_hand
         self._info["hand"] = cur_hand
 
-        # Count the number of playable card values.
-        playable_card_values = 0
-        for cv in range(13):
-            if cur_hand.count(CardValue(cv)) > 0:
-                playable_card_values += 1
-
         # Set up the action space
-        if playable_card_values == 1:
-            self.action_space = self.action_space_one_legal_lead
-        elif playable_card_values == 2:
-            self.action_space = self.action_space_two_legal_lead
-        else:
-            self.action_space = self.action_space_lead
+        self.action_space = self._action_space_factory.create_lead(cur_hand)
 
         return Observation(
             self.observation_factory,
@@ -327,21 +260,12 @@ class SeatCEOEnv(gym.Env):
         self._cur_hand = cur_hand
         self._info["hand"] = cur_hand
 
-        playable_card_values = len(
-            self._simple_behavior_base.get_playable_cards(cur_hand, cur_card_value, cur_card_count)
-        )
-
-        # See if we must pass, i.e., there is no choice of action
-        if playable_card_values == 0:
-            return None
-
         # Set up the action space
-        if playable_card_values == 1:
-            self.action_space = self.action_space_one_legal_play
-        elif playable_card_values == 2:
-            self.action_space = self.action_space_two_legal_play
-        else:
-            self.action_space = self.action_space_play
+        self.action_space = self._action_space_factory.create_play(
+            cur_hand, cur_card_value, cur_card_count
+        )
+        if self.action_space == None:
+            return None
 
         return Observation(
             self.observation_factory,

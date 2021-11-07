@@ -8,7 +8,7 @@ import CEO.cards.round as rd
 import CEO.cards.player as player
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.observation import Observation
-from gym_ceo.envs.actions import Actions, ActionEnum
+from gym_ceo.envs.actions import Actions, ActionEnum, ActionSpaceFactory
 from stable_baselines3.common.env_checker import check_env
 
 
@@ -208,13 +208,13 @@ def test_SeatCEOEnv_NoPassing():
 
     observation = env.reset()
 
-    assert env.action_space == env.action_space_two_legal_lead
+    assert env.action_space == ActionSpaceFactory.action_space_two_legal_lead
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
     observation, reward, done, info = env.step(action)
 
-    assert env.action_space == env.action_space_one_legal_play
+    assert env.action_space == ActionSpaceFactory.action_space_one_legal_play
     assert not done
     assert reward == 0
 
@@ -300,13 +300,13 @@ def test_SeatCEOEnv_CEOLeadsAndNoOnePlays():
     observation = env.reset()
 
     # Three possible cards to play
-    assert env.action_space == env.action_space_lead
+    assert env.action_space == ActionSpaceFactory.action_space_lead
 
     # Lead highest
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
     observation, reward, done, info = env.step(action)
 
-    assert env.action_space == env.action_space_two_legal_lead
+    assert env.action_space == ActionSpaceFactory.action_space_two_legal_lead
     assert not done
     assert reward == 0
 
@@ -314,7 +314,7 @@ def test_SeatCEOEnv_CEOLeadsAndNoOnePlays():
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
     observation, reward, done, info = env.step(action)
 
-    assert env.action_space == env.action_space_one_legal_play
+    assert env.action_space == ActionSpaceFactory.action_space_one_legal_play
     assert not done
     assert reward == 0
 
@@ -398,7 +398,7 @@ def test_SeatCEOEnv_ActionSpace_Play_SingleCard():
     observation = env.reset()
 
     # Lead lowest
-    assert env.action_space == SeatCEOEnv.action_space_two_legal_lead
+    assert env.action_space == ActionSpaceFactory.action_space_two_legal_lead
     action = 1
     assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
     observation, reward, done, info = env.step(action)
@@ -406,7 +406,7 @@ def test_SeatCEOEnv_ActionSpace_Play_SingleCard():
     assert not done
     assert reward == 0
 
-    assert env.action_space == SeatCEOEnv.action_space_one_legal_play
+    assert env.action_space == ActionSpaceFactory.action_space_one_legal_play
     assert env.action_space.n == 2
     action = 0
     assert env.action_space.actions[action] != ActionEnum.PASS_ON_TRICK_NUM
@@ -495,7 +495,7 @@ def test_SeatCEOEnv_ActionSpace_Play_TwoCards():
     observation = env.reset()
 
     # Lead lowest
-    assert env.action_space == SeatCEOEnv.action_space_lead
+    assert env.action_space == ActionSpaceFactory.action_space_lead
     action = 2
     assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
     observation, reward, done, info = env.step(action)
@@ -504,7 +504,7 @@ def test_SeatCEOEnv_ActionSpace_Play_TwoCards():
     assert reward == 0
 
     # Play highest
-    assert env.action_space == SeatCEOEnv.action_space_two_legal_play
+    assert env.action_space == ActionSpaceFactory.action_space_two_legal_play
     assert env.action_space.n == 3
     action = 0
     assert env.action_space.actions[action] == ActionEnum.PLAY_HIGHEST_NUM
@@ -514,7 +514,7 @@ def test_SeatCEOEnv_ActionSpace_Play_TwoCards():
     assert reward == 0
 
     # Lead only card
-    assert env.action_space == SeatCEOEnv.action_space_one_legal_lead
+    assert env.action_space == ActionSpaceFactory.action_space_one_legal_lead
     action = 0
     observation, reward, done, info = env.step(action)
 
@@ -610,7 +610,7 @@ def test_SeatCEOEnv_ActionSpace_Lead_TwoCards():
     observation = env.reset()
 
     # Lead lowest
-    assert env.action_space == SeatCEOEnv.action_space_lead
+    assert env.action_space == ActionSpaceFactory.action_space_lead
     action = 2
     assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
     observation, reward, done, info = env.step(action)
@@ -619,7 +619,7 @@ def test_SeatCEOEnv_ActionSpace_Lead_TwoCards():
     assert reward == 0
 
     # Play lowest
-    assert env.action_space == SeatCEOEnv.action_space_play
+    assert env.action_space == ActionSpaceFactory.action_space_play
     assert env.action_space.n == 4
     action = 2
     assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
@@ -629,7 +629,7 @@ def test_SeatCEOEnv_ActionSpace_Lead_TwoCards():
     assert reward == 0
 
     # Lead highest card
-    assert env.action_space == SeatCEOEnv.action_space_two_legal_lead
+    assert env.action_space == ActionSpaceFactory.action_space_two_legal_lead
     action = 0
     assert env.action_space.actions[action] == ActionEnum.PLAY_HIGHEST_NUM
     observation, reward, done, info = env.step(action)
@@ -638,7 +638,7 @@ def test_SeatCEOEnv_ActionSpace_Lead_TwoCards():
     assert reward == 0
 
     # Lead only card
-    assert env.action_space == SeatCEOEnv.action_space_one_legal_lead
+    assert env.action_space == ActionSpaceFactory.action_space_one_legal_lead
     action = 0
     observation, reward, done, info = env.step(action)
 

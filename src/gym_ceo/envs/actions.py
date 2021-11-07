@@ -2,6 +2,8 @@ from CEO.cards.player import *
 from CEO.cards.hand import *
 from CEO.cards.simplebehavior import SimpleBehaviorBase
 
+from gym.spaces import Box, Discrete
+
 from enum import Enum
 
 
@@ -147,3 +149,93 @@ class Actions(SimpleBehaviorBase):
         self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
         return None
+
+
+class CEOActionSpace(Discrete):
+    actions: list[ActionEnum]
+
+    def __init__(self, actions: list[int]):
+        super(CEOActionSpace, self).__init__(len(actions))
+
+        self.actions = actions
+
+    def find_full_action(self, full_action: int) -> int:
+        return self.actions.index(full_action)
+
+    def __eq__(self, other):
+        if not super(CEOActionSpace, self).__eq__(other):
+            return False
+
+        return self.actions == other.actions
+
+
+class ActionSpaceFactory(SimpleBehaviorBase):
+    """Class that calculates the correct action space based on the hand and trick"""
+
+    action_space_lead = CEOActionSpace(
+        [
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PLAY_SECOND_LOWEST_WITHOUT_BREAK_NUM,
+            ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM,
+        ]
+    )
+    action_space_one_legal_lead = CEOActionSpace(
+        [
+            ActionEnum.PLAY_HIGHEST_NUM,
+        ]
+    )
+    action_space_two_legal_lead = CEOActionSpace(
+        [
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM,
+        ]
+    )
+    action_space_play = CEOActionSpace(
+        [
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PLAY_SECOND_LOWEST_WITHOUT_BREAK_NUM,
+            ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM,
+            ActionEnum.PASS_ON_TRICK_NUM,
+        ]
+    )
+    action_space_one_legal_play = CEOActionSpace(
+        [
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PASS_ON_TRICK_NUM,
+        ]
+    )
+    action_space_two_legal_play = CEOActionSpace(
+        [
+            ActionEnum.PLAY_HIGHEST_NUM,
+            ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM,
+            ActionEnum.PASS_ON_TRICK_NUM,
+        ]
+    )
+
+    def create_lead(self, hand: Hand):
+        # Count the number of playable card values.
+        playable_card_values = 0
+        for cv in range(13):
+            if hand.count(CardValue(cv)) > 0:
+                playable_card_values += 1
+
+        if playable_card_values == 1:
+            return self.action_space_one_legal_lead
+        elif playable_card_values == 2:
+            return self.action_space_two_legal_lead
+        else:
+            return self.action_space_lead
+
+    def create_play(self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int):
+        """Create the action space where the player will play on the given trick"""
+        playable_card_values = len(self.get_playable_cards(hand, cur_trick_value, cur_trick_count))
+
+        # See if we must pass, i.e., there is no choice of action
+        if playable_card_values == 0:
+            return None
+        elif playable_card_values == 1:
+            return self.action_space_one_legal_play
+        elif playable_card_values == 2:
+            return self.action_space_two_legal_play
+        else:
+            return self.action_space_play
