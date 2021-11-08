@@ -1,6 +1,7 @@
 import gym
 import numpy as np
 import pickle
+import datetime
 
 from gym_ceo.envs.seat_ceo_env import CEOActionSpace
 from gym_ceo.envs.actions import ActionEnum
@@ -20,8 +21,8 @@ class EpisodeInfo:
 
 class QTable:
     _Q: np.ndarray
-    _max_action_value: int
     _state_count: np.ndarray
+    _max_action_value: int
 
     q_raw_array: RawArray
     state_count_raw_array: RawArray
@@ -143,6 +144,10 @@ class LearningBase:
     _env: gym.Env
     _qtable: QTable
 
+    _search_statistics: list[dict]
+    _start_time: datetime.datetime
+    _last_backup_pickle_time: datetime.datetime
+
     def __init__(self, env: gym.Env, **kwargs):
         """Constructor for a learning base class object.
         The kwargs are passed to the QTable constructor so it can be initialized
@@ -151,9 +156,40 @@ class LearningBase:
         self._env = env
         self._qtable = QTable(env, **kwargs)
 
+        self._search_statistics = []
+        self._start_time = datetime.datetime.now()
+        self._last_backup_pickle_time = datetime.datetime.now()
+
     def set_env(self, env: gym.Env):
         """Sets the environment used by the agent"""
         self._env = env
+
+    def add_search_statistics(
+        self,
+        typestr: str,
+        episode: int,
+        avg_reward: float,
+        recent_reward: float,
+        explore_rate: float,
+        states_visited: int,
+    ):
+        now = datetime.datetime.now()
+
+        stats = dict()
+        stats["episode"] = episode
+        stats["avg_reward"] = avg_reward
+        stats["recent_reward"] = recent_reward
+        stats["exlore_rate"] = explore_rate
+        stats["states_visited"] = states_visited
+        stats["duration"] = now - self._start_time
+
+        self._search_statistics.append(stats)
+
+        if now - self._last_backup_pickle_time > datetime.timedelta(minutes=15):
+            print("Pickling backup")
+            self.pickle(typestr, "searchbackup.pickle")
+
+            self._last_backup_pickle_time = now
 
     def pickle(self, typestr: str, filename: str):
         pickle_dict = dict()
@@ -161,6 +197,7 @@ class LearningBase:
         pickle_dict["StateCount"] = self._qtable._state_count
         pickle_dict["Type"] = typestr
         pickle_dict["MaxActionValue"] = self._qtable._max_action_value
+        pickle_dict["SearchStats"] = self._search_statistics
 
         with open(filename, "wb") as f:
             pickle.dump(pickle_dict, f, pickle.HIGHEST_PROTOCOL)

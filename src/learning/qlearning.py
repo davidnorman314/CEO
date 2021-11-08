@@ -180,6 +180,15 @@ class QLearning(LearningBase):
                     sum(recent_exploit_counts) + sum(recent_explore_counts)
                 )
 
+                self.add_search_statistics(
+                    "qlearning",
+                    episode,
+                    ave_training_rewards,
+                    recent_rewards,
+                    recent_explore_rate,
+                    states_visited,
+                )
+
                 print(
                     "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} Explore rate {:.3f} States visited {}".format(
                         episode,
