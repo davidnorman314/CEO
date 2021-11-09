@@ -326,6 +326,15 @@ class QLearningTraces(LearningBase):
                     )
                 )
 
+                self.add_search_statistics(
+                    "qlearning_traces",
+                    episode,
+                    ave_training_rewards,
+                    recent_rewards,
+                    recent_explore_rate,
+                    states_visited,
+                )
+
             if False and episode > 0 and episode % 5000 == 0:
                 # Log the states for this episode
                 print("Episode info")
@@ -417,3 +426,6 @@ if __name__ == "__main__":
         cProfile.run("qlearning.train()", sort=SortKey.CUMULATIVE)
     else:
         qlearning.train(do_log)
+
+        # Save the agent in a pickle file.
+        qlearning.pickle("qlearning_traces", "qlearning_traces.pickle")
