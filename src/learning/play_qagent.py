@@ -121,6 +121,10 @@ def create_agent(file_name: str, env: gym.Env, base_env: gym.Env):
     with open(file_name, "rb") as f:
         info = pickle.load(f)
 
+    print("----")
+    print("Trained with", info["SearchStats"][-1]["episode"], "episodes")
+    print("----")
+
     return QAgent(info["Q"], info["StateCount"], env, base_env)
 
 
