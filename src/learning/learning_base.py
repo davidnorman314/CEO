@@ -196,7 +196,7 @@ class LearningBase:
 
         self._search_statistics.append(stats)
 
-        if now - self._last_backup_pickle_time > datetime.timedelta(minutes=15):
+        if now - self._last_backup_pickle_time > datetime.timedelta(minutes=30):
             print("Pickling backup")
             self.pickle(typestr, "searchbackup.pickle")
 
