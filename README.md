@@ -14,6 +14,8 @@ pytest -s -k game
 
 `python -m learning.qlearning --episodes 1000000`
 
+`python -m learning.qlearning_traces --episodes 100000`
+
 `python -m learning.monte_carlo --train --episodes 1000000`
 
 `python -m learning.monte_carlo --train --episodes 5000 --processes 3`
@@ -23,3 +25,9 @@ pytest -s -k game
 `python -m learning.play_qagent --play --agent-file monte_carlo.pickle --episodes 200 > log.txt`
 
 `python -m learning.play_qagent --play-round-file play_hands/hands9.pickle --agent-file monte_carlo.pickle > log.txt`
+
+## Azure command-line client
+
+`python -m main.azure_rl --get-rl-trainings`
+
+`python -m main.azure_rl --get-blob blob_name --save-file save.txt`
