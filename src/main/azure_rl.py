@@ -14,6 +14,13 @@ def main():
         default=False,
         help="Download the list of all RL trainings.",
     )
+    parser.add_argument(
+        "--get-blob",
+        dest="blob_name",
+        type=str,
+        default=None,
+        help="The name of the blob to download.",
+    )
 
     args = parser.parse_args()
 
@@ -24,6 +31,12 @@ def main():
 
         for training in trainings:
             print(training)
+    elif args.blob_name:
+        blob = client.get_blob(args.blob_name)
+
+        print(blob)
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":

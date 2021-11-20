@@ -120,6 +120,15 @@ class AzureClient:
         print(type(data_str))
         return data_str.split("\n")
 
+    def get_blob(self, blob_name):
+        blob_client = self.container_client.get_blob_client(blob_name)
+
+        downloader = blob_client.download_blob()
+        data = downloader.readall()
+        data_str = data.decode("utf-8")
+
+        return data_str
+
 
 if __name__ == "__main__":
     # Test method

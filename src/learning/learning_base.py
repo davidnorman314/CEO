@@ -190,7 +190,7 @@ class LearningBase:
         stats["episode"] = episode
         stats["avg_reward"] = avg_reward
         stats["recent_reward"] = recent_reward
-        stats["exlore_rate"] = explore_rate
+        stats["explore_rate"] = explore_rate
         stats["states_visited"] = states_visited
         stats["duration"] = now - self._start_time
 
