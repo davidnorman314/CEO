@@ -2,6 +2,7 @@ import gym
 import numpy as np
 import pickle
 import datetime
+from azure_rl.azure_client import AzureClient
 
 from gym_ceo.envs.seat_ceo_env import CEOActionSpace
 from gym_ceo.envs.actions import ActionEnum
@@ -147,18 +148,28 @@ class LearningBase:
     _search_statistics: list[dict]
     _start_time: datetime.datetime
     _last_backup_pickle_time: datetime.datetime
+    _last_azure_log_time: datetime.datetime
+
+    _azure_client: AzureClient
 
     def __init__(self, env: gym.Env, **kwargs):
         """Constructor for a learning base class object.
         The kwargs are passed to the QTable constructor so it can be initialized
         for multiprocessing.
         """
+        if "azure_client" in kwargs:
+            self._azure_client = kwargs["azure_client"]
+            del kwargs["azure_client"]
+        else:
+            self._azure_client = None
+
         self._env = env
         self._qtable = QTable(env, **kwargs)
 
         self._search_statistics = []
         self._start_time = datetime.datetime.now()
         self._last_backup_pickle_time = datetime.datetime.now()
+        self._last_azure_log_time = datetime.datetime.now()
 
     def set_env(self, env: gym.Env):
         """Sets the environment used by the agent"""
@@ -190,6 +201,13 @@ class LearningBase:
             self.pickle(typestr, "searchbackup.pickle")
 
             self._last_backup_pickle_time = now
+
+        if self._azure_client:
+            # if now - self._last_azure_log_time > datetime.timedelta(seconds=10):
+            if now - self._last_azure_log_time > datetime.timedelta(minutes=5):
+                self._azure_client.log(stats)
+
+                self._last_azure_log_time = now
 
     def pickle(self, typestr: str, filename: str):
         pickle_dict = dict()

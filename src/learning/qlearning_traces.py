@@ -5,6 +5,7 @@ import argparse
 import random
 import copy
 import math
+from azure_rl.azure_client import AzureClient
 from learning.learning_base import LearningBase, EpisodeInfo
 from collections import deque
 
@@ -28,8 +29,8 @@ class QLearningTraces(LearningBase):
 
     _train_episodes: int
 
-    def __init__(self, env: gym.Env, train_episodes=100000):
-        super().__init__(env)
+    def __init__(self, env: gym.Env, train_episodes=100000, **kwargs):
+        super().__init__(env, **kwargs)
         self._train_episodes = train_episodes
 
     def _pick_action(self, state_tuple: tuple, epsilon: float) -> ActionEnum:
@@ -67,6 +68,18 @@ class QLearningTraces(LearningBase):
         decay = 0.00001
 
         print("Training with", self._train_episodes, "episodes")
+
+        # Log the start of training to Azure, if necessary.
+        if self._azure_client:
+            params = dict()
+            params["discount_factor"] = discount_factor
+            params["lambda_val"] = lambda_val
+            params["epsilon"] = epsilon
+            params["max_epsilon"] = max_epsilon
+            params["min_epsilon"] = min_epsilon
+            params["decay"] = decay
+
+            self._azure_client.start_training("qlearning_traces", params)
 
         # Training the agent
         total_training_reward = 0
@@ -374,9 +387,12 @@ class QLearningTraces(LearningBase):
 
                 print("  pos", pos_count, "neg", neg_count, "zero", zero_count)
 
+        if self._azure_client:
+            self._azure_client.end_training()
+
 
 # Main function
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Do learning")
     parser.add_argument(
         "--profile",
@@ -401,6 +417,14 @@ if __name__ == "__main__":
         default=100000,
         help="The number of rounds to play",
     )
+    parser.add_argument(
+        "--azure",
+        dest="azure",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Save agent and log information to azure blob storage.",
+    )
 
     args = parser.parse_args()
     print(args)
@@ -408,6 +432,9 @@ if __name__ == "__main__":
     kwargs = dict()
     if args.train_episodes:
         kwargs["train_episodes"] = args.train_episodes
+
+    if args.azure:
+        kwargs["azure_client"] = AzureClient()
 
     do_log = False
     if args.log:
@@ -429,3 +456,7 @@ if __name__ == "__main__":
 
         # Save the agent in a pickle file.
         qlearning.pickle("qlearning_traces", "qlearning_traces.pickle")
+
+
+if __name__ == "__main__":
+    main()

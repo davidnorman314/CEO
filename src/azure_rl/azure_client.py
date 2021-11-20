@@ -25,6 +25,9 @@ class AzureClient:
 
     blob_service_client: BlobServiceClient
     container_client: ContainerClient
+    log_client: BlobClient
+
+    _training_id: str
 
     def __init__(self):
         self.connect_str = os.getenv(self.connection_env_var)
@@ -39,12 +42,15 @@ class AzureClient:
         self.container_client = self.blob_service_client.get_container_client(self.container_name)
 
     def start_training(self, learning_type: str, params: dict):
+        self._training_id = "tid_" + str(uuid.uuid4())
+
         desc = dict()
         desc["learning_type"] = learning_type
         desc["start_time"] = datetime.datetime.now().isoformat()
         desc["log_blob_name"] = self.log_blob_name
         desc["pickle_blob_name"] = self.pickle_blob_name
         desc["params"] = params
+        desc["training_id"] = self._training_id
 
         # Use ndjson format
         json_str = json.dumps(desc, separators=(",", ":"), indent=None)
@@ -58,6 +64,48 @@ class AzureClient:
         if not rl_trainings_blob_client.exists():
             rl_trainings_blob_client.create_append_blob()
         rl_trainings_blob_client.append_block(json_str, len(json_str))
+
+        # Connect to the blob that will contain log messages
+        self.log_client = self.container_client.get_blob_client(self.log_blob_name)
+
+        self.log_client.create_append_blob()
+        self.log_client.append_block(json_str, len(json_str))
+
+        print("Saving information to Azure blob storage")
+
+    def end_training(self):
+        desc = dict()
+        desc["stop_time"] = datetime.datetime.now().isoformat()
+        desc["training_id"] = self._training_id
+
+        # Use ndjson format
+        json_str = json.dumps(desc, separators=(",", ":"), indent=None)
+        json_str = json_str + "\n"
+
+        rl_trainings_blob_client = self.container_client.get_blob_client(
+            self.rl_trainings_blob_name
+        )
+
+        rl_trainings_blob_client.append_block(json_str, len(json_str))
+
+    def log(self, stats: dict):
+        """Log information about the search"""
+
+        # Convert any datetimes or timedeltas to strings
+        new_stats = dict()
+        for key, value in stats.items():
+            if isinstance(value, datetime.datetime):
+                new_stats[key] = value.isoformat()
+            elif isinstance(value, datetime.timedelta):
+                new_stats[key] = str(value)
+            else:
+                new_stats[key] = value
+
+        # Use ndjson format
+        json_str = json.dumps(new_stats, separators=(",", ":"), indent=None)
+        json_str = json_str + "\n"
+
+        self.log_client.append_block(json_str, len(json_str))
 
     def get_all_trainings(self):
         rl_trainings_blob_client = self.container_client.get_blob_client(
