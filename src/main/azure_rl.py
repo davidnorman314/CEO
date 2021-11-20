@@ -21,6 +21,13 @@ def main():
         default=None,
         help="The name of the blob to download.",
     )
+    parser.add_argument(
+        "--save-file",
+        dest="filename",
+        type=str,
+        default=None,
+        help="The name of the file where the downloaded data should be saved.",
+    )
 
     args = parser.parse_args()
 
@@ -31,6 +38,8 @@ def main():
 
         for training in trainings:
             print(training)
+    elif args.blob_name and args.filename:
+        blob = client.get_blob_and_save(args.blob_name, args.filename)
     elif args.blob_name:
         blob = client.get_blob(args.blob_name)
 

@@ -454,8 +454,11 @@ def main():
     else:
         qlearning.train(do_log)
 
-        # Save the agent in a pickle file.
-        qlearning.pickle("qlearning_traces", "qlearning_traces.pickle")
+    # Save the agent in a pickle file.
+    file_name = "qlearning_traces.pickle"
+    qlearning.pickle("qlearning_traces", file_name)
+
+    # S
 
 
 if __name__ == "__main__":

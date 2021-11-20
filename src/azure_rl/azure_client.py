@@ -107,6 +107,17 @@ class AzureClient:
 
         self.log_client.append_block(json_str, len(json_str))
 
+    def upload_pickle(self, filename: str):
+        # Connect to the blob for the pickled information
+        blob_client = self.container_client.get_blob_client(self.pickle_blob_name)
+
+        filesize = os.path.getsize(filename)
+
+        print("Uploading pickled information to Azure")
+        with open(filename, "rb") as data:
+            blob_client.upload_blob(data, overwrite=True, length=filesize)
+        print("Done uploading pickled information to Azure")
+
     def get_all_trainings(self):
         rl_trainings_blob_client = self.container_client.get_blob_client(
             self.rl_trainings_blob_name
@@ -128,6 +139,16 @@ class AzureClient:
         data_str = data.decode("utf-8")
 
         return data_str
+
+    def get_blob_and_save(self, blob_name, filename):
+        blob_client = self.container_client.get_blob_client(blob_name)
+
+        downloader = blob_client.download_blob()
+        data = downloader.readall()
+
+        with open(filename, "wb") as out:
+            out.write(data)
+
 
 
 if __name__ == "__main__":

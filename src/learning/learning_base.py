@@ -220,6 +220,10 @@ class LearningBase:
         with open(filename, "wb") as f:
             pickle.dump(pickle_dict, f, pickle.HIGHEST_PROTOCOL)
 
+        # Upload to Azure, if necessary
+        if self._azure_client:
+            self._azure_client.upload_pickle(filename)
+
     def mean_squared_difference(self, o) -> int:
         """
         Calculates the mean squared difference between this QTable and the
