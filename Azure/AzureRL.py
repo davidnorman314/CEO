@@ -128,6 +128,22 @@ def provision_vm(
         account_info.resource_group, vm_config["vnet_name"], vm_config["subnet_name"]
     )
 
+    # Find the network security group.
+    network_security_groups = network_client.network_security_groups.list(
+        account_info.resource_group
+    )
+    print(network_security_groups)
+
+    network_security_group = None
+    for nsg in network_security_groups:
+        if nsg.name == vm_config["network_security_group"]:
+            network_security_group = nsg
+            break
+
+    if network_security_group is None:
+        print("Can't find network security group", vm_config["network_security_group"])
+        return
+
     # Provision an IP address and wait for completion
     poller = network_client.public_ip_addresses.begin_create_or_update(
         account_info.resource_group,
@@ -159,6 +175,7 @@ def provision_vm(
                     "public_ip_address": {"id": ip_address_result.id},
                 }
             ],
+            "network_security_group": network_security_group,
         },
     )
 
@@ -171,6 +188,8 @@ def provision_vm(
 
     vm_name = vm_config["name"]
     username = vm_config["admin_username"]
+    ssh_username = vm_config["ssh_username"]
+    ssh_user_publickey = vm_config["ssh_user_publickey"]
     password = os.getenv("AZURE_VM_PASSWORD")
     if not password or len(password) < 5:
         print("The AZURE_VM_PASSWORD environment variable is not set or is too short.")
@@ -191,6 +210,19 @@ def provision_vm(
                 "computer_name": vm_name,
                 "admin_username": username,
                 "admin_password": password,
+                "linux_configuration": {
+                    "disable_password_authentication": True,
+                    "ssh": {
+                        "public_keys": [
+                            {
+                                "path": "/home/{}/.ssh/authorized_keys".format(
+                                    ssh_username
+                                ),
+                                "key_data": ssh_user_publickey,
+                            }
+                        ]
+                    },
+                },
             },
             "network_profile": {
                 "network_interfaces": [
