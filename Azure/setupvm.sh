@@ -2,32 +2,28 @@
 
 # Upgrade python
 sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt install python3.9
 
-# Install conda
-sudo apt-get install tcsh
-curl https://repo.anaconda.com/archive/Anaconda3-2021.05-Linux-x86_64.sh > CondaInstall.sh
+sudo apt --assume-yes update
+sudo apt --assume-yes install software-properties-common
+sudo apt --assume-yes install python3.9
+sudo apt --assume-yes install python3-pip
 
-# Install conda. Have the installer run conda init.
-/bin/sh CondaInstall.sh
+# Set up a python 3.9 environment
+cd /home/david
+virtualenv --python=/usr/bin/python3.9 py39
+source py39/bin/activate
 
-conda create -n py39 python=3.9
+# Clone the repository
+cd /home/david
+git clone https://github.com/davidnorman314/CEO.git
 
-conda activate py39
+# Update python libraries
+cd /home/david/CEO/src
+pip install -r requirements.txt
 
-conda install -c conda-forge gym
+# Test. Note that the test takes a few seconds, since it writes the full
+# Q table results to disk.
+cd /home/david/CEO/src
+pytest
+python -m learning.qlearning --episodes 100
 
-# Other libs
-conda install matplotlib
-
-
-# Try to install stable-baselines3
-# Upgrade glibc
-# sudo apt-get install libc6
-# conda install -c conda-forge stable-baselines3
-
-# Install blobfuse for Azure blob storage access
-wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
-sudo apt-get update
-sudo apt-get install blobfuse
