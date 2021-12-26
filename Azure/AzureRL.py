@@ -35,10 +35,9 @@ from azure.mgmt.compute.models import (
     OperatingSystemTypes,
 )
 
-import azure.batch._batch_service_client as batch
+from azure.batch import BatchServiceClient
 import azure.batch.batch_auth as batchauth
 import azure.batch.models as batchmodels
-import azure.batch.models._batch_service_client_enums
 
 
 class AccountInfo:
@@ -68,7 +67,7 @@ def get_batch_vm_images(
         account_info.batch_account, batch_account_key
     )
 
-    batch_client = batch.BatchServiceClient(credentials, batch_service_url)
+    batch_client = BatchServiceClient(credentials, batch_service_url)
     batch_client.config.retry_policy.retries = 5
 
     # Get VM images supported by Azure Batch
@@ -82,8 +81,7 @@ def get_batch_vm_images(
     )
     filtered_images = list(
         filter(
-            lambda img: img.os_type
-            == azure.batch.models._batch_service_client_enums.OSType.linux
+            lambda img: img.os_type == batchmodels.OSType.linux
             and img.node_agent_sku_id == node_agent_sku_id
             and img.capabilities is None,
             images,
@@ -390,7 +388,9 @@ def create_pool(
     new_pool = batchmodels.PoolAddParameter(
         id=pool_id,
         virtual_machine_configuration=batchmodels.VirtualMachineConfiguration(
-            image_reference=batchmodels.ImageReference(virtual_machine_image_id=image_version.id),
+            image_reference=batchmodels.ImageReference(
+                virtual_machine_image_id=image_version.id
+            ),
             node_agent_sku_id=node_agent_sku_id,
         ),
         vm_size=vm_size,
