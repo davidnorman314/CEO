@@ -18,6 +18,7 @@ import json
 import os
 
 from azure.identity import AzureCliCredential, EnvironmentCredential
+from azure.common.credentials import ServicePrincipalCredentials
 
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
@@ -53,7 +54,9 @@ class AccountInfo:
         self.batch_account = config["batch_account"]
 
 
-def get_batch_vm_images(account_info: AccountInfo, batch_account_key: str):
+def get_batch_vm_images(
+    account_info: AccountInfo, batch_account_key: str, node_agent_sku_id: str
+):
     """Queries Azure to find out which VM images can be used to create images for
     a batch pool.
     """
@@ -81,7 +84,7 @@ def get_batch_vm_images(account_info: AccountInfo, batch_account_key: str):
         filter(
             lambda img: img.os_type
             == azure.batch.models._batch_service_client_enums.OSType.linux
-            and img.node_agent_sku_id == "batch.node.ubuntu 20.04"
+            and img.node_agent_sku_id == node_agent_sku_id
             and img.capabilities is None,
             images,
         )
@@ -239,6 +242,165 @@ def provision_vm(
     print(f"Provisioned virtual machine {vm_result.name}. Note that the VM is running.")
 
 
+def create_pool(
+    account_info: AccountInfo,
+    credential: EnvironmentCredential,
+    vm_name: str,
+    vm_size: str,
+    node_agent_sku_id: str,
+    pool_config: dict(),
+    gallery_config: dict(),
+):
+    compute_client = ComputeManagementClient(credential, account_info.subscription_id)
+
+    # Find the VM
+    all_vms = compute_client.virtual_machines.list(account_info.resource_group)
+
+    vm = None
+    for this_vm in all_vms:
+        # print(this_vm)
+        if this_vm.name == vm_name:
+            vm = this_vm
+            break
+
+    if vm is None:
+        print("Can't find vm", vm_name)
+        return
+
+    # Power off the VM
+    poller = compute_client.virtual_machines.begin_power_off(
+        account_info.resource_group, vm_name
+    )
+    power_off_result = poller.result()
+
+    # Capture the VM
+    vm_image_name = gallery_config["image_name"]
+    compute_client.virtual_machines.generalize(account_info.resource_group, vm_name)
+
+    source_sub_resource = SubResource(id=vm.id)
+    image = Image(
+        location=account_info.location, source_virtual_machine=source_sub_resource
+    )
+    poller = compute_client.images.begin_create_or_update(
+        account_info.resource_group, vm_image_name, image
+    )
+
+    image_creation_result = poller.result()
+
+    print(f"Created image {vm_image_name}. Result", image_creation_result)
+
+    # Create the identifier for the image
+    gallery_name = gallery_config["name"]
+    gallery_image_name = gallery_config["gallery_image_name"]
+    gallery_image_identifier = GalleryImageIdentifier(
+        publisher=gallery_config["identifier"]["publisher"],
+        offer=gallery_config["identifier"]["offer"],
+        sku=gallery_config["identifier"]["sku"],
+    )
+
+    # If the image already exists in the gallery, delete it
+    try:
+        current_image = compute_client.gallery_images.get(
+            account_info.resource_group, gallery_name, gallery_image_identifier
+        )
+        if current_image is not None:
+            delete_poller = compute_client.gallery_images.begin_delete(
+                account_info.resource_group, gallery_name, gallery_image_identifier
+            )
+            result = delete_poller.result()
+            print(f"Deleted old image {gallery_image_identifier}")
+    except azure.core.exceptions.ResourceNotFoundError:
+        pass
+
+    # Add the image to a gallery
+    gallery_image = GalleryImage(
+        location=account_info.location,
+        description="test desc",
+        os_type=OperatingSystemTypes.linux,
+        os_state=OperatingSystemStateTypes.GENERALIZED,
+        identifier=gallery_image_identifier,
+    )
+    create_image_poller = compute_client.gallery_images.begin_create_or_update(
+        account_info.resource_group,
+        gallery_name,
+        gallery_image_name,
+        gallery_image,
+    )
+
+    gallery_image_creation_result = create_image_poller.result()
+    print(
+        f"Created gallery image {gallery_image_name}. Result",
+        gallery_image_creation_result,
+    )
+
+    # Add the image version to the image
+    image_id = image_creation_result.id
+    source = GalleryArtifactVersionSource(id=image_id)
+    storage_profile = GalleryImageVersionStorageProfile(source=source)
+    gallery_image_version = GalleryImageVersion(
+        location=account_info.location, storage_profile=storage_profile
+    )
+    create_image_version_poller = (
+        compute_client.gallery_image_versions.begin_create_or_update(
+            account_info.resource_group,
+            gallery_name,
+            gallery_image_name,
+            "1.0.0",
+            gallery_image_version,
+        )
+    )
+
+    image_version = create_image_version_poller.result()
+
+    print("Added image to gallery", image_version)
+
+    # Authenticate using the service principal
+    client_id_var = "AZURE_CLIENT_ID"
+    client_secret_var = "AZURE_CLIENT_SECRET"
+    tenant_var = "AZURE_TENANT_ID"
+    RESOURCE = "https://batch.core.windows.net/"
+    client_id = os.getenv(client_id_var)
+    if not client_id:
+        raise Exception("Environment variable", client_id_var, "is not set.")
+
+    client_secret = os.getenv(client_secret_var)
+    if not client_secret:
+        raise Exception("Environment variable", client_secret_var, "is not set.")
+
+    tenant = os.getenv(tenant_var)
+    if not tenant:
+        raise Exception("Environment variable", tenant_var, "is not set.")
+
+    credentials = ServicePrincipalCredentials(
+        client_id=client_id,
+        secret=client_secret,
+        tenant=tenant,
+        resource=RESOURCE,
+    )
+
+    # Create the pool
+    batch_account_name = pool_config["batch_account_name"]
+    batch_service_url = f"https://{batch_account_name}.westus3.batch.azure.com"
+
+    batch_client = batch.BatchServiceClient(credentials, batch_service_url)
+    batch_client.config.retry_policy.retries = 5
+
+    pool_id = pool_config["name"]
+    pool_size = 5
+    new_pool = batchmodels.PoolAddParameter(
+        id=pool_id,
+        virtual_machine_configuration=batchmodels.VirtualMachineConfiguration(
+            image_reference=batchmodels.ImageReference(virtual_machine_image_id=image_version.id),
+            node_agent_sku_id=node_agent_sku_id,
+        ),
+        vm_size=vm_size,
+        target_dedicated_nodes=pool_size,
+    )
+    pool_creation_result = batch_client.pool.add(new_pool)
+
+    print(f"Created pool {pool_id}. Result", pool_creation_result)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -264,6 +426,14 @@ def main():
         default=False,
         help="Create the VM.",
     )
+    parser.add_argument(
+        "--create-pool",
+        dest="create_pool",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Create the batch pool.",
+    )
 
     args = parser.parse_args()
 
@@ -272,7 +442,9 @@ def main():
         config = json.load(f)
 
     account_info = AccountInfo(config)
+    vm_name = config["vm_config"]["name"]
     vm_size = config["vm_size"]
+    node_agent_sku_id = config["vm_config"]["node_agent_sku_id"]
 
     # Create a credential object from the environment.
     credential = EnvironmentCredential()
@@ -287,9 +459,19 @@ def main():
 
     if args.get_batch_vm_images:
         assert batch_account_key is not None
-        get_batch_vm_images(account_info, batch_account_key)
+        get_batch_vm_images(account_info, batch_account_key, node_agent_sku_id)
     if args.create_vm:
         provision_vm(account_info, credential, vm_size, config["vm_config"])
+    if args.create_pool:
+        create_pool(
+            account_info,
+            credential,
+            vm_name,
+            vm_size,
+            node_agent_sku_id,
+            config["pool_config"],
+            config["gallery_config"],
+        )
 
 
 if __name__ == "__main__":

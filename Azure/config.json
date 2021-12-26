@@ -20,6 +20,21 @@
             "offer": "0001-com-ubuntu-server-focal",
             "sku": "20_04-lts",
             "version": "latest"
+        },
+        "node_agent_sku_id": "batch.node.ubuntu 20.04"
+    },
+    "gallery_config": {
+        "name": "rlazuregallery",
+        "image_name": "rl_image",
+        "gallery_image_name": "rl_image_gallery",
+        "identifier": {
+            "publisher": "david",
+            "offer": "davidoffer",
+            "sku": "david"
         }
+    },
+    "pool_config": {
+        "name": "rlbatchpool",
+        "batch_account_name": "davidbatchacct"
     }
 }
