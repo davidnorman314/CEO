@@ -16,6 +16,8 @@
 import argparse
 import json
 import os
+import io
+import time
 
 from azure.identity import AzureCliCredential, EnvironmentCredential
 from azure.common.credentials import ServicePrincipalCredentials
@@ -116,6 +118,7 @@ def provision_vm(
     vm_size: str,
     vm_config: dict,
 ):
+    """Provisions a VM using the given configuration."""
     # Code from https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-example-virtual-machines?tabs=cmd
 
     # Create a VM
@@ -249,6 +252,7 @@ def create_pool(
     pool_config: dict(),
     gallery_config: dict(),
 ):
+    """Creates an Azure Batch pool using the given VM."""
     compute_client = ComputeManagementClient(credential, account_info.subscription_id)
 
     # Find the VM
@@ -401,6 +405,115 @@ def create_pool(
     print(f"Created pool {pool_id}. Result", pool_creation_result)
 
 
+def run_test_job(
+    account_info: AccountInfo,
+    batch_account_key: str,
+    pool_config: dict,
+    task_count: int,
+):
+    """Runs a test job with the given number of tasks."""
+
+    batch_service_url = (
+        f"https://{account_info.batch_account}.{account_info.location}.batch.azure.com"
+    )
+
+    credentials = batchauth.SharedKeyCredentials(
+        account_info.batch_account, batch_account_key
+    )
+
+    batch_client = BatchServiceClient(credentials, batch_service_url)
+    batch_client.config.retry_policy.retries = 5
+
+    options = batchmodels.AccountListSupportedImagesOptions(
+        filter="verificationType eq 'verified'"
+    )
+    imglist = list(
+        batch_client.account.list_supported_images(
+            account_list_supported_images_options=None
+        )
+    )
+
+    # Create a job
+    pool_id = pool_config["name"]
+    job_id = "TestJob"
+    job = batchmodels.JobAddParameter(
+        id=job_id, pool_info=batchmodels.PoolInformation(pool_id=pool_id)
+    )
+
+    batch_client.job.add(job)
+
+    # Add tasks
+    tasks = list()
+    for i in range(task_count):
+        task_id = f"Task{i}"
+
+        command = f"""/bin/bash -c "echo Task {i} executing.;
+        cd /home/david;
+        source py39/bin/activate;
+        python --version;"
+        """
+
+        tasks.append(
+            batchmodels.TaskAddParameter(
+                id=task_id,
+                command_line=command,
+            )
+        )
+
+    batch_client.task.add_collection(job_id, tasks)
+
+    # Wait for the job to complete
+    while True:
+        print("Checking tasks")
+        job_tasks = list(batch_client.task.list(job_id))
+        total = len(job_tasks)
+        completed = 0
+        for task in job_tasks:
+            print(task)
+
+            if task.state == batchmodels.JobState.completed:
+                completed += 1
+
+        if completed == len(job_tasks):
+            break
+
+        print(f"There are {completed} completed jobs of {total}")
+        time.sleep(1)
+
+    # Print information from the tasks
+    job_tasks = batch_client.task.list(job_id)
+    out_file_name = "stdout.txt"
+    for task in job_tasks:
+        node_id = batch_client.task.get(job_id, task.id).node_info.node_id
+        print("Task: {}".format(task.id))
+        print("Node: {}".format(node_id))
+
+        stream = batch_client.file.get_from_task(job_id, task.id, out_file_name)
+
+        file_text = _read_stream_as_string(stream)
+        print("Standard output:")
+        print(file_text)
+
+
+def _read_stream_as_string(stream):
+    """
+    Read stream as string
+
+    :param stream: input stream generator
+    :return: The file content.
+    :rtype: str
+    """
+    encoding = "utf-8"
+
+    output = io.BytesIO()
+    try:
+        for data in stream:
+            output.write(data)
+        return output.getvalue().decode(encoding)
+    finally:
+        output.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -434,6 +547,13 @@ def main():
         default=False,
         help="Create the batch pool.",
     )
+    parser.add_argument(
+        "--run-test-job",
+        dest="test_task_count",
+        type=int,
+        default=None,
+        help="The number of tasks in the job.",
+    )
 
     args = parser.parse_args()
 
@@ -445,12 +565,13 @@ def main():
     vm_name = config["vm_config"]["name"]
     vm_size = config["vm_size"]
     node_agent_sku_id = config["vm_config"]["node_agent_sku_id"]
+    pool_config = config["pool_config"]
 
     # Create a credential object from the environment.
     credential = EnvironmentCredential()
 
     batch_account_key = None
-    if args.get_batch_vm_images:
+    if args.get_batch_vm_images or args.test_task_count:
         batch_key_env_var = "AZURE_BATCH_KEY"
         batch_account_key = os.getenv(batch_key_env_var)
 
@@ -469,9 +590,12 @@ def main():
             vm_name,
             vm_size,
             node_agent_sku_id,
-            config["pool_config"],
+            pool_config,
             config["gallery_config"],
         )
+
+    if args.test_task_count:
+        run_test_job(account_info, batch_account_key, pool_config, args.test_task_count)
 
 
 if __name__ == "__main__":
