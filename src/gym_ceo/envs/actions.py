@@ -241,8 +241,11 @@ class ActionSpaceFactory(SimpleBehaviorBase):
         highest_value = playable_cards[-1].cv
 
         # Filter out low cards that if played would break up a set.
-        playable_no_break_card_values = [playable_card for playable_card in playable_cards
-            if playable_card.count_matches or playable_card.cv == highest_value]
+        playable_no_break_card_values = [
+            playable_card
+            for playable_card in playable_cards
+            if playable_card.count_matches or playable_card.cv == highest_value
+        ]
 
         updated_playable_card_count = len(playable_no_break_card_values)
 

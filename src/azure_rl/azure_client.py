@@ -150,7 +150,6 @@ class AzureClient:
             out.write(data)
 
 
-
 if __name__ == "__main__":
     # Test method
     params = dict()
