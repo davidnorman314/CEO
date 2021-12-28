@@ -190,7 +190,11 @@ class ConsoleBehavior(PlayerBehaviorInterface):
         return self._get_card_to_play(hand)
 
     def play_on_trick(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, state: RoundState
+        self,
+        hand: Hand,
+        cur_trick_value: CardValue,
+        cur_trick_count: int,
+        state: RoundState,
     ) -> CardValue:
 
         self._listener.print_cur_trick(state)

@@ -6,7 +6,10 @@ from CEO.cards.hand import *
 import CEO.cards.round as rd
 from CEO.cards.simplebehavior import SimpleBehaviorBase
 import CEO.cards.player as player
-from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv, TriplesUnderValueCount
+from gym_ceo.envs.seat_ceo_features_env import (
+    SeatCEOFeaturesEnv,
+    TriplesUnderValueCount,
+)
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.observation import Observation, ObservationFactory
 from stable_baselines3.common.env_checker import check_env
@@ -149,7 +152,10 @@ def test_TriplesUnderValueCount():
     behaviors = [behavior2, behavior3, behavior4]
 
     env = SeatCEOEnv(
-        num_players=4, behaviors=behaviors, hands=hands, listener=PrintAllEventListener()
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
     )
     factory = ObservationFactory(env.num_players)
 

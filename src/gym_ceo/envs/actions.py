@@ -24,7 +24,11 @@ class Actions(SimpleBehaviorBase):
         pass
 
     def play(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, action_number: int
+        self,
+        hand: Hand,
+        cur_trick_value: CardValue,
+        cur_trick_count: int,
+        action_number: int,
     ):
         if action_number == ActionEnum.PASS_ON_TRICK_NUM:
             if cur_trick_value is None:

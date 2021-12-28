@@ -46,7 +46,8 @@ class Round:
         # Calculate the order of the other players after the player that leads.
         # Note that play_order is an iterator.
         play_order = map(
-            (lambda x: (x + starting_player) % self._player_count), range(self._player_count)
+            (lambda x: (x + starting_player) % self._player_count),
+            range(self._player_count),
         )
         next(play_order)
 
@@ -110,7 +111,12 @@ class Round:
 
             if not cur_player.behavoir.is_reinforcement_learning:
                 new_card_value = cur_player.behavoir.play_on_trick(
-                    starting_player, cur_index, cur_hand, cur_card_value, cur_card_count, state
+                    starting_player,
+                    cur_index,
+                    cur_hand,
+                    cur_card_value,
+                    cur_card_count,
+                    state,
                 )
             else:
                 new_card_value = (
@@ -129,7 +135,14 @@ class Round:
 
             # Debugging
             if new_card_value.value <= cur_card_value.value:
-                print("Player", cur_player.name, "plays", new_card_value, "on", cur_card_value)
+                print(
+                    "Player",
+                    cur_player.name,
+                    "plays",
+                    new_card_value,
+                    "on",
+                    cur_card_value,
+                )
             assert new_card_value.value > cur_card_value.value
 
             self._play_cards(cur_index, new_card_value, cur_card_count)

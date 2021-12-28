@@ -55,9 +55,7 @@ class AccountInfo:
         self.batch_account = config["batch_account"]
 
 
-def get_batch_vm_images(
-    account_info: AccountInfo, batch_account_key: str, node_agent_sku_id: str
-):
+def get_batch_vm_images(account_info: AccountInfo, batch_account_key: str, node_agent_sku_id: str):
     """Queries Azure to find out which VM images can be used to create images for
     a batch pool.
     """
@@ -65,21 +63,15 @@ def get_batch_vm_images(
         f"https://{account_info.batch_account}.{account_info.location}.batch.azure.com"
     )
 
-    credentials = batchauth.SharedKeyCredentials(
-        account_info.batch_account, batch_account_key
-    )
+    credentials = batchauth.SharedKeyCredentials(account_info.batch_account, batch_account_key)
 
     batch_client = BatchServiceClient(credentials, batch_service_url)
     batch_client.config.retry_policy.retries = 5
 
     # Get VM images supported by Azure Batch
-    options = batchmodels.AccountListSupportedImagesOptions(
-        filter="verificationType eq 'verified'"
-    )
+    options = batchmodels.AccountListSupportedImagesOptions(filter="verificationType eq 'verified'")
     images = list(
-        batch_client.account.list_supported_images(
-            account_list_supported_images_options=options
-        )
+        batch_client.account.list_supported_images(account_list_supported_images_options=options)
     )
     filtered_images = list(
         filter(
@@ -122,9 +114,7 @@ def provision_vm(
     # Code from https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-example-virtual-machines?tabs=cmd
 
     # Create a VM
-    print(
-        "Provisioning a virtual machine...some operations might take a minute or two."
-    )
+    print("Provisioning a virtual machine...some operations might take a minute or two.")
 
     # Look up the network information
     network_client = NetworkManagementClient(credential, account_info.subscription_id)
@@ -198,9 +188,7 @@ def provision_vm(
     if not password or len(password) < 5:
         print("The AZURE_VM_PASSWORD environment variable is not set or is too short.")
 
-    print(
-        f"Provisioning virtual machine {vm_name}; this operation might take a few minutes."
-    )
+    print(f"Provisioning virtual machine {vm_name}; this operation might take a few minutes.")
 
     # Provision the VM.
     poller = compute_client.virtual_machines.begin_create_or_update(
@@ -219,9 +207,7 @@ def provision_vm(
                     "ssh": {
                         "public_keys": [
                             {
-                                "path": "/home/{}/.ssh/authorized_keys".format(
-                                    ssh_username
-                                ),
+                                "path": "/home/{}/.ssh/authorized_keys".format(ssh_username),
                                 "key_data": ssh_user_publickey,
                             }
                         ]
@@ -270,9 +256,7 @@ def create_pool(
         return
 
     # Power off the VM
-    poller = compute_client.virtual_machines.begin_power_off(
-        account_info.resource_group, vm_name
-    )
+    poller = compute_client.virtual_machines.begin_power_off(account_info.resource_group, vm_name)
     power_off_result = poller.result()
 
     # Capture the VM
@@ -280,9 +264,7 @@ def create_pool(
     compute_client.virtual_machines.generalize(account_info.resource_group, vm_name)
 
     source_sub_resource = SubResource(id=vm.id)
-    image = Image(
-        location=account_info.location, source_virtual_machine=source_sub_resource
-    )
+    image = Image(location=account_info.location, source_virtual_machine=source_sub_resource)
     poller = compute_client.images.begin_create_or_update(
         account_info.resource_group, vm_image_name, image
     )
@@ -342,14 +324,12 @@ def create_pool(
     gallery_image_version = GalleryImageVersion(
         location=account_info.location, storage_profile=storage_profile
     )
-    create_image_version_poller = (
-        compute_client.gallery_image_versions.begin_create_or_update(
-            account_info.resource_group,
-            gallery_name,
-            gallery_image_name,
-            "1.0.0",
-            gallery_image_version,
-        )
+    create_image_version_poller = compute_client.gallery_image_versions.begin_create_or_update(
+        account_info.resource_group,
+        gallery_name,
+        gallery_image_name,
+        "1.0.0",
+        gallery_image_version,
     )
 
     image_version = create_image_version_poller.result()
@@ -392,9 +372,7 @@ def create_pool(
     new_pool = batchmodels.PoolAddParameter(
         id=pool_id,
         virtual_machine_configuration=batchmodels.VirtualMachineConfiguration(
-            image_reference=batchmodels.ImageReference(
-                virtual_machine_image_id=image_version.id
-            ),
+            image_reference=batchmodels.ImageReference(virtual_machine_image_id=image_version.id),
             node_agent_sku_id=node_agent_sku_id,
         ),
         vm_size=vm_size,
@@ -417,20 +395,14 @@ def run_test_job(
         f"https://{account_info.batch_account}.{account_info.location}.batch.azure.com"
     )
 
-    credentials = batchauth.SharedKeyCredentials(
-        account_info.batch_account, batch_account_key
-    )
+    credentials = batchauth.SharedKeyCredentials(account_info.batch_account, batch_account_key)
 
     batch_client = BatchServiceClient(credentials, batch_service_url)
     batch_client.config.retry_policy.retries = 5
 
-    options = batchmodels.AccountListSupportedImagesOptions(
-        filter="verificationType eq 'verified'"
-    )
+    options = batchmodels.AccountListSupportedImagesOptions(filter="verificationType eq 'verified'")
     imglist = list(
-        batch_client.account.list_supported_images(
-            account_list_supported_images_options=None
-        )
+        batch_client.account.list_supported_images(account_list_supported_images_options=None)
     )
 
     # Create a job

@@ -182,7 +182,11 @@ class SimpleBehaviorBase:
         assert "shouldn't be here" == ""
 
     def play_lowest_or_pass(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int, state: RoundState
+        self,
+        hand: Hand,
+        cur_trick_value: CardValue,
+        cur_trick_count: int,
+        state: RoundState,
     ) -> CardValue:
         """
         Method that either playes the lowest card possible or passes.

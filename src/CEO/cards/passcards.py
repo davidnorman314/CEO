@@ -43,7 +43,11 @@ class PassCards:
                 cards.append(cv)
 
             self._listener.pass_cards(
-                cards, from_index, self._players[from_index], to_index, self._players[to_index]
+                cards,
+                from_index,
+                self._players[from_index],
+                to_index,
+                self._players[to_index],
             )
 
         # Pass from the upper half to the lower
@@ -79,5 +83,9 @@ class PassCards:
                 to_hand.add_cards(cv, 1)
 
             self._listener.pass_cards(
-                values, from_index, self._players[from_index], to_index, self._players[to_index]
+                values,
+                from_index,
+                self._players[from_index],
+                to_index,
+                self._players[to_index],
             )

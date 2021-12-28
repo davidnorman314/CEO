@@ -124,7 +124,14 @@ def main():
 
     args = parser.parse_args()
 
-    do_learning(args.configfile[0], args.azure, args.log, args.seed, args.profile, args.pickle_file)
+    do_learning(
+        args.configfile[0],
+        args.azure,
+        args.log,
+        args.seed,
+        args.profile,
+        args.pickle_file,
+    )
 
 
 if __name__ == "__main__":

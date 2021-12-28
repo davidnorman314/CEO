@@ -20,7 +20,11 @@ def main():
         help="Print the game status.",
     )
     parser.add_argument(
-        "--count", dest="count", type=int, default=1000, help="The number of rounds to play"
+        "--count",
+        dest="count",
+        type=int,
+        default=1000,
+        help="The number of rounds to play",
     )
 
     args = parser.parse_args()
@@ -107,7 +111,10 @@ def main():
         print(format2a.format(total_move_up), end="")
         print("")
         print(format1.format("Stay count:"), end="")
-        print(format2a.format(stats.stay_count / stats.players_with_behavior_count), end="")
+        print(
+            format2a.format(stats.stay_count / stats.players_with_behavior_count),
+            end="",
+        )
         print("")
         print(format1.format("Down count:"), end="")
         print(format2a.format(total_move_down), end="")

@@ -13,7 +13,11 @@ from collections import deque
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from gym_ceo.envs.actions import ActionEnum
-from CEO.cards.eventlistener import EventListenerInterface, GameWatchListener, PrintAllEventListener
+from CEO.cards.eventlistener import (
+    EventListenerInterface,
+    GameWatchListener,
+    PrintAllEventListener,
+)
 from CEO.cards.deck import Deck
 from CEO.cards.hand import Hand, CardValue
 from learning.learning_base import QTable

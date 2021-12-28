@@ -25,7 +25,11 @@ def test_game_player_order(MockRoundClass, MockPassCards, MockRandom):
 
     # Set up the round results
     instance = MockRoundClass.return_value
-    instance.get_next_round_order.side_effect = [[3, 2, 1, 0], [1, 2, 3, 0], [0, 1, 2, 3]]
+    instance.get_next_round_order.side_effect = [
+        [3, 2, 1, 0],
+        [1, 2, 3, 0],
+        [0, 1, 2, 3],
+    ]
 
     # Make the players
     player1 = player.Player("Player1", None)

@@ -19,7 +19,11 @@ from multiprocessing import RawArray, Pool
 from gym_ceo.envs.actions import ActionEnum
 from gym_ceo.envs.seat_ceo_env import CEOActionSpace, SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
-from CEO.cards.eventlistener import EventListenerInterface, GameWatchListener, PrintAllEventListener
+from CEO.cards.eventlistener import (
+    EventListenerInterface,
+    GameWatchListener,
+    PrintAllEventListener,
+)
 from CEO.cards.deck import Deck
 from CEO.cards.hand import Hand, CardValue
 
@@ -54,7 +58,10 @@ class MonteCarloLearning(LearningBase):
         self._base_env = base_env
 
     def _pick_action(
-        self, state_tuple: tuple, action_space: CEOActionSpace, statistics: SearchStatistics
+        self,
+        state_tuple: tuple,
+        action_space: CEOActionSpace,
+        statistics: SearchStatistics,
     ) -> ActionEnum:
         # If the action space only has one action, return it
         if action_space.n == 1:

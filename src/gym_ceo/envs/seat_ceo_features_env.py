@@ -32,7 +32,13 @@ class BottomHalfTableMinCards:
         self._start_check_index = full_env.num_players // 2 - 1
         self._end_check_index = full_env.num_players - 1
 
-    def calc(self, full_obs: Observation, dest_obs: np.array, dest_start_index: int, info: dict):
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
         feature_value = self.max_value
         for i in range(self._start_check_index, self._end_check_index):
             card_count = full_obs.get_other_player_card_count(i)
@@ -57,7 +63,13 @@ class HandCardCount:
     def __init__(self, full_env: SeatCEOEnv, card_value_index: int):
         self.card_value_index = card_value_index
 
-    def calc(self, full_obs: Observation, dest_obs: np.array, dest_start_index: int, info: dict):
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
         card_count = full_obs.get_card_count(self.card_value_index)
         feature_value = min(card_count, self.max_value)
         dest_obs[dest_start_index] = feature_value
@@ -77,7 +89,13 @@ class OtherPlayerHandCount:
     def __init__(self, full_env: SeatCEOEnv, other_player_index: int):
         self.other_player_index = other_player_index
 
-    def calc(self, full_obs: Observation, dest_obs: np.array, dest_start_index: int, info: dict):
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
         other_player_card_count = full_obs.get_other_player_card_count(self.other_player_index)
         feature_value = min(other_player_card_count, self.max_value)
         dest_obs[dest_start_index] = feature_value
@@ -104,7 +122,13 @@ class SinglesUnderValueCount:
     def __init__(self, full_env: SeatCEOEnv, threshold: int):
         self._threshold = threshold
 
-    def calc(self, full_obs: Observation, dest_obs: np.array, dest_start_index: int, info: dict):
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
         single_count = 0
         for i in range(self._threshold):
             card_count = full_obs.get_card_count(i)
@@ -128,7 +152,13 @@ class DoublesUnderValueCount:
     def __init__(self, full_env: SeatCEOEnv, threshold: int):
         self._threshold = threshold
 
-    def calc(self, full_obs: Observation, dest_obs: np.array, dest_start_index: int, info: dict):
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
         double_count = 0
         for i in range(self._threshold):
             card_count = full_obs.get_card_count(i)
@@ -152,7 +182,13 @@ class TriplesUnderValueCount:
     def __init__(self, full_env: SeatCEOEnv, threshold: int):
         self._threshold = threshold
 
-    def calc(self, full_obs: Observation, dest_obs: np.array, dest_start_index: int, info: dict):
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
         triple_count = 0
         for i in range(self._threshold):
             card_count = full_obs.get_card_count(i)
@@ -176,7 +212,13 @@ class TrickPosition:
     def __init__(self, full_env: SeatCEOEnv):
         self.num_player = full_env.num_players
 
-    def calc(self, full_obs: Observation, dest_obs: np.array, dest_start_index: int, info: dict):
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
         start_player = full_obs.get_starting_player()
 
         if start_player == 0:
@@ -216,7 +258,13 @@ class CurTrickValue:
     def __init__(self, full_env: SeatCEOEnv):
         pass
 
-    def calc(self, full_obs: Observation, dest_obs: np.array, dest_start_index: int, info: dict):
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
         cur_trick_count = full_obs.get_cur_trick_count()
         if cur_trick_count == 0:
             # We should lead
@@ -275,7 +323,13 @@ class CurTrickCount:
     def __init__(self, full_env: SeatCEOEnv):
         pass
 
-    def calc(self, full_obs: Observation, dest_obs: np.array, dest_start_index: int, info: dict):
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
         cur_trick_count = full_obs.get_cur_trick_count()
 
         # See if we should lead
@@ -347,7 +401,12 @@ class SeatCEOFeaturesEnv(gym.Env):
                 obs_space_high.append(calculator.max_value)
                 obs_space_possible_values = obs_space_possible_values * (calculator.max_value + 1)
             print(
-                "Calculator", type(calculator), "dim", calculator.dim, "max", calculator.max_value
+                "Calculator",
+                type(calculator),
+                "dim",
+                calculator.dim,
+                "max",
+                calculator.max_value,
             )
         self.observation_space = Box(
             low=np.array(obs_space_low),
