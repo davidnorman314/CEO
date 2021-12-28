@@ -17,6 +17,57 @@ from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, ActionEnum, CEOActionSpace
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
+
+def do_learning(
+    configfile: str,
+    do_azure: bool,
+    do_logging: bool,
+    random_seed: int,
+    do_profile: bool,
+    pickle_file: str,
+):
+    print("Loading configuration from", configfile)
+    with open(configfile) as f:
+        config = json.load(f)
+
+    # Create the arguments for the learning object
+    kwargs = dict()
+    if do_azure:
+        print("Saving progress and results to Azure")
+        kwargs["azure_client"] = AzureClient()
+
+    kwargs["train_episodes"] = config["episodes"]
+
+    if random_seed is not None:
+        print("Random seed", random_seed)
+        random.seed(random_seed)
+    else:
+        random.seed(0)
+
+    listener = PrintAllEventListener()
+    listener = EventListenerInterface()
+    base_env = SeatCEOEnv(listener=listener)
+    env = SeatCEOFeaturesEnv(base_env)
+
+    learning_type = config["learning_type"]
+    if learning_type == "qlearning_traces":
+        learning = QLearningTraces(env, **kwargs)
+    else:
+        print("Unknown learning type", learning_type)
+        exit(1)
+
+    if do_profile:
+        print("Running with profiling")
+        cProfile.run("qlearning.train()", sort=SortKey.CUMULATIVE)
+    else:
+        learning.train(do_logging)
+
+    # Save the agent in a pickle file.
+    if pickle_file:
+        print("Saving results to", pickle_file)
+        learning.pickle("qlearning_traces", pickle_file)
+
+
 def main():
     """Main function"""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -58,57 +109,17 @@ def main():
         default=False,
         help="Save agent and log information to azure blob storage.",
     )
-    parser.add_argument('configfile', metavar='config_file', type=str, nargs=1,
-                        help='The learning configuration file')
+    parser.add_argument(
+        "configfile",
+        metavar="config_file",
+        type=str,
+        nargs=1,
+        help="The learning configuration file",
+    )
 
     args = parser.parse_args()
 
-    print("Loading configuration from", args.configfile[0])
-    with open(args.configfile[0]) as f:
-        config = json.load(f)
-
-    # Create the arguments for the learning object
-    kwargs = dict()
-    if args.azure:
-        kwargs["azure_client"] = AzureClient()
-
-    kwargs["train_episodes"] = config["episodes"]
-
-    do_log = False
-    if args.log:
-        do_log = args.log
-
-    if args.seed:
-        print("Arg seed", args.seed)
-        random.seed(args.seed[0])
-    else:
-        print("No value")
-        random.seed(0)
-
-    listener = PrintAllEventListener()
-    listener = EventListenerInterface()
-    base_env = SeatCEOEnv(listener=listener)
-    env = SeatCEOFeaturesEnv(base_env)
-
-    learning_type = config["learning_type"]
-    if learning_type == "qlearning_traces":
-        learning = QLearningTraces(env, **kwargs)
-    else:
-        print("Unknown learning type", learning_type)
-        exit(1)
-
-    if args.profile:
-        print("Running with profiling")
-        cProfile.run("qlearning.train()", sort=SortKey.CUMULATIVE)
-    else:
-        learning.train(do_log)
-
-    # Save the agent in a pickle file.
-    if args.pickle_file:
-        print("Saving results to", args.pickle_file)
-        learning.pickle("qlearning_traces", args.pickle_file)
-    else:
-        print("Not saving results to local file.")
+    do_learning(args.configfile[0], args.azure, args.log, args.seed, args.profile, args.pickle_file)
 
 
 if __name__ == "__main__":
