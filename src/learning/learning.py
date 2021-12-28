@@ -56,12 +56,14 @@ def do_learning(
         print("Unknown learning type", learning_type)
         exit(1)
 
+    params = config["params"]
+
     final_search_statistics = None
     if do_profile:
         print("Running with profiling")
         cProfile.run("qlearning.train()", sort=SortKey.CUMULATIVE)
     else:
-        final_search_statistics = learning.train(do_logging)
+        final_search_statistics = learning.train(params, do_logging)
 
     # Save the agent in a pickle file.
     if pickle_file:

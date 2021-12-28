@@ -1,4 +1,12 @@
 {
     "learning_type": "qlearning_traces",
-    "episodes": 1000
+    "episodes": 1000,
+    "params": {
+        "discount_factor": 0.7,
+        "lambda": 0.5,
+        "epsilon": 1,
+        "max_epsilon": 0.5,
+        "min_epsilon": 0.01,
+        "decay": 0.00001
+    }
 }

@@ -58,14 +58,31 @@ class QLearningTraces(LearningBase):
 
         return action, is_exploit
 
-    def train(self, do_log: bool):
-        # Creating lists to keep track of reward and epsilon values
-        discount_factor = 0.7
-        lambda_val = 0.5
-        epsilon = 1
-        max_epsilon = 0.5
-        min_epsilon = 0.01
-        decay = 0.00001
+    def train(self, params: dict, do_log: bool):
+        # Validate the parameters
+        discount_factor = params["discount_factor"]
+        if discount_factor is None:
+            return "The parameter discount_factor is missing"
+
+        lambda_val = params["lambda"]
+        if lambda_val is None:
+            return "The parameter lambda is missing"
+
+        epsilon = params["epsilon"]
+        if epsilon is None:
+            return "The parameter epsilon is missing"
+
+        max_epsilon = params["max_epsilon"]
+        if max_epsilon is None:
+            return "The parameter max_epsilon is missing"
+
+        min_epsilon = params["min_epsilon"]
+        if min_epsilon is None:
+            return "The parameter min_epsilon is missing"
+
+        decay = params["decay"]
+        if decay is None:
+            return "The parameter decay is missing"
 
         print("Training with", self._train_episodes, "episodes")
 
@@ -447,6 +464,15 @@ def main():
     listener = EventListenerInterface()
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
+
+    # Set up default parameters
+    params = dict()
+    params["discount_factor"] = 0.7
+    params["lambda_val"] = 0.5
+    params["epsilon"] = 1
+    params["max_epsilon"] = 0.5
+    params["min_epsilon"] = 0.01
+    params["decay"] = 0.00001
 
     qlearning = QLearningTraces(env, **kwargs)
 
