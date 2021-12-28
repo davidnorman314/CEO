@@ -322,7 +322,7 @@ class QLearningTraces(LearningBase):
                 recent_explore_counts.popleft()
                 recent_exploit_counts.popleft()
 
-            if episode > 0 and episode % 2000 == 0:
+            if (episode > 0 and episode % 2000 == 0) or (episode == self._train_episodes):
                 ave_training_rewards = total_training_reward / episode
                 recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
                 recent_explore_rate = sum(recent_explore_counts) / (
@@ -389,6 +389,8 @@ class QLearningTraces(LearningBase):
 
         if self._azure_client:
             self._azure_client.end_training()
+
+        return self._search_statistics[-1]
 
 
 # Main function
