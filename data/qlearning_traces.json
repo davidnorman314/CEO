@@ -1,0 +1,4 @@
+{
+    "learning_type": "qlearning_traces",
+    "episodes": 1000
+}
