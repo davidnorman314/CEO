@@ -426,11 +426,21 @@ def run_test_job(
     for i in range(task_count):
         task_id = f"Task{i}"
 
+        file = f"First line File{i}\nSecond line\nThird line."
+
         command = f"""/bin/bash -c "echo Task {i} executing.;
         echo Env var $TEST_ENV;
-        cd /home/david;
-        source py39/bin/activate;
-        python --version;"
+        CONFIG_VAR='{file}'
+        echo $CONFIG_VAR > config.json
+        git clone https://github.com/davidnorman314/CEO.git;
+        ls CEO;
+        ls CEO/src;
+        echo Start file;
+        cat config.json;
+        echo End file;
+        source /home/david/py39/bin/activate;
+        python --version;
+        echo Done;"
         """
 
         tasks.append(
@@ -463,6 +473,7 @@ def run_test_job(
     # Print information from the tasks
     job_tasks = batch_client.task.list(job_id)
     out_file_name = "stdout.txt"
+    stderr_file_name = "stderr.txt"
     for task in job_tasks:
         node_id = batch_client.task.get(job_id, task.id).node_info.node_id
         print("Task: {}".format(task.id))
@@ -472,6 +483,12 @@ def run_test_job(
 
         file_text = _read_stream_as_string(stream)
         print("Standard output:")
+        print(file_text)
+
+        stream = batch_client.file.get_from_task(job_id, task.id, stderr_file_name)
+
+        file_text = _read_stream_as_string(stream)
+        print("Standard error:")
         print(file_text)
 
 
