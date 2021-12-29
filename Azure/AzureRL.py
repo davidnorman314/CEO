@@ -49,9 +49,8 @@ AUTOSCALE_FORMULA = """
     keepAliveVMs = (maxRecentTaskCount > 0 ? $TargetDedicatedNodes : 0);
     curTaskCount = avg($PendingTasks.GetSample(1));
     curVMTarget = curTaskCount / $TaskSlotsPerNode + 0.51;
-    rawNodes=min(maxNumberOfVMs, max(keepAliveVMs, curVMTarget));
-    adjustedNodes=((rawNodes > 0.0 && rawNodes < 1.0) ? 1.0 : rawNodes);
-    $TargetDedicatedNodes=adjustedNodes;
+    newTargetNodes=min(maxNumberOfVMs, max(keepAliveVMs, curVMTarget));
+    $TargetDedicatedNodes=newTargetNodes;
     $NodeDeallocationOption = taskcompletion;
     """
 
