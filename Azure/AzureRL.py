@@ -406,11 +406,17 @@ def run_test_job(
         batch_client.account.list_supported_images(account_list_supported_images_options=None)
     )
 
+    # Set up environment variables
+    env_vars = list()
+    env_vars.append(batchmodels.EnvironmentSetting(name="TEST_ENV", value="abc"))
+
     # Create a job
     pool_id = pool_config["name"]
     job_id = "TestJob"
     job = batchmodels.JobAddParameter(
-        id=job_id, pool_info=batchmodels.PoolInformation(pool_id=pool_id)
+        id=job_id,
+        pool_info=batchmodels.PoolInformation(pool_id=pool_id),
+        common_environment_settings=env_vars,
     )
 
     batch_client.job.add(job)
@@ -421,6 +427,7 @@ def run_test_job(
         task_id = f"Task{i}"
 
         command = f"""/bin/bash -c "echo Task {i} executing.;
+        echo Env var $TEST_ENV;
         cd /home/david;
         source py39/bin/activate;
         python --version;"
