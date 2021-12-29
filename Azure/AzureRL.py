@@ -40,6 +40,7 @@ from azure.mgmt.compute.models import (
 from azure.batch import BatchServiceClient
 import azure.batch.batch_auth as batchauth
 import azure.batch.models as batchmodels
+import azure.core.exceptions
 
 
 class AccountInfo:
@@ -364,7 +365,7 @@ def create_pool(
     batch_account_name = pool_config["batch_account_name"]
     batch_service_url = f"https://{batch_account_name}.westus3.batch.azure.com"
 
-    batch_client = batch.BatchServiceClient(credentials, batch_service_url)
+    batch_client = BatchServiceClient(credentials, batch_service_url)
     batch_client.config.retry_policy.retries = 5
 
     pool_id = pool_config["name"]
