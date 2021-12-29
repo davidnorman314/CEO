@@ -35,6 +35,8 @@
     },
     "pool_config": {
         "name": "rlbatchpool",
-        "batch_account_name": "davidbatchacct"
+        "batch_account_name": "davidbatchacct",
+        "maximum_nodes": 5,
+        "tasks_per_node": 2
     }
 }

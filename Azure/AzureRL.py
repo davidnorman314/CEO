@@ -43,6 +43,15 @@ import azure.batch.batch_auth as batchauth
 import azure.batch.models as batchmodels
 import azure.core.exceptions
 
+AUTOSCALE_FORMULA = """
+    maxNumberOfVMs = {maxVMs};
+    taskCount = avg($PendingTasks.GetSample(1));
+    rawNodes=min(maxNumberOfVMs, taskCount / $TaskSlotsPerNode);
+    adjustedNodes=((rawNodes > 0.0 && rawNodes < 1.0) ? 1.0 : rawNodes);
+    $TargetDedicatedNodes=adjustedNodes;
+    $NodeDeallocationOption = taskcompletion;
+    """
+
 
 class AccountInfo:
     subscription_id: str
@@ -370,7 +379,8 @@ def create_pool(
     batch_client.config.retry_policy.retries = 5
 
     pool_id = pool_config["name"]
-    pool_size = 5
+    autoscale_formula = AUTOSCALE_FORMULA.format(maxVMs=pool_config["maximum_nodes"])
+    evaluation_interval = datetime.timedelta(minutes=5)
     new_pool = batchmodels.PoolAddParameter(
         id=pool_id,
         virtual_machine_configuration=batchmodels.VirtualMachineConfiguration(
@@ -378,13 +388,14 @@ def create_pool(
             node_agent_sku_id=node_agent_sku_id,
         ),
         vm_size=vm_size,
-        target_dedicated_nodes=pool_size,
+        task_slots_per_node=pool_config["tasks_per_node"],
+        enable_auto_scale=True,
+        auto_scale_formula=autoscale_formula,
+        auto_scale_evaluation_interval=evaluation_interval,
     )
     pool_creation_result = batch_client.pool.add(new_pool)
 
     print(f"Created pool {pool_id}. Result", pool_creation_result)
-
-    setup_pool_autoscale(account_info, credential, pool_config)
 
 
 def setup_pool_autoscale(
@@ -426,14 +437,7 @@ def setup_pool_autoscale(
 
     # Find the pool
     pool_id = pool_config["name"]
-    autoscale_formula = """
-    maxNumberOfVMs = 5;
-    taskCount = avg($PendingTasks.GetSample(1));
-    rawNodes=min(maxNumberOfVMs, taskCount / $TaskSlotsPerNode);
-    adjustedNodes=((rawNodes > 0.0 && rawNodes < 1.0) ? 1.0 : rawNodes);
-    $TargetDedicatedNodes=adjustedNodes;
-    $NodeDeallocationOption = taskcompletion;
-    """
+    autoscale_formula = AUTOSCALE_FORMULA.format(maxVMs=pool_config["maximum_nodes"])
     evaluation_interval = datetime.timedelta(minutes=5)
     batch_client.pool.enable_auto_scale(pool_id, autoscale_formula, evaluation_interval)
 
