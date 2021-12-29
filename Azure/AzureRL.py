@@ -446,6 +446,126 @@ def setup_pool_autoscale(
     print(f"Updated autoscaling for pool {pool_id}.")
 
 
+def do_learning(
+    account_info: AccountInfo,
+    batch_account_key: str,
+    pool_config: dict,
+    config_file: str,
+):
+    """Runs a single task to train an agent."""
+
+    batch_service_url = (
+        f"https://{account_info.batch_account}.{account_info.location}.batch.azure.com"
+    )
+
+    credentials = batchauth.SharedKeyCredentials(account_info.batch_account, batch_account_key)
+
+    batch_client = BatchServiceClient(credentials, batch_service_url)
+    batch_client.config.retry_policy.retries = 5
+
+    # Set up environment variables
+    storage_connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    if not storage_connection_string or len(storage_connection_string) < 5:
+        print(
+            "The AZURE_STORAGE_CONNECTION_STRING environment variable is not set or is too short."
+        )
+
+    env_vars = list()
+    env_vars.append(
+        batchmodels.EnvironmentSetting(
+            name="AZURE_STORAGE_CONNECTION_STRING", value=storage_connection_string
+        )
+    )
+
+    # Load the learning configuration
+    with open(config_file, "r") as file:
+        learning_config = file.read().replace("\n", "")
+    learning_config = learning_config.replace('"', '\\"')
+
+    # Make a unique job ID
+    timestr = datetime.datetime.now().isoformat()
+    timestr = timestr.replace(":", "-")
+    timestr = timestr.replace(".", "-")
+    job_id = "Learning_" + timestr
+
+    # Create a job
+    pool_id = pool_config["name"]
+    job = batchmodels.JobAddParameter(
+        id=job_id,
+        pool_info=batchmodels.PoolInformation(pool_id=pool_id),
+        common_environment_settings=env_vars,
+    )
+
+    batch_client.job.add(job)
+
+    # Create the task
+    tasks = list()
+    task_id = f"Task"
+
+    command = f"""/bin/bash -c "echo Learning task starting.;
+    echo '{learning_config}' > config.json;
+    echo Start config;
+    cat config.json;
+    echo End config;
+    git clone https://github.com/davidnorman314/CEO.git;
+    cd CEO/src;
+    echo Starting python;
+    python --version;
+    source /home/david/py39/bin/activate;
+    python -m learning.learning ../../config.json;
+    echo Python finished;
+    echo Done;"
+    """
+
+    tasks.append(
+        batchmodels.TaskAddParameter(
+            id=task_id,
+            command_line=command,
+        )
+    )
+
+    batch_client.task.add_collection(job_id, tasks)
+
+    # Wait for the job to complete
+    while True:
+        print("Checking tasks")
+        job_tasks = list(batch_client.task.list(job_id))
+        total = len(job_tasks)
+        completed = 0
+        for task in job_tasks:
+            print(task)
+
+            if task.state == batchmodels.JobState.completed:
+                completed += 1
+
+        if completed == len(job_tasks):
+            break
+
+        print(f"There are {completed} completed jobs of {total}")
+        time.sleep(1)
+
+    # Print information from the tasks
+    job_tasks = batch_client.task.list(job_id)
+    out_file_name = "stdout.txt"
+    stderr_file_name = "stderr.txt"
+    for task in job_tasks:
+        node_id = batch_client.task.get(job_id, task.id).node_info.node_id
+        print("Task: {}".format(task.id))
+        print("Node: {}".format(node_id))
+
+        stream = batch_client.file.get_from_task(job_id, task.id, out_file_name)
+
+        file_text = _read_stream_as_string(stream)
+        print("Standard output:")
+        print(file_text)
+
+        stream = batch_client.file.get_from_task(job_id, task.id, stderr_file_name)
+
+        file_text = _read_stream_as_string(stream)
+        print("Standard error:")
+        print(file_text)
+
+
 def run_test_job(
     account_info: AccountInfo,
     batch_account_key: str,
@@ -462,11 +582,6 @@ def run_test_job(
 
     batch_client = BatchServiceClient(credentials, batch_service_url)
     batch_client.config.retry_policy.retries = 5
-
-    options = batchmodels.AccountListSupportedImagesOptions(filter="verificationType eq 'verified'")
-    imglist = list(
-        batch_client.account.list_supported_images(account_list_supported_images_options=None)
-    )
 
     # Set up environment variables
     env_vars = list()
@@ -620,6 +735,13 @@ def main():
         help="Set up the pool's autoscaling.",
     )
     parser.add_argument(
+        "--train",
+        dest="learning_config",
+        type=str,
+        default=None,
+        help="Executes a single training.",
+    )
+    parser.add_argument(
         "--run-test-job",
         dest="test_task_count",
         type=int,
@@ -643,7 +765,7 @@ def main():
     credential = EnvironmentCredential()
 
     batch_account_key = None
-    if args.get_batch_vm_images or args.test_task_count:
+    if args.get_batch_vm_images or args.test_task_count or args.learning_config:
         batch_key_env_var = "AZURE_BATCH_KEY"
         batch_account_key = os.getenv(batch_key_env_var)
 
@@ -671,9 +793,10 @@ def main():
             credential,
             pool_config,
         )
-
     if args.test_task_count:
         run_test_job(account_info, batch_account_key, pool_config, args.test_task_count)
+    if args.learning_config:
+        do_learning(account_info, batch_account_key, pool_config, args.learning_config)
 
 
 if __name__ == "__main__":
