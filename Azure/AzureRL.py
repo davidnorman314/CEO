@@ -523,7 +523,7 @@ def do_learning(
     echo Starting python;
     python --version;
     source /home/david/py39/bin/activate;
-    python -m learning.learning --azure ../../config.json;
+    python -m learning.learning --azure --pickle-file ../../results.pkl ../../config.json;
     echo Python finished;
     echo Done;"
     """
