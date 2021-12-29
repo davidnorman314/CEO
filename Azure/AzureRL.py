@@ -384,6 +384,61 @@ def create_pool(
 
     print(f"Created pool {pool_id}. Result", pool_creation_result)
 
+    setup_pool_autoscale(account_info, credential, pool_config)
+
+
+def setup_pool_autoscale(
+    account_info: AccountInfo,
+    credential: EnvironmentCredential,
+    pool_config: dict(),
+):
+    """Configures the pool autoscaling."""
+
+    # Authenticate using the service principal
+    client_id_var = "AZURE_CLIENT_ID"
+    client_secret_var = "AZURE_CLIENT_SECRET"
+    tenant_var = "AZURE_TENANT_ID"
+    RESOURCE = "https://batch.core.windows.net/"
+    client_id = os.getenv(client_id_var)
+    if not client_id:
+        raise Exception("Environment variable", client_id_var, "is not set.")
+
+    client_secret = os.getenv(client_secret_var)
+    if not client_secret:
+        raise Exception("Environment variable", client_secret_var, "is not set.")
+
+    tenant = os.getenv(tenant_var)
+    if not tenant:
+        raise Exception("Environment variable", tenant_var, "is not set.")
+
+    credentials = ServicePrincipalCredentials(
+        client_id=client_id,
+        secret=client_secret,
+        tenant=tenant,
+        resource=RESOURCE,
+    )
+
+    batch_account_name = pool_config["batch_account_name"]
+    batch_service_url = f"https://{batch_account_name}.westus3.batch.azure.com"
+
+    batch_client = BatchServiceClient(credentials, batch_service_url)
+    batch_client.config.retry_policy.retries = 5
+
+    # Find the pool
+    pool_id = pool_config["name"]
+    autoscale_formula = """
+    maxNumberOfVMs = 5;
+    taskCount = avg($PendingTasks.GetSample(1));
+    rawNodes=min(maxNumberOfVMs, taskCount / $TaskSlotsPerNode);
+    adjustedNodes=((rawNodes > 0.0 && rawNodes < 1.0) ? 1.0 : rawNodes);
+    $TargetDedicatedNodes=adjustedNodes;
+    $NodeDeallocationOption = taskcompletion;
+    """
+    evaluation_interval = datetime.timedelta(minutes=5)
+    batch_client.pool.enable_auto_scale(pool_id, autoscale_formula, evaluation_interval)
+
+    print(f"Updated autoscaling for pool {pool_id}.")
+
 
 def run_test_job(
     account_info: AccountInfo,
@@ -551,6 +606,14 @@ def main():
         help="Create the batch pool.",
     )
     parser.add_argument(
+        "--setup-pool-autoscale",
+        dest="setup_pool_autoscale",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Set up the pool's autoscaling.",
+    )
+    parser.add_argument(
         "--run-test-job",
         dest="test_task_count",
         type=int,
@@ -595,6 +658,12 @@ def main():
             node_agent_sku_id,
             pool_config,
             config["gallery_config"],
+        )
+    if args.setup_pool_autoscale:
+        setup_pool_autoscale(
+            account_info,
+            credential,
+            pool_config,
         )
 
     if args.test_task_count:
