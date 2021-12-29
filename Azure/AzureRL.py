@@ -18,6 +18,7 @@ import json
 import os
 import io
 import time
+import datetime
 
 from azure.identity import AzureCliCredential, EnvironmentCredential
 from azure.common.credentials import ServicePrincipalCredentials
@@ -410,9 +411,14 @@ def run_test_job(
     env_vars = list()
     env_vars.append(batchmodels.EnvironmentSetting(name="TEST_ENV", value="abc"))
 
+    # Make a unique job ID
+    timestr = datetime.datetime.now().isoformat()
+    timestr = timestr.replace(":", "-")
+    timestr = timestr.replace(".", "-")
+    job_id = "TestJob_" + timestr
+
     # Create a job
     pool_id = pool_config["name"]
-    job_id = "TestJob"
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
