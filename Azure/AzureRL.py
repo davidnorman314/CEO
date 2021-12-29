@@ -22,6 +22,7 @@ import datetime
 
 from azure.identity import AzureCliCredential, EnvironmentCredential
 from azure.common.credentials import ServicePrincipalCredentials
+from azure.mgmt import network
 
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
@@ -247,6 +248,8 @@ def create_pool(
     credential: EnvironmentCredential,
     vm_name: str,
     vm_size: str,
+    vnet_name: str,
+    subnet_name: str,
     node_agent_sku_id: str,
     pool_config: dict(),
     gallery_config: dict(),
@@ -373,6 +376,10 @@ def create_pool(
         resource=RESOURCE,
     )
 
+    # Find the virtual network ID.
+    network_client = NetworkManagementClient(credential, account_info.subscription_id)
+    subnet_result = network_client.subnets.get(account_info.resource_group, vnet_name, subnet_name)
+
     # Create the pool
     batch_account_name = pool_config["batch_account_name"]
     batch_service_url = f"https://{batch_account_name}.westus3.batch.azure.com"
@@ -383,6 +390,8 @@ def create_pool(
     pool_id = pool_config["name"]
     autoscale_formula = AUTOSCALE_FORMULA.format(maxVMs=pool_config["maximum_nodes"])
     evaluation_interval = datetime.timedelta(minutes=5)
+    network_config = batchmodels.NetworkConfiguration(subnet_id=subnet_result.id)
+    public_ip_config = batchmodels.PublicIPAddressConfiguration(provision="noPublicIPAddresses")
     new_pool = batchmodels.PoolAddParameter(
         id=pool_id,
         virtual_machine_configuration=batchmodels.VirtualMachineConfiguration(
@@ -394,6 +403,8 @@ def create_pool(
         enable_auto_scale=True,
         auto_scale_formula=autoscale_formula,
         auto_scale_evaluation_interval=evaluation_interval,
+        network_configuration=network_config,
+        public_ip_address_configuration=public_ip_config,
     )
     pool_creation_result = batch_client.pool.add(new_pool)
 
@@ -512,7 +523,7 @@ def do_learning(
     echo Starting python;
     python --version;
     source /home/david/py39/bin/activate;
-    python -m learning.learning ../../config.json;
+    python -m learning.learning --azure ../../config.json;
     echo Python finished;
     echo Done;"
     """
@@ -758,6 +769,8 @@ def main():
     account_info = AccountInfo(config)
     vm_name = config["vm_config"]["name"]
     vm_size = config["vm_size"]
+    vnet_name = config["vm_config"]["vnet_name"]
+    subnet_name = config["vm_config"]["subnet_name"]
     node_agent_sku_id = config["vm_config"]["node_agent_sku_id"]
     pool_config = config["pool_config"]
 
@@ -783,6 +796,8 @@ def main():
             credential,
             vm_name,
             vm_size,
+            vnet_name,
+            subnet_name,
             node_agent_sku_id,
             pool_config,
             config["gallery_config"],
