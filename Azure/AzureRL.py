@@ -448,13 +448,71 @@ def setup_pool_autoscale(
     batch_client = BatchServiceClient(credentials, batch_service_url)
     batch_client.config.retry_policy.retries = 5
 
-    # Find the pool
+    # Update the pool
     pool_id = pool_config["name"]
     autoscale_formula = AUTOSCALE_FORMULA.format(maxVMs=pool_config["maximum_nodes"])
     evaluation_interval = datetime.timedelta(minutes=5)
     batch_client.pool.enable_auto_scale(pool_id, autoscale_formula, evaluation_interval)
 
     print(f"Updated autoscaling for pool {pool_id}.")
+
+
+def remove_node(
+    account_info: AccountInfo,
+    credential: EnvironmentCredential,
+    pool_config: dict(),
+    node_id: str,
+):
+    """Removes a node from the pool."""
+
+    # Authenticate using the service principal
+    client_id_var = "AZURE_CLIENT_ID"
+    client_secret_var = "AZURE_CLIENT_SECRET"
+    tenant_var = "AZURE_TENANT_ID"
+    RESOURCE = "https://batch.core.windows.net/"
+    client_id = os.getenv(client_id_var)
+    if not client_id:
+        raise Exception("Environment variable", client_id_var, "is not set.")
+
+    client_secret = os.getenv(client_secret_var)
+    if not client_secret:
+        raise Exception("Environment variable", client_secret_var, "is not set.")
+
+    tenant = os.getenv(tenant_var)
+    if not tenant:
+        raise Exception("Environment variable", tenant_var, "is not set.")
+
+    credentials = ServicePrincipalCredentials(
+        client_id=client_id,
+        secret=client_secret,
+        tenant=tenant,
+        resource=RESOURCE,
+    )
+
+    batch_account_name = pool_config["batch_account_name"]
+    batch_service_url = f"https://{batch_account_name}.westus3.batch.azure.com"
+
+    batch_client = BatchServiceClient(credentials, batch_service_url)
+    batch_client.config.retry_policy.retries = 5
+
+    # Disable auto scaling
+    pool_id = pool_config["name"]
+    batch_client.pool.disable_auto_scale(pool_id)
+
+    # Find the pool
+    nodes = [node_id]
+    remove_node_param = batchmodels.NodeRemoveParameter(
+        node_list=nodes, node_deallocation_option="terminate"
+    )
+    batch_client.pool.remove_nodes(
+        pool_id,
+        remove_node_param,
+    )
+
+    print(f"Removed node {node_id} from {pool_id}.")
+
+    # Renable auto scale
+    setup_pool_autoscale(account_info, credential, pool_config)
 
 
 def do_training(
@@ -763,6 +821,13 @@ def main():
         help="Set up the pool's autoscaling.",
     )
     parser.add_argument(
+        "--remove-node",
+        dest="remove_node",
+        type=str,
+        default=None,
+        help="Removes a node from the pool.",
+    )
+    parser.add_argument(
         "--train",
         dest="learning_config",
         type=str,
@@ -795,7 +860,7 @@ def main():
     credential = EnvironmentCredential()
 
     batch_account_key = None
-    if args.get_batch_vm_images or args.test_task_count or args.learning_config:
+    if args.get_batch_vm_images or args.test_task_count or args.learning_config or args.remove_node:
         batch_key_env_var = "AZURE_BATCH_KEY"
         batch_account_key = os.getenv(batch_key_env_var)
 
@@ -824,6 +889,13 @@ def main():
             account_info,
             credential,
             pool_config,
+        )
+    if args.remove_node:
+        remove_node(
+            account_info,
+            credential,
+            pool_config,
+            args.remove_node,
         )
     if args.test_task_count:
         run_test_job(account_info, batch_account_key, pool_config, args.test_task_count)
