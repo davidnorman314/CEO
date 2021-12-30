@@ -457,13 +457,17 @@ def setup_pool_autoscale(
     print(f"Updated autoscaling for pool {pool_id}.")
 
 
-def do_learning(
+def do_training(
     account_info: AccountInfo,
     batch_account_key: str,
     pool_config: dict,
     config_file: str,
 ):
-    """Runs a single task to train an agent."""
+    """Runs a one or more tasks to train an agents.
+    The configuration file is a JSON file. If the top level is a dictionary, then
+    it defines a single training. If it is an array, then each element defines
+    a training.
+    """
 
     batch_service_url = (
         f"https://{account_info.batch_account}.{account_info.location}.batch.azure.com"
@@ -490,8 +494,16 @@ def do_learning(
 
     # Load the learning configuration
     with open(config_file, "r") as file:
-        learning_config = file.read().replace("\n", "")
-    learning_config = learning_config.replace('"', '\\"')
+        learning_config = json.load(file)
+
+    if isinstance(learning_config, dict):
+        # We want to run a single experiment
+        learning_config = [learning_config]
+    elif isinstance(learning_config, list):
+        pass
+    else:
+        print("Unsupported type")
+        return
 
     # Make a unique job ID
     timestr = datetime.datetime.now().isoformat()
@@ -509,33 +521,38 @@ def do_learning(
 
     batch_client.job.add(job)
 
-    # Create the task
+    # Create the tasks
     tasks = list()
-    task_id = f"Task"
+    for learning, i in zip(learning_config, range(len(learning_config))):
+        task_id = f"Task{i}"
 
-    command = f"""/bin/bash -c "echo Learning task starting.;
-    echo '{learning_config}' > config.json;
-    echo Start config;
-    cat config.json;
-    echo End config;
-    git clone https://github.com/davidnorman314/CEO.git;
-    cd CEO/src;
-    echo Starting python;
-    python --version;
-    source /home/david/py39/bin/activate;
-    python -m learning.learning --azure --pickle-file ../../results.pkl ../../config.json;
-    echo Python finished;
-    echo Done;"
-    """
+        learning_config_json = json.dumps(learning)
+        learning_config_json = learning_config_json.replace('"', '\\"')
+        # print(learning_config_json)
 
-    tasks.append(
-        batchmodels.TaskAddParameter(
-            id=task_id,
-            command_line=command,
+        command = f"""/bin/bash -c "echo Learning task starting.;
+        echo '{learning_config_json}' > config.json;
+        echo Start config;
+        cat config.json;
+        echo End config;
+        git clone https://github.com/davidnorman314/CEO.git;
+        cd CEO/src;
+        echo Starting python;
+        python --version;
+        source /home/david/py39/bin/activate;
+        python -m learning.learning --azure --pickle-file ../../results.pkl ../../config.json;
+        echo Python finished;
+        echo Done;"
+        """
+
+        tasks.append(
+            batchmodels.TaskAddParameter(
+                id=task_id,
+                command_line=command,
+            )
         )
-    )
 
-    batch_client.task.add_collection(job_id, tasks)
+        batch_client.task.add_collection(job_id, tasks)
 
     # Wait for the job to complete
     while True:
@@ -544,7 +561,7 @@ def do_learning(
         total = len(job_tasks)
         completed = 0
         for task in job_tasks:
-            print(task)
+            # print(task)
 
             if task.state == batchmodels.JobState.completed:
                 completed += 1
@@ -552,7 +569,7 @@ def do_learning(
         if completed == len(job_tasks):
             break
 
-        print(f"There are {completed} completed jobs of {total}")
+        print(f"Job {job_id} There are {completed} completed tasks of {total}")
         time.sleep(1)
 
     # Print information from the tasks
@@ -750,7 +767,7 @@ def main():
         dest="learning_config",
         type=str,
         default=None,
-        help="Executes a single training.",
+        help="Executes one or more trainings as defined in the config file.",
     )
     parser.add_argument(
         "--run-test-job",
@@ -811,7 +828,7 @@ def main():
     if args.test_task_count:
         run_test_job(account_info, batch_account_key, pool_config, args.test_task_count)
     if args.learning_config:
-        do_learning(account_info, batch_account_key, pool_config, args.learning_config)
+        do_training(account_info, batch_account_key, pool_config, args.learning_config)
 
 
 if __name__ == "__main__":
