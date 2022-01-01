@@ -127,8 +127,6 @@ class AzureClient:
         data = downloader.readall()
         data_str = data.decode("utf-8")
 
-        print(type(data))
-        print(type(data_str))
         return data_str.split("\n")
 
     def get_blob(self, blob_name):
