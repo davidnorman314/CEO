@@ -468,7 +468,7 @@ def main():
     # Set up default parameters
     params = dict()
     params["discount_factor"] = 0.7
-    params["lambda_val"] = 0.5
+    params["lambda"] = 0.5
     params["epsilon"] = 1
     params["max_epsilon"] = 0.5
     params["min_epsilon"] = 0.01
@@ -480,7 +480,7 @@ def main():
         print("Running with profiling")
         cProfile.run("qlearning.train()", sort=SortKey.CUMULATIVE)
     else:
-        qlearning.train(do_log)
+        qlearning.train(params, do_log)
 
     # Save the agent in a pickle file.
     file_name = "qlearning_traces.pickle"
