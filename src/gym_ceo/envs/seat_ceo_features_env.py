@@ -373,29 +373,15 @@ class SeatCEOFeaturesEnv(gym.Env):
 
         self._feature_calculators = []
 
-        half_players = full_env.num_players // 2
-        for i in range(half_players - 1):
-            feature = OtherPlayerHandCount(full_env, other_player_index=i)
+        # Get default feature definitions
+        feature_defs = self.get_default_features(full_env)
+
+        # Create the features
+        for feature_class, kwargs in feature_defs:
+            class_obj = globals()[feature_class]
+            feature = class_obj(full_env, **kwargs)
+
             self._feature_calculators.append(feature)
-
-        # self._feature_calculators.append(BottomHalfTableMinCards(full_env))
-
-        min_card_exact_feature = 9
-        for i in range(min_card_exact_feature, 13):
-            self._feature_calculators.append(HandCardCount(full_env, card_value_index=i))
-        self._feature_calculators.append(
-            SinglesUnderValueCount(full_env, threshold=min_card_exact_feature)
-        )
-        self._feature_calculators.append(
-            DoublesUnderValueCount(full_env, threshold=min_card_exact_feature)
-        )
-        self._feature_calculators.append(
-            TriplesUnderValueCount(full_env, threshold=min_card_exact_feature)
-        )
-
-        self._feature_calculators.append(TrickPosition(full_env))
-        self._feature_calculators.append(CurTrickValue(full_env))
-        self._feature_calculators.append(CurTrickCount(full_env))
 
         # Calculate the observation space
         obs_space_low = []
@@ -428,6 +414,47 @@ class SeatCEOFeaturesEnv(gym.Env):
             obs_space_possible_values,
             "possible values",
         )
+
+    def get_default_features(self, full_env: SeatCEOEnv):
+        feature_defs = []
+        half_players = full_env.num_players // 2
+        for i in range(half_players - 1):
+            feature_params = dict()
+            feature_params["other_player_index"] = i
+            feature_defs.append(("OtherPlayerHandCount", feature_params))
+
+        if False:
+            feature_params = dict()
+            feature_defs.append(("BottomHalfTableMinCards", feature_params))
+
+        min_card_exact_feature = 9
+        for i in range(min_card_exact_feature, 13):
+            feature_params = dict()
+            feature_params["card_value_index"] = i
+            feature_defs.append(("HandCardCount", feature_params))
+
+        feature_params = dict()
+        feature_params["threshold"] = min_card_exact_feature
+        feature_defs.append(("SinglesUnderValueCount", feature_params))
+
+        feature_params = dict()
+        feature_params["threshold"] = min_card_exact_feature
+        feature_defs.append(("DoublesUnderValueCount", feature_params))
+
+        feature_params = dict()
+        feature_params["threshold"] = min_card_exact_feature
+        feature_defs.append(("TriplesUnderValueCount", feature_params))
+
+        feature_params = dict()
+        feature_defs.append(("TrickPosition", feature_params))
+
+        feature_params = dict()
+        feature_defs.append(("CurTrickValue", feature_params))
+
+        feature_params = dict()
+        feature_defs.append(("CurTrickCount", feature_params))
+
+        return feature_defs
 
     def reset(self, hands: list[Hand] = None):
         full_obs = self.full_env.reset(hands)
