@@ -159,7 +159,7 @@ def test_TriplesUnderValueCount():
     )
     factory = ObservationFactory(env.num_players)
 
-    feature_calc = TriplesUnderValueCount(env, 10)
+    feature_calc = TriplesUnderValueCount(env, threshold=10)
 
     observation_array = env.reset()
     observation = factory.create_observation(array=observation_array)

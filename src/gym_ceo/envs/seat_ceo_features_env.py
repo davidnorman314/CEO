@@ -60,7 +60,7 @@ class HandCardCount:
     max_value = 4
     card_value_index: int
 
-    def __init__(self, full_env: SeatCEOEnv, card_value_index: int):
+    def __init__(self, full_env: SeatCEOEnv, *, card_value_index: int):
         self.card_value_index = card_value_index
 
     def calc(
@@ -86,7 +86,7 @@ class OtherPlayerHandCount:
 
     other_player_index: int
 
-    def __init__(self, full_env: SeatCEOEnv, other_player_index: int):
+    def __init__(self, full_env: SeatCEOEnv, *, other_player_index: int):
         self.other_player_index = other_player_index
 
     def calc(
@@ -119,7 +119,7 @@ class SinglesUnderValueCount:
 
     _threshold: int
 
-    def __init__(self, full_env: SeatCEOEnv, threshold: int):
+    def __init__(self, full_env: SeatCEOEnv, *, threshold: int):
         self._threshold = threshold
 
     def calc(
@@ -149,7 +149,7 @@ class DoublesUnderValueCount:
 
     _threshold: int
 
-    def __init__(self, full_env: SeatCEOEnv, threshold: int):
+    def __init__(self, full_env: SeatCEOEnv, *, threshold: int):
         self._threshold = threshold
 
     def calc(
@@ -179,7 +179,7 @@ class TriplesUnderValueCount:
 
     _threshold: int
 
-    def __init__(self, full_env: SeatCEOEnv, threshold: int):
+    def __init__(self, full_env: SeatCEOEnv, *, threshold: int):
         self._threshold = threshold
 
     def calc(
@@ -375,17 +375,23 @@ class SeatCEOFeaturesEnv(gym.Env):
 
         half_players = full_env.num_players // 2
         for i in range(half_players - 1):
-            feature = OtherPlayerHandCount(full_env, i)
+            feature = OtherPlayerHandCount(full_env, other_player_index=i)
             self._feature_calculators.append(feature)
 
         # self._feature_calculators.append(BottomHalfTableMinCards(full_env))
 
         min_card_exact_feature = 9
         for i in range(min_card_exact_feature, 13):
-            self._feature_calculators.append(HandCardCount(full_env, i))
-        self._feature_calculators.append(SinglesUnderValueCount(full_env, min_card_exact_feature))
-        self._feature_calculators.append(DoublesUnderValueCount(full_env, min_card_exact_feature))
-        self._feature_calculators.append(TriplesUnderValueCount(full_env, min_card_exact_feature))
+            self._feature_calculators.append(HandCardCount(full_env, card_value_index=i))
+        self._feature_calculators.append(
+            SinglesUnderValueCount(full_env, threshold=min_card_exact_feature)
+        )
+        self._feature_calculators.append(
+            DoublesUnderValueCount(full_env, threshold=min_card_exact_feature)
+        )
+        self._feature_calculators.append(
+            TriplesUnderValueCount(full_env, threshold=min_card_exact_feature)
+        )
 
         self._feature_calculators.append(TrickPosition(full_env))
         self._feature_calculators.append(CurTrickValue(full_env))
