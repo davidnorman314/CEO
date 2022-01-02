@@ -46,8 +46,9 @@ import azure.core.exceptions
 
 AUTOSCALE_FORMULA = """
     maxNumberOfVMs = {maxVMs};
-    maxRecentTaskCount = max($PendingTasks.GetSample(30 * TimeInterval_Minute));
-    keepAliveVMs = (maxRecentTaskCount > 0 ? $TargetDedicatedNodes : 0);
+    maxRecentTaskCount = max($PendingTasks.GetSample(30 * TimeInterval_Minute, 10));
+    fullKeepAliveVMs = (maxRecentTaskCount > 0 ? $TargetDedicatedNodes : 0);
+    keepAliveVMs = min(fullKeepAliveVMs, 1);
     curTaskCount = avg($PendingTasks.GetSample(1));
     curVMTarget = curTaskCount / $TaskSlotsPerNode + 0.51;
     newTargetNodes=min(maxNumberOfVMs, max(keepAliveVMs, curVMTarget));
@@ -400,6 +401,9 @@ def create_pool(
         ),
         vm_size=vm_size,
         task_slots_per_node=pool_config["tasks_per_node"],
+        task_scheduling_policy=batchmodels.TaskSchedulingPolicy(
+            node_fill_type=batchmodels.ComputeNodeFillType.pack
+        ),
         enable_auto_scale=True,
         auto_scale_formula=autoscale_formula,
         auto_scale_evaluation_interval=evaluation_interval,
