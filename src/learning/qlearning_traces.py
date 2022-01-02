@@ -90,13 +90,15 @@ class QLearningTraces(LearningBase):
         if self._azure_client:
             params = dict()
             params["discount_factor"] = discount_factor
-            params["lambda_val"] = lambda_val
+            params["lambda"] = lambda_val
             params["epsilon"] = epsilon
             params["max_epsilon"] = max_epsilon
             params["min_epsilon"] = min_epsilon
             params["decay"] = decay
 
-            self._azure_client.start_training("qlearning_traces", params)
+            self._azure_client.start_training(
+                "qlearning_traces", self._env.full_env.num_players, params, self._env.feature_defs
+            )
 
         # Training the agent
         total_training_reward = 0

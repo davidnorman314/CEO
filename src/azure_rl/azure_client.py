@@ -41,7 +41,9 @@ class AzureClient:
         self.blob_service_client = BlobServiceClient.from_connection_string(self.connect_str)
         self.container_client = self.blob_service_client.get_container_client(self.container_name)
 
-    def start_training(self, learning_type: str, params: dict):
+    def start_training(
+        self, learning_type: str, player_count: int, params: dict, feature_defs: list
+    ):
         self._training_id = "tid_" + str(uuid.uuid4())
 
         desc = dict()
@@ -49,7 +51,9 @@ class AzureClient:
         desc["start_time"] = datetime.datetime.now().isoformat()
         desc["log_blob_name"] = self.log_blob_name
         desc["pickle_blob_name"] = self.pickle_blob_name
+        desc["player_count"] = player_count
         desc["params"] = params
+        desc["feature_defs"] = feature_defs
         desc["training_id"] = self._training_id
 
         # Use ndjson format
