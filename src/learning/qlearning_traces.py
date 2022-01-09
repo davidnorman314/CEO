@@ -174,14 +174,11 @@ class QLearningTraces(LearningBase):
                 episode_infos.append(episode_info)
                 episode_info.state = state_action_tuple
                 episode_info.value_before = self._qtable.state_action_value(state_action_tuple)
-                # episode_info.value_before = self._Q[state_action_tuple]
                 if state_action_tuple not in episode_value_before:
                     episode_value_before[state_action_tuple] = episode_info.value_before
 
                 self._qtable.increment_state_visit_count(state_action_tuple)
-                # self._state_count[state_action_tuple] += 1
                 state_visit_count = self._qtable.state_visit_count(state_action_tuple)
-                # state_visit_count = self._state_count[state_action_tuple]
                 if state_visit_count == 1:
                     states_visited += 1
 
@@ -218,7 +215,6 @@ class QLearningTraces(LearningBase):
                     state_prime_value = self._qtable.state_value(
                         state_prime_tuple, self._env.action_space
                     )
-                    # state_prime_value = np.max(self._Q[(*state_prime_tuple, slice(None))])
 
                     # Pick the next action
                     action_prime, is_exploit = self._pick_action(state_prime_tuple, epsilon)
@@ -227,11 +223,9 @@ class QLearningTraces(LearningBase):
                     action_star = self._qtable.greedy_action(
                         state_prime_tuple, self._env.action_space
                     )
-                    # action_star = np.argmax(self._Q[(*state_prime_tuple, slice(None))])
                     action_star_value = self._qtable.state_action_value(
                         (*state_prime_tuple, action_star)
                     )
-                    # action_star_value = self._Q[(*state_prime_tuple, action_star)]
                     if action_star_value == state_prime_value:
                         action_star = action_prime
 
@@ -248,11 +242,6 @@ class QLearningTraces(LearningBase):
                         print("  is exploit", is_exploit)
                         print("Action star", action_star)
                         print("Delta", delta)
-                    # delta = (
-                    #     reward
-                    #     + discount_factor * self._Q[(*state_prime_tuple, action_star)]
-                    #     - self._Q[(*state_tuple, action)]
-                    # )
                 else:
                     if do_log:
                         print("Reward", reward)
@@ -266,7 +255,6 @@ class QLearningTraces(LearningBase):
 
                     # Calculate the update value
                     delta = reward - self._qtable.state_action_value((*state_tuple, action))
-                    # delta = reward - self._Q[(*state_tuple, action)]
 
                 if do_log:
                     print("delta", delta)
