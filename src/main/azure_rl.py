@@ -2,6 +2,7 @@
 """
 import argparse
 import json
+import azure.core.exceptions
 from azure_rl.azure_client import AzureClient
 
 # Main function
@@ -58,7 +59,13 @@ def main():
 
             if "log_blob_name" in training:
                 blob_name = training["log_blob_name"]
-                blob = client.get_blob(blob_name)
+
+                try:
+                    blob = client.get_blob(blob_name)
+                except azure.core.exceptions.ResourceNotFoundError:
+                    print(f"Blob {blob_name} does not exist")
+                    continue
+
                 lines = blob.split("\n")
 
                 i = -1
