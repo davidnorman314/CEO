@@ -31,3 +31,7 @@ pytest -s -k game
 `python -m main.azure_rl --get-rl-trainings`
 
 `python -m main.azure_rl --get-blob blob_name --save-file save.txt`
+
+## Azure administation
+
+`python azure_admin.py <options>`
