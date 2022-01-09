@@ -1,4 +1,4 @@
-"""Play rounds using an agent based on a Q table
+"""Play rounds using an agent based on a Q table.
 """
 
 import gym
@@ -13,6 +13,7 @@ from collections import deque
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from gym_ceo.envs.actions import ActionEnum
+from azure_rl.azure_client import AzureClient
 from CEO.cards.eventlistener import (
     EventListenerInterface,
     GameWatchListener,
@@ -121,9 +122,19 @@ class QAgent:
         return episode_states, episode_actions, episode_reward
 
 
-def create_agent(file_name: str, env: gym.Env, base_env: gym.Env):
-    with open(file_name, "rb") as f:
-        info = pickle.load(f)
+def create_agent(env: gym.Env, base_env: gym.Env, *, local_file=None, azure_blob_name=None):
+    if local_file:
+        with open(local_file, "rb") as f:
+            info = pickle.load(f)
+    elif azure_blob_name:
+        print("Downloading from Azure")
+        client = AzureClient()
+        blob = client.get_blob_raw(azure_blob_name)
+        info = pickle.loads(blob)
+        print("Finished downloading from Azure")
+    else:
+        print("Error: No picked agent specified.")
+        return
 
     print("----")
     print("Trained with", info["SearchStats"][-1]["episode"], "episodes")
@@ -132,7 +143,7 @@ def create_agent(file_name: str, env: gym.Env, base_env: gym.Env):
     return QAgent(info["Q"], info["StateCount"], env, base_env)
 
 
-def play(agent_file_name: str, episodes: int):
+def play(episodes: int, **kwargs):
 
     # Set up the environment
     random.seed(0)
@@ -143,7 +154,7 @@ def play(agent_file_name: str, episodes: int):
     env = SeatCEOFeaturesEnv(base_env)
 
     # Load the agent
-    agent = create_agent(agent_file_name, env, base_env)
+    agent = create_agent(env, base_env, **kwargs)
 
     # Play the episodes
     total_wins = 0
@@ -182,7 +193,7 @@ def play(agent_file_name: str, episodes: int):
     )
 
 
-def play_round(agent_file_name: str, round_pickle_file: str):
+def play_round(round_pickle_file: str, **kwargs):
     # Load the hands
     with open(round_pickle_file, "rb") as f:
         hands = pickle.load(f)
@@ -196,7 +207,7 @@ def play_round(agent_file_name: str, round_pickle_file: str):
     env = SeatCEOFeaturesEnv(base_env)
 
     # Load the agent
-    agent = create_agent(agent_file_name, env, base_env)
+    agent = create_agent(env, base_env, **kwargs)
 
     states, actions, reward = agent.do_episode(hands, True)
 
@@ -242,6 +253,13 @@ def main():
     )
 
     parser.add_argument(
+        "--azure-agent",
+        dest="azure_agent",
+        type=str,
+        help="The name of the Auzre blob containing the pickled agent.",
+    )
+
+    parser.add_argument(
         "--play",
         dest="play",
         action="store_const",
@@ -260,10 +278,19 @@ def main():
     args = parser.parse_args()
     # print(args)
 
+    agent_args = dict()
+    if args.agent_file:
+        agent_args["local_file"] = args.agent_file
+    elif args.azure_agent:
+        agent_args["azure_blob_name"] = args.azure_agent
+    else:
+        print("No agent file specified.")
+        return
+
     if args.play_round_file:
-        play_round(args.agent_file, args.play_round_file)
+        play_round(args.play_round_file, **agent_args)
     elif args.play:
-        play(args.agent_file, args.episodes)
+        play(args.episodes, **agent_args)
     else:
         parser.print_usage()
 

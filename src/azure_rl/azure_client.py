@@ -142,6 +142,14 @@ class AzureClient:
 
         return data_str
 
+    def get_blob_raw(self, blob_name):
+        blob_client = self.container_client.get_blob_client(blob_name)
+
+        downloader = blob_client.download_blob()
+        data = downloader.readall()
+
+        return data
+
     def get_blob_and_save(self, blob_name, filename):
         blob_client = self.container_client.get_blob_client(blob_name)
 
