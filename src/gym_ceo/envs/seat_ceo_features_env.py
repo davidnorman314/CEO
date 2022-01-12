@@ -199,6 +199,40 @@ class TriplesUnderValueCount:
         info["TriplesUnderValueCount"] = dest_obs[dest_start_index]
 
 
+class ValuesInRangeCount:
+    """
+    Feature giving the number of values in the hand in the range [range_begin, range_end)
+    """
+
+    dim = 1
+    max_value = 3
+
+    _range_begin: int
+    _range_end: int
+
+    def __init__(self, full_env: SeatCEOEnv, *, range_begin: int, range_end: int):
+        assert range_begin < range_end
+
+        self._range_begin = range_begin
+        self._range_end = range_end
+
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
+        count = 0
+        for i in range(self._range_begin, self._range_end):
+            card_count = full_obs.get_card_count(i)
+            if card_count > 0:
+                count += 1
+
+        dest_obs[dest_start_index] = min(count, self.max_value)
+        info["ValuesInRange({self._range_begin},{self._range_end})"] = dest_obs[dest_start_index]
+
+
 class TrickPosition:
     """
     Feature giving the position the player is for the trick: lead, in the middle, or
