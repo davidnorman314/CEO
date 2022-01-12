@@ -403,7 +403,7 @@ class SeatCEOFeaturesEnv(gym.Env):
 
     _observation_dimension: int
 
-    def __init__(self, full_env: SeatCEOEnv):
+    def __init__(self, full_env: SeatCEOEnv, *, feature_defs=None):
         self.full_env = full_env
         self.action_space = full_env.action_space
         self.max_action_value = full_env.max_action_value
@@ -411,7 +411,11 @@ class SeatCEOFeaturesEnv(gym.Env):
         self._feature_calculators = []
 
         # Get default feature definitions
-        self.feature_defs = self.get_default_features(full_env)
+        if feature_defs:
+            self.feature_defs = feature_defs
+        else:
+            print("Using default features")
+            self.feature_defs = self.get_default_features(full_env)
 
         # Create the features
         for feature_class, kwargs in self.feature_defs:

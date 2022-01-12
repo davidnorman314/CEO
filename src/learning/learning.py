@@ -44,10 +44,22 @@ def do_learning(
     else:
         random.seed(0)
 
+    # Get the feature definitions, if any.
+    feature_defs = None
+    if "features" in config:
+        feature_defs = []
+
+        for feature_config in config["features"]:
+            type = feature_config["type"]
+            feature_params = feature_config["params"]
+
+            feature_defs.append((type, feature_params))
+
+    # Create the environment
     listener = PrintAllEventListener()
     listener = EventListenerInterface()
     base_env = SeatCEOEnv(listener=listener)
-    env = SeatCEOFeaturesEnv(base_env)
+    env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
 
     learning_type = config["learning_type"]
     if learning_type == "qlearning_traces":
