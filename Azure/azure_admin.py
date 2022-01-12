@@ -276,6 +276,10 @@ def create_pool(
     poller = compute_client.virtual_machines.begin_power_off(account_info.resource_group, vm_name)
     power_off_result = poller.result()
 
+    # Deallocate the VM so we don't get charged for it.
+    poller = compute_client.virtual_machines.begin_deallocate(account_info.resource_group, vm_name)
+    power_off_result = poller.result()
+
     # Capture the VM
     vm_image_name = gallery_config["image_name"]
     compute_client.virtual_machines.generalize(account_info.resource_group, vm_name)
