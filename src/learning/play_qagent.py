@@ -143,13 +143,17 @@ def create_agent(env: gym.Env, base_env: gym.Env, *, local_file=None, azure_blob
     return QAgent(info["Q"], info["StateCount"], env, base_env)
 
 
-def play(episodes: int, **kwargs):
+def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs):
 
     # Set up the environment
     random.seed(0)
 
-    listener = PrintAllEventListener()
-    listener = GameWatchListener("RL")
+    if do_logging:
+        listener = PrintAllEventListener()
+        listener = GameWatchListener("RL")
+    else:
+        listener = EventListenerInterface()
+
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
 
@@ -160,12 +164,14 @@ def play(episodes: int, **kwargs):
     total_wins = 0
     total_losses = 0
     for count in range(episodes):
-        print("Playing episode", count + 1)
+        if do_logging:
+            print("Playing episode", count + 1)
+
         deck = Deck(base_env.num_players)
         hands = deck.deal()
         save_hands = deepcopy(hands)
 
-        states, actions, reward = agent.do_episode(hands, True)
+        states, actions, reward = agent.do_episode(hands, do_logging)
 
         if reward > 0.0:
             total_wins += 1
@@ -173,12 +179,14 @@ def play(episodes: int, **kwargs):
             total_losses += 1
 
         if reward < 0:
-            file = "play_hands/hands" + str(count + 1) + ".pickle"
-            with open(file, "wb") as f:
-                pickle.dump(save_hands, f, pickle.HIGHEST_PROTOCOL)
+            if save_failed_hands:
+                file = "play_hands/hands" + str(count + 1) + ".pickle"
+                with open(file, "wb") as f:
+                    pickle.dump(save_hands, f, pickle.HIGHEST_PROTOCOL)
 
-            for i in range(len(states)):
-                print(i, "state", states[i], "action", actions[i])
+            if do_logging:
+                for i in range(len(states)):
+                    print(i, "state", states[i], "action", actions[i])
 
     pct_win = total_wins / (total_wins + total_losses)
     print(
@@ -193,7 +201,7 @@ def play(episodes: int, **kwargs):
     )
 
 
-def play_round(round_pickle_file: str, **kwargs):
+def play_round(round_pickle_file: str, do_logging: bool, **kwargs):
     # Load the hands
     with open(round_pickle_file, "rb") as f:
         hands = pickle.load(f)
@@ -201,15 +209,19 @@ def play_round(round_pickle_file: str, **kwargs):
     # Set up the environment
     random.seed(0)
 
-    listener = PrintAllEventListener()
-    listener = GameWatchListener("RL")
+    if do_logging:
+        listener = PrintAllEventListener()
+        listener = GameWatchListener("RL")
+    else:
+        listener = EventListenerInterface()
+
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
 
     # Load the agent
     agent = create_agent(env, base_env, **kwargs)
 
-    states, actions, reward = agent.do_episode(hands, True)
+    states, actions, reward = agent.do_episode(hands, do_logging)
 
     if False:
         for i in range(len(states)):
@@ -275,6 +287,24 @@ def main():
         help="The name of a pickle file containing a list of hands",
     )
 
+    parser.add_argument(
+        "--do-logging",
+        dest="do_logging",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Log information giving the details of each hand.",
+    )
+
+    parser.add_argument(
+        "--save-failed-hands",
+        dest="save_failed_hands",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Save pickle files for hands where the agent got a negative reward.",
+    )
+
     args = parser.parse_args()
     # print(args)
 
@@ -288,9 +318,9 @@ def main():
         return
 
     if args.play_round_file:
-        play_round(args.play_round_file, **agent_args)
+        play_round(args.play_round_file, args.do_logging, **agent_args)
     elif args.play:
-        play(args.episodes, **agent_args)
+        play(args.episodes, args.do_logging, args.save_failed_hands, **agent_args)
     else:
         parser.print_usage()
 
