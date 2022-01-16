@@ -395,6 +395,9 @@ class SeatCEOFeaturesEnv(gym.Env):
     action_space: Discrete
     max_action_value: int
 
+    # The number of players
+    num_players: int
+
     # Feature definitions
     feature_defs: list
 
@@ -407,6 +410,7 @@ class SeatCEOFeaturesEnv(gym.Env):
         self.full_env = full_env
         self.action_space = full_env.action_space
         self.max_action_value = full_env.max_action_value
+        self.num_players = full_env.num_players
 
         self._feature_calculators = []
 

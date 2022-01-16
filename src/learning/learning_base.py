@@ -216,6 +216,8 @@ class LearningBase:
         pickle_dict["Type"] = typestr
         pickle_dict["MaxActionValue"] = self._qtable._max_action_value
         pickle_dict["SearchStats"] = self._search_statistics
+        pickle_dict["FeatureDefs"] = self._env.feature_defs
+        pickle_dict["NumPlayers"] = self._env.num_players
 
         with open(filename, "wb") as f:
             pickle.dump(pickle_dict, f, pickle.HIGHEST_PROTOCOL)

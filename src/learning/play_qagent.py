@@ -122,7 +122,7 @@ class QAgent:
         return episode_states, episode_actions, episode_reward
 
 
-def create_agent(env: gym.Env, base_env: gym.Env, *, local_file=None, azure_blob_name=None):
+def create_agent(listener: EventListenerInterface, *, local_file=None, azure_blob_name=None):
     if local_file:
         with open(local_file, "rb") as f:
             info = pickle.load(f)
@@ -136,11 +136,22 @@ def create_agent(env: gym.Env, base_env: gym.Env, *, local_file=None, azure_blob
         print("Error: No picked agent specified.")
         return
 
+    if "FeatureDefs" in info:
+        feature_defs = info["FeatureDefs"]
+    else:
+        feature_defs = None
+
+    num_players = info["NumPlayers"]
+
+    base_env = SeatCEOEnv(num_players=num_players, listener=listener)
+    env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
+
+    print(info.keys())
     print("----")
     print("Trained with", info["SearchStats"][-1]["episode"], "episodes")
     print("----")
 
-    return QAgent(info["Q"], info["StateCount"], env, base_env)
+    return env, base_env, QAgent(info["Q"], info["StateCount"], env, base_env)
 
 
 def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs):
@@ -154,11 +165,8 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs):
     else:
         listener = EventListenerInterface()
 
-    base_env = SeatCEOEnv(listener=listener)
-    env = SeatCEOFeaturesEnv(base_env)
-
     # Load the agent
-    agent = create_agent(env, base_env, **kwargs)
+    env, base_env, agent = create_agent(listener, **kwargs)
 
     # Play the episodes
     total_wins = 0
@@ -219,7 +227,7 @@ def play_round(round_pickle_file: str, do_logging: bool, **kwargs):
     env = SeatCEOFeaturesEnv(base_env)
 
     # Load the agent
-    agent = create_agent(env, base_env, **kwargs)
+    env, base_env, agent = create_agent(listener, **kwargs)
 
     states, actions, reward = agent.do_episode(hands, do_logging)
 
