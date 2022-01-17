@@ -122,39 +122,74 @@ class QAgent:
         return episode_states, episode_actions, episode_reward
 
 
-def create_agent(listener: EventListenerInterface, *, local_file=None, azure_blob_name=None):
-    if local_file:
-        with open(local_file, "rb") as f:
-            info = pickle.load(f)
-    elif azure_blob_name:
-        print("Downloading from Azure")
-        client = AzureClient()
-        blob = client.get_blob_raw(azure_blob_name)
-        info = pickle.loads(blob)
-        print("Finished downloading from Azure")
+def create_agent(
+    listener: EventListenerInterface,
+    *,
+    local_file=None,
+    azure_blob_name=None,
+    env=None,
+    base_env=None,
+    q_table=None,
+    state_count=None,
+):
+
+    if local_file or azure_blob_name:
+        assert not base_env
+        assert not env
+        assert not q_table
+        assert not state_count
+
+        # Load the pickle file and use it to create the environment and agent.
+        if local_file:
+            with open(local_file, "rb") as f:
+                info = pickle.load(f)
+        elif azure_blob_name:
+            print("Downloading from Azure")
+            client = AzureClient()
+            blob = client.get_blob_raw(azure_blob_name)
+            info = pickle.loads(blob)
+            print("Finished downloading from Azure")
+        else:
+            print("Error: No picked agent specified.")
+            return
+
+        if "FeatureDefs" in info:
+            feature_defs = info["FeatureDefs"]
+        else:
+            feature_defs = None
+
+        num_players = info["NumPlayers"]
+
+        base_env = SeatCEOEnv(num_players=num_players, listener=listener)
+        env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
+
+        q_table = info["Q"]
+        state_count = info["StateCount"]
+
+        print(info.keys())
+        print("----")
+        print("Trained with", info["SearchStats"][-1]["episode"], "episodes")
+        print("----")
+    elif env:
+        assert not local_file
+        assert not azure_blob_name
+
+        assert q_table is not None
+        assert state_count is not None
+        assert env is not None
+        assert base_env is not None
     else:
-        print("Error: No picked agent specified.")
-        return
+        print("Error: incorrect arguments specified.")
 
-    if "FeatureDefs" in info:
-        feature_defs = info["FeatureDefs"]
-    else:
-        feature_defs = None
-
-    num_players = info["NumPlayers"]
-
-    base_env = SeatCEOEnv(num_players=num_players, listener=listener)
-    env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
-
-    print(info.keys())
-    print("----")
-    print("Trained with", info["SearchStats"][-1]["episode"], "episodes")
-    print("----")
-
-    return env, base_env, QAgent(info["Q"], info["StateCount"], env, base_env)
+    return env, base_env, QAgent(q_table, state_count, env, base_env)
 
 
 def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs):
+
+    azure_client = None
+    if "azure_client" in kwargs:
+        azure_client = kwargs["azure_client"]
+        del kwargs["azure_client"]
 
     # Set up the environment
     random.seed(0)
@@ -207,6 +242,9 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs):
         "Percent wins",
         pct_win,
     )
+
+    if azure_client:
+       azure_client.save_post_train_stats(episodes=episodes,total_wins=total_wins,total_losses=total_losses,pct_win= pct_win) 
 
 
 def play_round(round_pickle_file: str, do_logging: bool, **kwargs):

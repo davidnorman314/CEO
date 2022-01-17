@@ -10,6 +10,8 @@ import random
 from learning.qlearning_traces import QLearningTraces
 from azure_rl.azure_client import AzureClient
 
+import learning.play_qagent as play_qagent
+
 import cProfile
 from pstats import SortKey
 
@@ -25,6 +27,7 @@ def do_learning(
     random_seed: int,
     do_profile: bool,
     pickle_file: str,
+    post_train_stats_episodes: int,
 ):
     print("Loading configuration from", configfile)
     with open(configfile) as f:
@@ -32,9 +35,11 @@ def do_learning(
 
     # Create the arguments for the learning object
     kwargs = dict()
+    azure_client = None
     if do_azure:
         print("Saving progress and results to Azure")
-        kwargs["azure_client"] = AzureClient()
+        azure_client = AzureClient()
+        kwargs["azure_client"] = azure_client
 
     kwargs["train_episodes"] = config["episodes"]
 
@@ -82,7 +87,27 @@ def do_learning(
         print("Saving results to", pickle_file)
         learning.pickle("qlearning_traces", pickle_file)
 
+    # Run a final test of the agent, if necessary
+    if post_train_stats_episodes:
+        post_train_stats(learning, env, base_env, post_train_stats_episodes, azure_client)
+
     return final_search_statistics
+
+
+def post_train_stats(learning, env, base_env, episodes, azure_client):
+    q_table = learning._qtable._Q
+    state_count = learning._qtable._state_count
+
+    play_qagent.play(
+        episodes,
+        False,
+        False,
+        env=env,
+        base_env=base_env,
+        q_table=q_table,
+        state_count=state_count,
+        azure_client=azure_client,
+    )
 
 
 def main():
@@ -133,6 +158,13 @@ def main():
         nargs=1,
         help="The learning configuration file",
     )
+    parser.add_argument(
+        "--post-train-stats-episodes",
+        type=int,
+        nargs=1,
+        default=None,
+        help="How many episodes should be run when testing the trained agent.",
+    )
 
     args = parser.parse_args()
 
@@ -143,6 +175,7 @@ def main():
         args.seed,
         args.profile,
         args.pickle_file,
+        args.post_train_stats_episodes[0],
     )
 
 

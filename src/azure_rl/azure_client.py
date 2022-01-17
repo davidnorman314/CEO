@@ -47,6 +47,7 @@ class AzureClient:
         self._training_id = "tid_" + str(uuid.uuid4())
 
         desc = dict()
+        desc["record_type"] = "start_training"
         desc["learning_type"] = learning_type
         desc["start_time"] = datetime.datetime.now().isoformat()
         desc["log_blob_name"] = self.log_blob_name
@@ -79,6 +80,7 @@ class AzureClient:
 
     def end_training(self):
         desc = dict()
+        desc["record_type"] = "end_training"
         desc["stop_time"] = datetime.datetime.now().isoformat()
         desc["training_id"] = self._training_id
 
@@ -110,6 +112,30 @@ class AzureClient:
         json_str = json_str + "\n"
 
         self.log_client.append_block(json_str, len(json_str))
+
+    def save_post_train_stats(
+        self, *, episodes=None, total_wins=None, total_losses=None, pct_win=None
+    ):
+        """Save statistics from running the agent after it is trained."""
+
+        stats = dict()
+        stats["record_type"] = "post_train_stats"
+        stats["episodes"] = episodes
+        stats["total_wins"] = total_wins
+        stats["total_losses"] = total_losses
+        stats["pct_win"] = pct_win
+        stats["training_id"] = self._training_id
+        stats["test_time"] = datetime.datetime.now().isoformat()
+
+        # Use ndjson format
+        json_str = json.dumps(stats, separators=(",", ":"), indent=None)
+        json_str = json_str + "\n"
+
+        rl_trainings_blob_client = self.container_client.get_blob_client(
+            self.rl_trainings_blob_name
+        )
+
+        rl_trainings_blob_client.append_block(json_str, len(json_str))
 
     def upload_pickle(self, filename: str):
         # Connect to the blob for the pickled information
