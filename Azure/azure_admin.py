@@ -606,7 +606,7 @@ def do_training(
         echo Starting python;
         python --version;
         source /home/david/py39/bin/activate;
-        python -m learning.learning --azure ---post-train-stats-episodes 10000 --pickle-file ../../results.pkl ../../config.json;
+        python -m learning.learning --azure --post-train-stats-episodes 10000 --pickle-file ../../results.pkl ../../config.json;
         echo Python finished;
         echo Done;"
         """
