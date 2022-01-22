@@ -56,6 +56,7 @@ class PassCards:
             to_index = self._player_count - 1 - i
             from_hand = self._hands[i]
             to_hand = self._hands[to_index]
+            orig_from_hand_str = str(from_hand)
 
             cards_to_pass = pass_count - i
 
@@ -79,6 +80,17 @@ class PassCards:
             assert len(values) == cards_to_pass
 
             for cv in values:
+                if from_hand.count(cv) <= 0:
+                    print(
+                        "Pass returned too many cards for",
+                        cv,
+                        "pass",
+                        values,
+                        "original hand",
+                        orig_from_hand_str,
+                    )
+                    assert "Trying to remove too many cards" == ""
+
                 from_hand.remove_cards(cv, 1)
                 to_hand.add_cards(cv, 1)
 
