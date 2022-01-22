@@ -51,30 +51,45 @@ def main():
     elif args.get_results:
         trainings = client.get_all_trainings()
 
+        all_trainings = dict()
         for training_str in trainings:
             if len(training_str) == 0:
                 continue
 
             training = json.loads(training_str)
 
-            if "log_blob_name" in training:
-                blob_name = training["log_blob_name"]
+            if training["record_type"] == "start_training":
+                training_id = training["training_id"]
+                all_trainings[training_id] = dict()
+                all_trainings[training_id]["start_training"] = training
+            elif training["record_type"] == "post_train_stats":
+                training_id = training["training_id"]
+                all_trainings[training_id]["post_train_stats"] = training
 
-                try:
-                    blob = client.get_blob(blob_name)
-                except azure.core.exceptions.ResourceNotFoundError:
-                    print(f"Blob {blob_name} does not exist")
-                    continue
+        for training_id, training_dict in all_trainings.items():
+            start_training = training_dict["start_training"]
+            post_train_stats = None
+            if "post_train_stats" in training_dict:
+                post_train_stats = training_dict["post_train_stats"]
 
-                lines = blob.split("\n")
+            blob_name = start_training["log_blob_name"]
 
-                i = -1
-                if len(lines[i]) == 0:
-                    i = -2
+            try:
+                blob = client.get_blob(blob_name)
+            except azure.core.exceptions.ResourceNotFoundError:
+                print(f"Blob {blob_name} does not exist")
+                continue
 
-                print(training)
-                print(lines[i])
-                print("")
+            lines = blob.split("\n")
+
+            i = -1
+            if len(lines[i]) == 0:
+                i = -2
+
+            print(start_training)
+            print(lines[i])
+            print(post_train_stats)
+            print("")
     elif args.blob_name and args.filename:
         blob = client.get_blob_and_save(args.blob_name, args.filename)
     elif args.blob_name:
