@@ -137,15 +137,17 @@ class AzureClient:
 
         rl_trainings_blob_client.append_block(json_str, len(json_str))
 
-    def upload_pickle(self, filename: str):
+    def upload_pickle(self, *, filename: str = None, data: bytes = None):
         # Connect to the blob for the pickled information
         blob_client = self.container_client.get_blob_client(self.pickle_blob_name)
 
-        filesize = os.path.getsize(filename)
+        if filename is not None:
+            assert data is None
+            with open(filename, "rb") as f:
+                data = f.read()
 
         print("Uploading pickled information to Azure")
-        with open(filename, "rb") as data:
-            blob_client.upload_blob(data, overwrite=True, length=filesize)
+        blob_client.upload_blob(data, overwrite=True, length=len(data))
         print("Done uploading pickled information to Azure")
 
     def get_all_trainings(self):

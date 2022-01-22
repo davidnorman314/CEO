@@ -594,7 +594,6 @@ def do_training(
 
         learning_config_json = json.dumps(learning)
         learning_config_json = learning_config_json.replace('"', '\\"')
-        # print(learning_config_json)
 
         command = f"""/bin/bash -c "echo Learning task starting.;
         echo '{learning_config_json}' > config.json;
@@ -606,7 +605,7 @@ def do_training(
         echo Starting python;
         python --version;
         source /home/david/py39/bin/activate;
-        python -m learning.learning --azure --post-train-stats-episodes 10000 --pickle-file ../../results.pkl ../../config.json;
+        python -m learning.learning --azure --post-train-stats-episodes 10000 ../../config.json;
         echo Python finished;
         echo Done;"
         """

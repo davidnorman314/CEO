@@ -219,12 +219,16 @@ class LearningBase:
         pickle_dict["FeatureDefs"] = self._env.feature_defs
         pickle_dict["NumPlayers"] = self._env.num_players
 
-        with open(filename, "wb") as f:
-            pickle.dump(pickle_dict, f, pickle.HIGHEST_PROTOCOL)
+        data = pickle.dumps(pickle_dict, pickle.HIGHEST_PROTOCOL)
+
+        if filename:
+            print("Saving results to", filename)
+            with open(filename, "wb") as f:
+                f.write(data)
 
         # Upload to Azure, if necessary
         if self._azure_client:
-            self._azure_client.upload_pickle(filename)
+            self._azure_client.upload_pickle(data=data)
 
     def mean_squared_difference(self, o) -> int:
         """

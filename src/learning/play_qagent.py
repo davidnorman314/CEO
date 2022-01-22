@@ -244,7 +244,12 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs):
     )
 
     if azure_client:
-       azure_client.save_post_train_stats(episodes=episodes,total_wins=total_wins,total_losses=total_losses,pct_win= pct_win) 
+        azure_client.save_post_train_stats(
+            episodes=episodes,
+            total_wins=total_wins,
+            total_losses=total_losses,
+            pct_win=pct_win,
+        )
 
 
 def play_round(round_pickle_file: str, do_logging: bool, **kwargs):

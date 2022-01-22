@@ -83,8 +83,7 @@ def do_learning(
         final_search_statistics = learning.train(params, do_logging)
 
     # Save the agent in a pickle file.
-    if pickle_file:
-        print("Saving results to", pickle_file)
+    if pickle_file or azure_client:
         learning.pickle("qlearning_traces", pickle_file)
 
     # Run a final test of the agent, if necessary
@@ -161,7 +160,6 @@ def main():
     parser.add_argument(
         "--post-train-stats-episodes",
         type=int,
-        nargs=1,
         default=None,
         help="How many episodes should be run when testing the trained agent.",
     )
@@ -175,7 +173,7 @@ def main():
         args.seed,
         args.profile,
         args.pickle_file,
-        args.post_train_stats_episodes[0],
+        args.post_train_stats_episodes,
     )
 
 
