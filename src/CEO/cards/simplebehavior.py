@@ -159,25 +159,50 @@ class SimpleBehaviorBase:
 
         # We don't have enough singles and don't have a pair, so we need to pass the singles and
         # cards from the lowest other group.
-        seen_lowest_large_group = False
-        ret = []
+        if single_count < count and pair_count == 0:
+            seen_lowest_large_group = False
+            ret = []
 
-        for i in range(13):
-            cv = CardValue(i)
-            if hand.count(cv) == 1:
-                ret.append(cv)
-            elif hand.count(cv) == 0:
-                pass
-            else:
-                if not seen_lowest_large_group:
-                    ret.extend([cv] * (count - single_count))
-
-                    seen_lowest_large_group = True
+            for i in range(13):
+                cv = CardValue(i)
+                if hand.count(cv) == 1:
+                    ret.append(cv)
+                elif hand.count(cv) == 0:
+                    pass
                 else:
-                    continue
+                    if not seen_lowest_large_group:
+                        ret.extend([cv] * (count - single_count))
 
-            if len(ret) == count:
-                return ret
+                        seen_lowest_large_group = True
+                    else:
+                        continue
+
+                if len(ret) == count:
+                    return ret
+
+        # We don't have any singles, but we have a pair, so we need to pass the pair and
+        # cards from the lowest other group.
+        if single_count == 0 and pair_count == 1 and count > 2:
+            seen_lowest_large_group = False
+            ret = []
+
+            for i in range(13):
+                cv = CardValue(i)
+                if hand.count(cv) == 2:
+                    ret.append(cv)
+                    ret.append(cv)
+                elif hand.count(cv) == 0:
+                    pass
+                else:
+                    if not seen_lowest_large_group:
+                        ret.extend([cv] * (count - 2))
+
+                        seen_lowest_large_group = True
+                    else:
+                        continue
+
+                if len(ret) == count:
+                    return ret
 
         assert "shouldn't be here" == ""
 

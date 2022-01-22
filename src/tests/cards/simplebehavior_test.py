@@ -223,6 +223,15 @@ def test_SimpleBehaviorBase_pass_singles():
 
     assert behavior.pass_singles(hand, 3) == [cv1, cv3, cv6]
 
+    # Test when we need to pass three but there aren't any singles or triples
+    hand = Hand()
+    hand.add_cards(cv3, 2)
+    hand.add_cards(cv9, 5)
+    hand.add_cards(cv11, 4)
+    hand.add_cards(cv12, 5)
+
+    assert behavior.pass_singles(hand, 3) == [cv3, cv3, cv9]
+
 
 def test_SimpleBehaviorBase_play_lowest_or_pass():
     """
