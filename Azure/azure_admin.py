@@ -46,10 +46,10 @@ import azure.core.exceptions
 
 AUTOSCALE_FORMULA = """
     maxNumberOfVMs = {maxVMs};
-    maxRecentTaskCount = max($PendingTasks.GetSample(30 * TimeInterval_Minute, 10));
+    maxRecentTaskCount = max($PendingTasks.GetSample(30 * TimeInterval_Minute, 1));
     fullKeepAliveVMs = (maxRecentTaskCount > 0 ? $TargetDedicatedNodes : 0);
     keepAliveVMs = min(fullKeepAliveVMs, 1);
-    curTaskCount = avg($PendingTasks.GetSample(1));
+    curTaskCount = avg($PendingTasks.GetSample(60 * TimeInterval_Second));
     curVMTarget = curTaskCount / $TaskSlotsPerNode + 0.51;
     newTargetNodes=min(maxNumberOfVMs, max(keepAliveVMs, curVMTarget));
     $TargetDedicatedNodes=newTargetNodes;
