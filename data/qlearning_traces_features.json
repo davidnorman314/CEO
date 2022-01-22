@@ -50,21 +50,24 @@
             "type": "ValuesInRangeCount",
             "params": {
                 "range_begin": 0,
-                "range_end": 3
+                "range_end": 3,
+                "max_value": 3
             }
         },
         {
             "type": "ValuesInRangeCount",
             "params": {
                 "range_begin": 3,
-                "range_end": 6
+                "range_end": 6,
+                "max_value": 3
             }
         },
         {
             "type": "ValuesInRangeCount",
             "params": {
                 "range_begin": 6,
-                "range_end": 9
+                "range_end": 9,
+                "max_value": 3
             }
         },
         {
