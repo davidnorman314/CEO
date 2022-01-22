@@ -205,16 +205,17 @@ class ValuesInRangeCount:
     """
 
     dim = 1
-    max_value = 3
+    max_value: int
 
     _range_begin: int
     _range_end: int
 
-    def __init__(self, full_env: SeatCEOEnv, *, range_begin: int, range_end: int):
+    def __init__(self, full_env: SeatCEOEnv, *, range_begin: int, range_end: int, max_value: int):
         assert range_begin < range_end
 
         self._range_begin = range_begin
         self._range_end = range_end
+        self.max_value = max_value
 
     def calc(
         self,
@@ -230,7 +231,9 @@ class ValuesInRangeCount:
                 count += 1
 
         dest_obs[dest_start_index] = min(count, self.max_value)
-        info["ValuesInRange({self._range_begin},{self._range_end})"] = dest_obs[dest_start_index]
+        info["ValuesInRange({self._range_begin},{self._range_end},{self.max_value})"] = dest_obs[
+            dest_start_index
+        ]
 
 
 class TrickPosition:

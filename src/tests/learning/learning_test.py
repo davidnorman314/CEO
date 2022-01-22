@@ -15,7 +15,7 @@ def test_qlearning_traces(pytestconfig):
     pickle_file = None
 
     search_statistics = do_learning(
-        configfile, do_azure, do_logging, random_seed, do_profile, pickle_file
+        configfile, do_azure, do_logging, random_seed, do_profile, pickle_file, None
     )
 
     assert search_statistics["episode"] == 1000

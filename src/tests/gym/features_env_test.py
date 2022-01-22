@@ -231,10 +231,10 @@ def test_ValuesInRangeCount():
     )
     factory = ObservationFactory(env.num_players)
 
-    feature_calc_0_3 = ValuesInRangeCount(env, range_begin=0, range_end=3)
-    feature_calc_0_4 = ValuesInRangeCount(env, range_begin=0, range_end=4)
-    feature_calc_3_6 = ValuesInRangeCount(env, range_begin=3, range_end=6)
-    feature_calc_4_6 = ValuesInRangeCount(env, range_begin=4, range_end=6)
+    feature_calc_0_3 = ValuesInRangeCount(env, range_begin=0, range_end=3, max_value=3)
+    feature_calc_0_4 = ValuesInRangeCount(env, range_begin=0, range_end=4, max_value=3)
+    feature_calc_3_6 = ValuesInRangeCount(env, range_begin=3, range_end=6, max_value=3)
+    feature_calc_4_6 = ValuesInRangeCount(env, range_begin=4, range_end=6, max_value=3)
 
     observation_array = env.reset()
     observation = factory.create_observation(array=observation_array)
@@ -253,3 +253,13 @@ def test_ValuesInRangeCount():
 
     feature_calc_4_6.calc(observation, feature_array, 0, info)
     assert feature_array[0] == 0
+
+    # Test max_value
+    feature_calc_max2 = ValuesInRangeCount(env, range_begin=0, range_end=12, max_value=2)
+    feature_calc_max3 = ValuesInRangeCount(env, range_begin=0, range_end=12, max_value=3)
+
+    feature_calc_max2.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_calc_max3.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
