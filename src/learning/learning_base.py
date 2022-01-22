@@ -103,7 +103,6 @@ class QTable:
         return sum(
             self._state_count[(*state_tuple, action.value)] for action in action_space.actions
         )
-        # return np.sum(self._state_count[(*state_tuple, slice(None))])
 
     def state_visit_count(self, state_action_tuple: tuple):
         return self._state_count[(*state_action_tuple[:-1], state_action_tuple[-1].value)]
