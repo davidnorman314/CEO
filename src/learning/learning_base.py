@@ -139,7 +139,7 @@ class LearningBase:
         )
 
         if self._azure_client:
-            self._azure_client.save_train_stats(
+            self._azure_client.save_test_stats(
                 training_episodes=training_episodes,
                 episodes=stats.episodes,
                 total_wins=stats.total_wins,

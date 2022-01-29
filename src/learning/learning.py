@@ -91,12 +91,12 @@ def do_learning(
 
     # Run a final test of the agent, if necessary
     if post_train_stats_episodes:
-        post_train_stats(learning, env, base_env, post_train_stats_episodes, azure_client)
+        post_train_test_stats(learning, env, base_env, post_train_stats_episodes, azure_client)
 
     return final_search_statistics
 
 
-def post_train_stats(learning, env, base_env, episodes, azure_client):
+def post_train_test_stats(learning, env, base_env, episodes, azure_client):
     q_table = learning._qtable._Q
     state_count = learning._qtable._state_count
 
@@ -111,7 +111,7 @@ def post_train_stats(learning, env, base_env, episodes, azure_client):
     )
 
     if azure_client:
-        azure_client.save_post_train_stats(
+        azure_client.save_post_train_test_stats(
             episodes=stats.episodes,
             total_wins=stats.total_wins,
             total_losses=stats.total_losses,
