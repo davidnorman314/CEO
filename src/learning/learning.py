@@ -8,6 +8,7 @@ import json
 import random
 
 from learning.qlearning_traces import QLearningTraces
+from learning.qlearning import QLearning
 from azure_rl.azure_client import AzureClient
 
 import learning.play_qagent as play_qagent
@@ -69,6 +70,8 @@ def do_learning(
     learning_type = config["learning_type"]
     if learning_type == "qlearning_traces":
         learning = QLearningTraces(env, **kwargs)
+    elif learning_type == "qlearning":
+        learning = QLearning(env, **kwargs)
     else:
         print("Unknown learning type", learning_type)
         exit(1)

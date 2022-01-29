@@ -5,6 +5,7 @@ import argparse
 import random
 import copy
 import math
+from azure_rl.azure_client import AzureClient
 from learning.learning_base import LearningBase, EpisodeInfo
 from collections import deque
 
@@ -28,18 +29,42 @@ class QLearning(LearningBase):
         super().__init__(env)
         self._train_episodes = train_episodes
 
-    def train(self):
-        # Creating lists to keep track of reward and epsilon values
-        discount_factor = 0.7
-        epsilon = 1
-        max_epsilon = 0.5
-        min_epsilon = 0.01
-        decay = 0.000001
+    def train(self, params: dict, do_log: bool):
+        # Validate the parameters
+        discount_factor = params["discount_factor"]
+        if discount_factor is None:
+            return "The parameter discount_factor is missing"
 
-        test_episodes = 100
-        max_steps = 100
+        epsilon = params["epsilon"]
+        if epsilon is None:
+            return "The parameter epsilon is missing"
+
+        max_epsilon = params["max_epsilon"]
+        if max_epsilon is None:
+            return "The parameter max_epsilon is missing"
+
+        min_epsilon = params["min_epsilon"]
+        if min_epsilon is None:
+            return "The parameter min_epsilon is missing"
+
+        decay = params["decay"]
+        if decay is None:
+            return "The parameter decay is missing"
 
         print("Training with", self._train_episodes, "episodes")
+
+        # Log the start of training to Azure, if necessary.
+        if self._azure_client:
+            params = dict()
+            params["discount_factor"] = discount_factor
+            params["epsilon"] = epsilon
+            params["max_epsilon"] = max_epsilon
+            params["min_epsilon"] = min_epsilon
+            params["decay"] = decay
+
+            self._azure_client.start_training(
+                "qlearning", self._env.full_env.num_players, params, self._env.feature_defs
+            )
 
         # Training the agent
         total_training_reward = 0
@@ -67,7 +92,6 @@ class QLearning(LearningBase):
                 exp_exp_sample = random.uniform(0, 1)
 
                 exploit_action = self._qtable.greedy_action(state_tuple, self._env.action_space)
-                # exploit_action = np.argmax(self._Q[(*state_tuple, slice(None))])
 
                 explore_action_index = self._env.action_space.sample()
                 explore_action = self._env.action_space.actions[explore_action_index]
@@ -77,15 +101,11 @@ class QLearning(LearningBase):
 
                     action = exploit_action
                     action_type = "-------"
-
-                    # print("q action", action, type(action))
-                    # print("  expected reward", self._Q[state, action])
                 else:
                     action = explore_action
                     action_type = "explore"
 
                     episode_explore_count += 1
-                    # print("e action", action, type(action))
 
                 state_action_tuple = state_tuple + (action,)
 
@@ -103,7 +123,6 @@ class QLearning(LearningBase):
                     new_state_value = self._qtable.state_value(
                         new_state_tuple, self._env.action_space
                     )
-                    # new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
                 else:
                     assert done
                     assert reward != 0
@@ -117,12 +136,9 @@ class QLearning(LearningBase):
 
                 episode_info.state = state_action_tuple
                 episode_info.value_before = self._qtable.state_action_value(state_action_tuple)
-                # episode_info.value_before = self._Q[state_action_tuple]
 
                 self._qtable.increment_state_visit_count(state_action_tuple)
-                # self._state_count[state_action_tuple] += 1
                 state_visit_count = self._qtable.state_visit_count(state_action_tuple)
-                # state_visit_count = self._state_count[state_action_tuple]
                 if state_visit_count == 1:
                     states_visited += 1
 
@@ -134,9 +150,6 @@ class QLearning(LearningBase):
                 state_action_value = self._qtable.state_action_value(state_action_tuple)
                 delta = alpha * (reward + discount_factor * new_state_value - state_action_value)
                 self._qtable.update_state_visit_value(state_action_tuple, delta)
-                # self._Q[state_action_tuple] = self._Q[state_action_tuple] + alpha * (
-                #    reward + discount_factor * new_state_value - self._Q[state_action_tuple]
-                # )
 
                 episode_info.value_after = self._qtable.state_action_value(state_action_tuple)
                 episode_info.hand = copy.deepcopy(info)
@@ -157,7 +170,6 @@ class QLearning(LearningBase):
 
                 # See if the episode is finished
                 if done == True:
-                    # print("Reward", reward)
                     break
 
             # Cutting down on exploration by reducing the epsilon
@@ -173,20 +185,11 @@ class QLearning(LearningBase):
                 recent_explore_counts.popleft()
                 recent_exploit_counts.popleft()
 
-            if episode > 0 and episode % 2000 == 0:
+            if (episode > 0 and episode % 2000 == 0) or (episode == self._train_episodes):
                 ave_training_rewards = total_training_reward / episode
                 recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
                 recent_explore_rate = sum(recent_explore_counts) / (
                     sum(recent_exploit_counts) + sum(recent_explore_counts)
-                )
-
-                self.add_search_statistics(
-                    "qlearning",
-                    episode,
-                    ave_training_rewards,
-                    recent_rewards,
-                    recent_explore_rate,
-                    states_visited,
                 )
 
                 print(
@@ -197,6 +200,15 @@ class QLearning(LearningBase):
                         recent_explore_rate,
                         states_visited,
                     )
+                )
+
+                self.add_search_statistics(
+                    "qlearning",
+                    episode,
+                    ave_training_rewards,
+                    recent_rewards,
+                    recent_explore_rate,
+                    states_visited,
                 )
 
             if False and episode > 0 and episode % 20000 == 0:
@@ -239,6 +251,11 @@ class QLearning(LearningBase):
 
                 print("  pos", pos_count, "neg", neg_count, "zero", zero_count)
 
+        if self._azure_client:
+            self._azure_client.end_training()
+
+        return self._search_statistics[-1]
+
 
 # Main function
 if __name__ == "__main__":
@@ -252,11 +269,27 @@ if __name__ == "__main__":
         help="Do profiling.",
     )
     parser.add_argument(
+        "--log",
+        dest="log",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Do logging.",
+    )
+    parser.add_argument(
         "--episodes",
         dest="train_episodes",
         type=int,
         default=100000,
         help="The number of rounds to play",
+    )
+    parser.add_argument(
+        "--azure",
+        dest="azure",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Save agent and log information to azure blob storage.",
     )
 
     args = parser.parse_args()
@@ -266,11 +299,27 @@ if __name__ == "__main__":
     if args.train_episodes:
         kwargs["train_episodes"] = args.train_episodes
 
+    if args.azure:
+        kwargs["azure_client"] = AzureClient()
+
+    do_log = False
+    if args.log:
+        do_log = args.log
+
     random.seed(0)
     listener = PrintAllEventListener()
     listener = EventListenerInterface()
     base_env = SeatCEOEnv(listener=listener)
     env = SeatCEOFeaturesEnv(base_env)
+
+    # Set up default parameters
+    params = dict()
+    params["discount_factor"] = 0.7
+    params["lambda"] = 0.5
+    params["epsilon"] = 1
+    params["max_epsilon"] = 0.5
+    params["min_epsilon"] = 0.01
+    params["decay"] = 0.0000001
 
     qlearning = QLearning(env, **kwargs)
 
@@ -278,7 +327,7 @@ if __name__ == "__main__":
         print("Running with profiling")
         cProfile.run("qlearning.train()", sort=SortKey.CUMULATIVE)
     else:
-        qlearning.train()
+        qlearning.train(params, do_log)
 
     # Save the agent in a pickle file.
     qlearning.pickle("qlearning", "qlearning.pickle")
