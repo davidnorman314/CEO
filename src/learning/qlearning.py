@@ -25,8 +25,8 @@ class QLearning(LearningBase):
 
     _train_episodes: int
 
-    def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000):
-        super().__init__(env, base_env)
+    def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000, **kwargs):
+        super().__init__(env, base_env, **kwargs)
         self._train_episodes = train_episodes
 
     def train(self, params: dict, do_log: bool):
