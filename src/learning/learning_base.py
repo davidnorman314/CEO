@@ -45,6 +45,7 @@ class LearningBase:
             self._azure_client = None
 
         self._env = env
+        self._base_env = env
         self._qtable = QTable(env, **kwargs)
 
         self._search_statistics = []
