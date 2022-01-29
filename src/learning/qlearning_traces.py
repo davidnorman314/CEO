@@ -97,7 +97,11 @@ class QLearningTraces(LearningBase):
             params["decay"] = decay
 
             self._azure_client.start_training(
-                "qlearning_traces", self._env.full_env.num_players, params, self._env.feature_defs
+                "qlearning_traces",
+                self._env.full_env.num_players,
+                self._env.full_env.seat_number,
+                params,
+                self._env.feature_defs,
             )
 
         # Training the agent

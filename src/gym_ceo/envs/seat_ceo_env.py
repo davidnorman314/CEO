@@ -64,6 +64,8 @@ class SeatCEOEnv(gym.Env):
 
     num_players: int
 
+    seat_number: int
+
     _round: Round
     _listener: EventListenerInterface
     _hands: list[Hand]
@@ -90,6 +92,7 @@ class SeatCEOEnv(gym.Env):
         skip_passing=False,
     ):
         self.num_players = num_players
+        self.seat_number = 0
         self._skip_passing = skip_passing
 
         if listener is None:

@@ -65,9 +65,17 @@ def main():
             elif training["record_type"] == "post_train_stats":
                 training_id = training["training_id"]
                 all_trainings[training_id]["post_train_stats"] = training
+            elif training["record_type"] == "train_stats":
+                training_id = training["training_id"]
+                all_trainings[training_id]["train_stats"] = training
 
         for training_id, training_dict in all_trainings.items():
             start_training = training_dict["start_training"]
+
+            train_stats = None
+            if "train_stats" in training_dict:
+                train_stats = training_dict["train_stats"]
+
             post_train_stats = None
             if "post_train_stats" in training_dict:
                 post_train_stats = training_dict["post_train_stats"]
@@ -88,6 +96,7 @@ def main():
 
             print(start_training)
             print(lines[i])
+            print(train_stats)
             print(post_train_stats)
             print("")
     elif args.blob_name and args.filename:
