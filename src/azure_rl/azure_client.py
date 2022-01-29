@@ -113,6 +113,37 @@ class AzureClient:
 
         self.log_client.append_block(json_str, len(json_str))
 
+    def save_train_stats(
+        self,
+        *,
+        training_episodes=None,
+        episodes=None,
+        total_wins=None,
+        total_losses=None,
+        pct_win=None,
+    ):
+        """Save statistics from running the agent during training."""
+
+        stats = dict()
+        stats["record_type"] = "train_stats"
+        stats["training_episodes"] = training_episodes
+        stats["episodes"] = episodes
+        stats["total_wins"] = total_wins
+        stats["total_losses"] = total_losses
+        stats["pct_win"] = pct_win
+        stats["training_id"] = self._training_id
+        stats["test_time"] = datetime.datetime.now().isoformat()
+
+        # Use ndjson format
+        json_str = json.dumps(stats, separators=(",", ":"), indent=None)
+        json_str = json_str + "\n"
+
+        rl_trainings_blob_client = self.container_client.get_blob_client(
+            self.rl_trainings_blob_name
+        )
+
+        rl_trainings_blob_client.append_block(json_str, len(json_str))
+
     def save_post_train_stats(
         self, *, episodes=None, total_wins=None, total_losses=None, pct_win=None
     ):

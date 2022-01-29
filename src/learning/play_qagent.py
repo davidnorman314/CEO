@@ -22,7 +22,7 @@ from CEO.cards.eventlistener import (
 )
 from CEO.cards.deck import Deck
 from CEO.cards.hand import Hand, CardValue
-from learning.learning_base import QTable
+from learning.qtable import QTable
 
 
 class QAgent:
@@ -235,7 +235,7 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
 
     pct_win = total_wins / (total_wins + total_losses)
     print(
-        "Episodes",
+        "Test episodes",
         episodes,
         "Total wins",
         total_wins,

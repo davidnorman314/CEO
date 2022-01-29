@@ -29,8 +29,8 @@ class QLearningTraces(LearningBase):
 
     _train_episodes: int
 
-    def __init__(self, env: gym.Env, train_episodes=100000, **kwargs):
-        super().__init__(env, **kwargs)
+    def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000, **kwargs):
+        super().__init__(env, base_env, **kwargs)
         self._train_episodes = train_episodes
 
     def _pick_action(self, state_tuple: tuple, epsilon: float) -> ActionEnum:
@@ -354,6 +354,9 @@ class QLearningTraces(LearningBase):
                     recent_explore_rate,
                     states_visited,
                 )
+
+            if episode > 0 and episode % 20000 == 0 and episode < self._train_episodes:
+                self.do_play_test(episode)
 
             if False and episode > 0 and episode % 5000 == 0:
                 # Log the states for this episode

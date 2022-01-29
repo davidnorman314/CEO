@@ -25,8 +25,8 @@ class QLearning(LearningBase):
 
     _train_episodes: int
 
-    def __init__(self, env: gym.Env, train_episodes=100000):
-        super().__init__(env)
+    def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000):
+        super().__init__(env, base_env)
         self._train_episodes = train_episodes
 
     def train(self, params: dict, do_log: bool):
@@ -211,6 +211,9 @@ class QLearning(LearningBase):
                     states_visited,
                 )
 
+            if episode > 0 and episode % 20000 == 0 and episode < self._train_episodes:
+                self.do_play_test(episode)
+
             if False and episode > 0 and episode % 20000 == 0:
                 # Log the states for this episode
                 print("Episode info")
@@ -321,7 +324,7 @@ if __name__ == "__main__":
     params["min_epsilon"] = 0.01
     params["decay"] = 0.0000001
 
-    qlearning = QLearning(env, **kwargs)
+    qlearning = QLearning(env, base_env, **kwargs)
 
     if args.profile:
         print("Running with profiling")

@@ -69,9 +69,9 @@ def do_learning(
 
     learning_type = config["learning_type"]
     if learning_type == "qlearning_traces":
-        learning = QLearningTraces(env, **kwargs)
+        learning = QLearningTraces(env, base_env, **kwargs)
     elif learning_type == "qlearning":
-        learning = QLearning(env, **kwargs)
+        learning = QLearning(env, base_env, **kwargs)
     else:
         print("Unknown learning type", learning_type)
         exit(1)
