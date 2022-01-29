@@ -100,7 +100,7 @@ def post_train_stats(learning, env, base_env, episodes, azure_client):
     q_table = learning._qtable._Q
     state_count = learning._qtable._state_count
 
-    play_qagent.play(
+    stats = play_qagent.play(
         episodes,
         False,
         False,
@@ -108,8 +108,15 @@ def post_train_stats(learning, env, base_env, episodes, azure_client):
         base_env=base_env,
         q_table=q_table,
         state_count=state_count,
-        azure_client=azure_client,
     )
+
+    if azure_client:
+        azure_client.save_post_train_stats(
+            episodes=stats.episodes,
+            total_wins=stats.total_wins,
+            total_losses=stats.total_losses,
+            pct_win=stats.pct_win,
+        )
 
 
 def main():

@@ -9,6 +9,7 @@ from typing import List, Tuple
 from copy import copy, deepcopy
 import numpy as np
 from collections import deque
+from typing import NamedTuple
 
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
@@ -184,13 +185,14 @@ def create_agent(
     return env, base_env, QAgent(q_table, state_count, env, base_env)
 
 
-def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs):
+class PlayStats(NamedTuple):
+    episodes: int
+    total_wins: int
+    total_losses: int
+    pct_win: float
 
-    azure_client = None
-    if "azure_client" in kwargs:
-        azure_client = kwargs["azure_client"]
-        del kwargs["azure_client"]
 
+def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> PlayStats:
     # Set up the environment
     random.seed(0)
 
@@ -243,13 +245,12 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs):
         pct_win,
     )
 
-    if azure_client:
-        azure_client.save_post_train_stats(
-            episodes=episodes,
-            total_wins=total_wins,
-            total_losses=total_losses,
-            pct_win=pct_win,
-        )
+    return PlayStats(
+        episodes=episodes,
+        total_wins=total_wins,
+        total_losses=total_losses,
+        pct_win=pct_win,
+    )
 
 
 def play_round(round_pickle_file: str, do_logging: bool, **kwargs):
@@ -371,7 +372,7 @@ def main():
     if args.play_round_file:
         play_round(args.play_round_file, args.do_logging, **agent_args)
     elif args.play:
-        play(args.episodes, args.do_logging, args.save_failed_hands, **agent_args)
+        stats = play(args.episodes, args.do_logging, args.save_failed_hands, **agent_args)
     else:
         parser.print_usage()
 
