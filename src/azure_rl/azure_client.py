@@ -112,6 +112,9 @@ class AzureClient:
             else:
                 new_stats[key] = value
 
+        if "record_type" not in new_stats:
+            new_stats["record_type"] = "log"
+
         # Use ndjson format
         json_str = json.dumps(new_stats, separators=(",", ":"), indent=None)
         json_str = json_str + "\n"
