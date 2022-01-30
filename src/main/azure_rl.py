@@ -5,6 +5,60 @@ import json
 import azure.core.exceptions
 from azure_rl.azure_client import AzureClient
 
+
+def get_results(client: AzureClient):
+    trainings = client.get_all_trainings()
+
+    all_trainings = dict()
+    for training_str in trainings:
+        if len(training_str) == 0:
+            continue
+
+        training = json.loads(training_str)
+
+        if training["record_type"] == "start_training":
+            training_id = training["training_id"]
+            all_trainings[training_id] = dict()
+            all_trainings[training_id]["start_training"] = training
+        elif training["record_type"] == "post_train_stats":
+            training_id = training["training_id"]
+            all_trainings[training_id]["post_train_stats"] = training
+        elif training["record_type"] == "train_stats":
+            training_id = training["training_id"]
+            all_trainings[training_id]["train_stats"] = training
+
+    for training_id, training_dict in all_trainings.items():
+        start_training = training_dict["start_training"]
+
+        train_stats = None
+        if "train_stats" in training_dict:
+            train_stats = training_dict["train_stats"]
+
+        post_train_stats = None
+        if "post_train_stats" in training_dict:
+            post_train_stats = training_dict["post_train_stats"]
+
+        blob_name = start_training["log_blob_name"]
+
+        try:
+            blob = client.get_blob(blob_name)
+        except azure.core.exceptions.ResourceNotFoundError:
+            print(f"Blob {blob_name} does not exist")
+            continue
+
+        lines = blob.split("\n")
+
+        i = -1
+        if len(lines[i]) == 0:
+            i = -2
+
+        print(start_training)
+        print(lines[i])
+        print(train_stats)
+        print(post_train_stats)
+        print("")
+
+
 # Main function
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -49,56 +103,7 @@ def main():
         for training in trainings:
             print(training)
     elif args.get_results:
-        trainings = client.get_all_trainings()
-
-        all_trainings = dict()
-        for training_str in trainings:
-            if len(training_str) == 0:
-                continue
-
-            training = json.loads(training_str)
-
-            if training["record_type"] == "start_training":
-                training_id = training["training_id"]
-                all_trainings[training_id] = dict()
-                all_trainings[training_id]["start_training"] = training
-            elif training["record_type"] == "post_train_stats":
-                training_id = training["training_id"]
-                all_trainings[training_id]["post_train_stats"] = training
-            elif training["record_type"] == "train_stats":
-                training_id = training["training_id"]
-                all_trainings[training_id]["train_stats"] = training
-
-        for training_id, training_dict in all_trainings.items():
-            start_training = training_dict["start_training"]
-
-            train_stats = None
-            if "train_stats" in training_dict:
-                train_stats = training_dict["train_stats"]
-
-            post_train_stats = None
-            if "post_train_stats" in training_dict:
-                post_train_stats = training_dict["post_train_stats"]
-
-            blob_name = start_training["log_blob_name"]
-
-            try:
-                blob = client.get_blob(blob_name)
-            except azure.core.exceptions.ResourceNotFoundError:
-                print(f"Blob {blob_name} does not exist")
-                continue
-
-            lines = blob.split("\n")
-
-            i = -1
-            if len(lines[i]) == 0:
-                i = -2
-
-            print(start_training)
-            print(lines[i])
-            print(train_stats)
-            print(post_train_stats)
-            print("")
+        get_results(client)
     elif args.blob_name and args.filename:
         blob = client.get_blob_and_save(args.blob_name, args.filename)
     elif args.blob_name:
