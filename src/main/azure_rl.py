@@ -46,6 +46,7 @@ def get_training_progress(client: AzureClient, pickle_file: str):
 
         cols = dict()
         cols["training_id"] = training_id
+        cols["learning_type"] = start_training["learning_type"]
         cols["start"] = pd.to_datetime(start_training["start_time"])
 
         if "end_training" in training_dict:
@@ -119,13 +120,6 @@ def get_training_progress(client: AzureClient, pickle_file: str):
                     progress_row["pct_win"] = None
 
                 progress_rows_list.append(progress_row)
-
-                print(training_id, episode)
-                if episode == 80000:
-                    print(training_id, line)
-
-        print("lines count", len(lines))
-        print("Progress row count", len(progress_rows_list))
 
     trainings_df = pd.DataFrame(trainings_rows_list)
     progress_df = pd.DataFrame(progress_rows_list)
