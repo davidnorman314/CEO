@@ -30,7 +30,9 @@ def get_training_progress(client: AzureClient, pickle_file: str):
         elif training["record_type"] == "end_training":
             all_trainings[training_id]["end_training"] = training
         elif training["record_type"] == "post_train_stats":
-            all_trainings[training_id]["post_train_stats"] = training
+            all_trainings[training_id]["post_train_test_stats"] = training
+        elif training["record_type"] == "post_train_test_stats":
+            all_trainings[training_id]["post_train_test_stats"] = training
         elif training["record_type"] == "train_stats":
             if "train_stats" not in all_trainings[training_id]:
                 all_trainings[training_id]["train_stats"] = []
@@ -61,10 +63,9 @@ def get_training_progress(client: AzureClient, pickle_file: str):
         if "train_stats" in training_dict:
             train_stats = training_dict["train_stats"]
 
-        post_train_stats = None
-        if "post_train_stats" in training_dict:
-            post_train_stats = training_dict["post_train_stats"]
-            cols["final_pct_win"] = post_train_stats["pct_win"]
+        if "post_train_test_stats" in training_dict:
+            post_train_test_stats = training_dict["post_train_test_stats"]
+            cols["final_pct_win"] = post_train_test_stats["pct_win"]
         else:
             cols["final_pct_win"] = None
 
@@ -96,8 +97,9 @@ def get_training_progress(client: AzureClient, pickle_file: str):
 
         # Process the train stats for the training. TODO: The stats have been moved to the
         # log file, so this can be removed.
-        for train_stats in training_dict["train_stats"]:
-            all_test_stats[train_stats["training_episodes"]] = train_stats["pct_win"]
+        if "train_stats" in training_dict:
+            for train_stats in training_dict["train_stats"]:
+                all_test_stats[train_stats["training_episodes"]] = train_stats["pct_win"]
 
         # Process the log messages for the training.
         for line in lines:
