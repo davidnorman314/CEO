@@ -606,14 +606,18 @@ def do_training(
         python --version;
         source /home/david/py39/bin/activate;
         python -m learning.learning --azure --post-train-stats-episodes 10000 ../../config.json;
-        echo Python finished;
+        retVal=$?;
+        echo Python finished exit code $retVal;
+        if [ $retVal -ne 0 ]; then dmesg; fi;
         echo Done;"
         """
 
+        auto_user = batchmodels.AutoUserSpecification(scope="pool", elevation_level="admin")
+        user_identity = batchmodels.UserIdentity(auto_user=auto_user, user_name=None)
+
         tasks.append(
             batchmodels.TaskAddParameter(
-                id=task_id,
-                command_line=command,
+                id=task_id, command_line=command, user_identity=user_identity
             )
         )
 
@@ -703,6 +707,9 @@ def run_test_job(
 
         file = f"First line File{i}\nSecond line\nThird line."
 
+        auto_user = batchmodels.AutoUserSpecification(scope="pool", elevation_level="admin")
+        user_identity = batchmodels.UserIdentity(auto_user=auto_user, user_name=None)
+
         command = f"""/bin/bash -c "echo Task {i} executing.;
         echo Env var $TEST_ENV;
         CONFIG_VAR='{file}'
@@ -715,13 +722,37 @@ def run_test_job(
         echo End file;
         source /home/david/py39/bin/activate;
         python --version;
+        echo before dmesg;
+        dmesg | head -10;
+        echo after dmesg;
+        echo before sudo dmesg;
+        sudo dmesg | head -10;
+        echo after sudo dmesg;
+        echo before test;
+        retVal=$?;
+        if [ $retVal -eq 0 ]; then echo in a if 0; fi;
+        if [ $retVal -ne 0 ]; then echo in a if not 0; fi;
+        retVal=1;
+        if [ $retVal -eq 0 ]; then echo in a if 0; fi;
+        if [ $retVal -ne 0 ]; then echo in a if not 0; fi;
+        retVal=0;
+        if [ $retVal -eq 0 ]; then echo in a if 0; fi;
+        if [ $retVal -ne 0 ]; then echo in a if not 0; fi;
         echo Done;"
+        """
+
+        old = """
+        if [$retVal -eq 0] then
+            echo in if 0
+        fi;
+        if [$retVal -nq 0] then
+            echo in if
+        fi;
         """
 
         tasks.append(
             batchmodels.TaskAddParameter(
-                id=task_id,
-                command_line=command,
+                id=task_id, command_line=command, user_identity=user_identity
             )
         )
 
