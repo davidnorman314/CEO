@@ -11,6 +11,12 @@ class QTable:
     _state_count: np.ndarray
     _max_action_value: int
 
+    _qtable_denom = 32000
+    """We store q table values as integers. The actual value is the integer
+    divided by _qtable_denom."""
+
+    _max_state_visit = 63000
+
     q_raw_array: RawArray
     state_count_raw_array: RawArray
 
@@ -42,8 +48,28 @@ class QTable:
         q_dims = q_dims + (env.max_action_value,)
         q_size = int(np.prod(q_dims))
 
-        q_type = np.float32
-        state_count_type = np.int32
+        q_type = np.int16
+        state_count_type = np.uint16
+
+        q_type_iinfo = np.iinfo(q_type)
+        state_count_type_iinfo = np.iinfo(state_count_type)
+
+        assert q_type_iinfo.max > self._qtable_denom
+        assert q_type_iinfo.min < -self._qtable_denom
+
+        assert state_count_type_iinfo.max > self._max_state_visit
+        assert state_count_type_iinfo.min == 0
+
+        print("q_type:", q_type, "[", q_type_iinfo.min, ",", q_type_iinfo.max, "]")
+        print(
+            "state_count_type:",
+            state_count_type,
+            "[",
+            state_count_type_iinfo.min,
+            ",",
+            state_count_type_iinfo.max,
+            "]",
+        )
 
         q_ctype = np.ctypeslib.as_ctypes_type(q_type)
         state_count_ctype = np.ctypeslib.as_ctypes_type(state_count_type)
@@ -54,6 +80,7 @@ class QTable:
             self._state_count = np.zeros(q_dims, dtype=state_count_type)
             print("Q dims", q_dims)
             print("Q table size", self._Q.nbytes // (1024 * 1024), "mb")
+            print("State count size", self._state_count.nbytes // (1024 * 1024), "mb")
 
             init_from_shared = False
         elif "shared" in kwargs and kwargs["shared"]:
@@ -94,29 +121,50 @@ class QTable:
         return self._state_count[(*state_action_tuple[:-1], state_action_tuple[-1].value)]
 
     def state_action_value(self, state_action_tuple: tuple):
-        return self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)]
+        return (
+            self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)] / self._qtable_denom
+        )
 
     def min_max_value(self, state_tuple: tuple, action_space: CEOActionSpace):
         max_value = max(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
         min_value = min(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
 
-        return (min_value, max_value)
+        return (min_value / self._qtable_denom, max_value / self._qtable_denom)
 
     def greedy_action(self, state_tuple: tuple, action_space: CEOActionSpace) -> ActionEnum:
         lookup_value = lambda action: self._Q[(*state_tuple, action.value)]
         return max(action_space.actions, key=lookup_value)
 
     def state_value(self, state_tuple: tuple, action_space: CEOActionSpace):
-        return max(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
-
-        lookup_value = lambda i: self._Q[(*state_tuple, i)]
-        return max(range(action_space.n), key=lookup_value)
+        return (
+            max(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
+            / self._qtable_denom
+        )
 
     def increment_state_visit_count(self, state_action_tuple: tuple):
         self._state_count[(*state_action_tuple[:-1], state_action_tuple[-1].value)] += 1
 
+        if (
+            self._state_count[(*state_action_tuple[:-1], state_action_tuple[-1].value)]
+            > self._max_state_visit
+        ):
+            self._state_count[
+                (*state_action_tuple[:-1], state_action_tuple[-1].value)
+            ] = self._max_state_visit
+
     def update_state_visit_value(self, state_action_tuple: tuple, delta: float):
-        self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)] += delta
+        delta_int = delta * self._qtable_denom
+        assert delta_int != 0 or delta == 0
+        self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)] += delta_int
+        if False:
+            before = (
+                self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)]
+                / self._qtable_denom
+            )
+            after = before + delta
+            self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)] = (
+                after / self._qtable_denom
+            )
 
     def get_shared_arrays(self):
         return self.q_raw_array, self.state_count_raw_array
