@@ -13,6 +13,9 @@ from gym_ceo.envs.seat_ceo_features_env import (
     OtherPlayerHandCount,
     HandCardCountRelative,
     HighestCard,
+    SinglesUnderValueCountRelative,
+    DoublesUnderValueCountRelative,
+    TriplesUnderValueCountRelative,
 )
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.observation import Observation, ObservationFactory
@@ -195,6 +198,519 @@ def test_TriplesUnderValueCount():
     feature_calc.calc(observation, feature_array, 0, info)
 
     assert feature_array[0] == 1
+
+
+def test_SinglesUnderValueCountRelative():
+    """
+    Test the SinglesUnderValueCountRelative feature
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+    cv12 = CardValue(12)
+
+    # Make the other players' hands
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+
+    # Test where the highest card is an ace
+    hand1 = Hand()
+    hand1.add_cards(cv0, 2)
+    hand1.add_cards(cv2, 1)
+    hand1.add_cards(cv3, 1)
+    hand1.add_cards(cv4, 2)
+    hand1.add_cards(cv5, 1)
+    hand1.add_cards(cv6, 1)
+    hand1.add_cards(cv11, 1)
+    hand1.add_cards(cv12, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_5 = SinglesUnderValueCountRelative(env, relative_threshold=5, max_value=5)
+    feature_6 = SinglesUnderValueCountRelative(env, relative_threshold=6, max_value=5)
+    feature_7 = SinglesUnderValueCountRelative(env, relative_threshold=7, max_value=5)
+    feature_8 = SinglesUnderValueCountRelative(env, relative_threshold=8, max_value=5)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+    feature_6.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_7.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_8.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    # Test where the highest card is a king
+    hand1 = Hand()
+    hand1.add_cards(cv0, 2)
+    hand1.add_cards(cv2, 1)
+    hand1.add_cards(cv3, 1)
+    hand1.add_cards(cv4, 2)
+    hand1.add_cards(cv5, 1)
+    hand1.add_cards(cv6, 1)
+    hand1.add_cards(cv11, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_5 = SinglesUnderValueCountRelative(env, relative_threshold=5, max_value=5)
+    feature_6 = SinglesUnderValueCountRelative(env, relative_threshold=6, max_value=5)
+    feature_7 = SinglesUnderValueCountRelative(env, relative_threshold=7, max_value=5)
+    feature_8 = SinglesUnderValueCountRelative(env, relative_threshold=8, max_value=5)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_6.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_7.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_8.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    # Test where the highest card is a six
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv2, 1)
+    hand1.add_cards(cv3, 1)
+    hand1.add_cards(cv4, 2)
+    hand1.add_cards(cv5, 1)
+    hand1.add_cards(cv6, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_5 = SinglesUnderValueCountRelative(env, relative_threshold=5, max_value=5)
+    feature_6 = SinglesUnderValueCountRelative(env, relative_threshold=6, max_value=5)
+    feature_7 = SinglesUnderValueCountRelative(env, relative_threshold=7, max_value=5)
+    feature_8 = SinglesUnderValueCountRelative(env, relative_threshold=8, max_value=5)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    feature_6.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_7.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_8.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test max_value
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv2, 1)
+    hand1.add_cards(cv3, 1)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 2)
+    hand1.add_cards(cv6, 2)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_max2 = SinglesUnderValueCountRelative(env, relative_threshold=1, max_value=2)
+    feature_max3 = SinglesUnderValueCountRelative(env, relative_threshold=1, max_value=3)
+    feature_max4 = SinglesUnderValueCountRelative(env, relative_threshold=1, max_value=4)
+    feature_max5 = SinglesUnderValueCountRelative(env, relative_threshold=1, max_value=5)
+
+    assert feature_max2.max_value == 2
+    assert feature_max3.max_value == 3
+    assert feature_max4.max_value == 4
+    assert feature_max5.max_value == 5
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_max2.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_max3.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_max4.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+    feature_max5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+
+def test_DoublesUnderValueCountRelative():
+    """
+    Test the DoublesUnderValueCountRelative feature
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+    cv12 = CardValue(12)
+
+    # Make the other players' hands
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+
+    # Test where the highest card is an ace
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv2, 2)
+    hand1.add_cards(cv3, 2)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 2)
+    hand1.add_cards(cv6, 2)
+    hand1.add_cards(cv11, 2)
+    hand1.add_cards(cv12, 2)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_5 = DoublesUnderValueCountRelative(env, relative_threshold=5, max_value=5)
+    feature_6 = DoublesUnderValueCountRelative(env, relative_threshold=6, max_value=5)
+    feature_7 = DoublesUnderValueCountRelative(env, relative_threshold=7, max_value=5)
+    feature_8 = DoublesUnderValueCountRelative(env, relative_threshold=8, max_value=5)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+    feature_6.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_7.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_8.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    # Test where the highest card is a king
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv2, 2)
+    hand1.add_cards(cv3, 2)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 2)
+    hand1.add_cards(cv6, 2)
+    hand1.add_cards(cv11, 2)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_5 = DoublesUnderValueCountRelative(env, relative_threshold=5, max_value=5)
+    feature_6 = DoublesUnderValueCountRelative(env, relative_threshold=6, max_value=5)
+    feature_7 = DoublesUnderValueCountRelative(env, relative_threshold=7, max_value=5)
+    feature_8 = DoublesUnderValueCountRelative(env, relative_threshold=8, max_value=5)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_6.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_7.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_8.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    # Test where the highest card is a six
+    hand1 = Hand()
+    hand1.add_cards(cv0, 2)
+    hand1.add_cards(cv2, 2)
+    hand1.add_cards(cv3, 2)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 2)
+    hand1.add_cards(cv6, 2)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_5 = DoublesUnderValueCountRelative(env, relative_threshold=5, max_value=5)
+    feature_6 = DoublesUnderValueCountRelative(env, relative_threshold=6, max_value=5)
+    feature_7 = DoublesUnderValueCountRelative(env, relative_threshold=7, max_value=5)
+    feature_8 = DoublesUnderValueCountRelative(env, relative_threshold=8, max_value=5)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    feature_6.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_7.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_8.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test max_value
+    hand1 = Hand()
+    hand1.add_cards(cv0, 2)
+    hand1.add_cards(cv2, 2)
+    hand1.add_cards(cv3, 2)
+    hand1.add_cards(cv4, 2)
+    hand1.add_cards(cv5, 1)
+    hand1.add_cards(cv6, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_max2 = DoublesUnderValueCountRelative(env, relative_threshold=1, max_value=2)
+    feature_max3 = DoublesUnderValueCountRelative(env, relative_threshold=1, max_value=3)
+    feature_max4 = DoublesUnderValueCountRelative(env, relative_threshold=1, max_value=4)
+    feature_max5 = DoublesUnderValueCountRelative(env, relative_threshold=1, max_value=5)
+
+    assert feature_max2.max_value == 2
+    assert feature_max3.max_value == 3
+    assert feature_max4.max_value == 4
+    assert feature_max5.max_value == 5
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_max2.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_max3.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_max4.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+    feature_max5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+
+def test_TriplesUnderValueCountRelative():
+    """
+    Test the TriplesUnderValueCountRelative feature
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+    cv12 = CardValue(12)
+
+    # Make the other players' hands
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+
+    # Test where the highest card is an ace
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv2, 4)
+    hand1.add_cards(cv3, 3)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 4)
+    hand1.add_cards(cv6, 3)
+    hand1.add_cards(cv11, 3)
+    hand1.add_cards(cv12, 3)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_5 = TriplesUnderValueCountRelative(env, relative_threshold=5, max_value=5)
+    feature_6 = TriplesUnderValueCountRelative(env, relative_threshold=6, max_value=5)
+    feature_7 = TriplesUnderValueCountRelative(env, relative_threshold=7, max_value=5)
+    feature_8 = TriplesUnderValueCountRelative(env, relative_threshold=8, max_value=5)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+    feature_6.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_7.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_8.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    # Test where the highest card is a king
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv2, 4)
+    hand1.add_cards(cv3, 3)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 4)
+    hand1.add_cards(cv6, 3)
+    hand1.add_cards(cv11, 3)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_5 = TriplesUnderValueCountRelative(env, relative_threshold=5, max_value=5)
+    feature_6 = TriplesUnderValueCountRelative(env, relative_threshold=6, max_value=5)
+    feature_7 = TriplesUnderValueCountRelative(env, relative_threshold=7, max_value=5)
+    feature_8 = TriplesUnderValueCountRelative(env, relative_threshold=8, max_value=5)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_6.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_7.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_8.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    # Test where the highest card is a six
+    hand1 = Hand()
+    hand1.add_cards(cv0, 3)
+    hand1.add_cards(cv2, 4)
+    hand1.add_cards(cv3, 3)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 4)
+    hand1.add_cards(cv6, 3)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_5 = TriplesUnderValueCountRelative(env, relative_threshold=5, max_value=5)
+    feature_6 = TriplesUnderValueCountRelative(env, relative_threshold=6, max_value=5)
+    feature_7 = TriplesUnderValueCountRelative(env, relative_threshold=7, max_value=5)
+    feature_8 = TriplesUnderValueCountRelative(env, relative_threshold=8, max_value=5)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    feature_6.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_7.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_8.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test max_value
+    hand1 = Hand()
+    hand1.add_cards(cv0, 3)
+    hand1.add_cards(cv2, 4)
+    hand1.add_cards(cv3, 3)
+    hand1.add_cards(cv4, 4)
+    hand1.add_cards(cv5, 1)
+    hand1.add_cards(cv6, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+
+    feature_max2 = TriplesUnderValueCountRelative(env, relative_threshold=1, max_value=2)
+    feature_max3 = TriplesUnderValueCountRelative(env, relative_threshold=1, max_value=3)
+    feature_max4 = TriplesUnderValueCountRelative(env, relative_threshold=1, max_value=4)
+    feature_max5 = TriplesUnderValueCountRelative(env, relative_threshold=1, max_value=5)
+
+    assert feature_max2.max_value == 2
+    assert feature_max3.max_value == 3
+    assert feature_max4.max_value == 4
+    assert feature_max5.max_value == 5
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_max2.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_max3.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_max4.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+    feature_max5.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
 
 
 def test_ValuesInRangeCount():

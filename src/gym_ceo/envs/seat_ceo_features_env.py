@@ -222,7 +222,7 @@ class SinglesUnderValueCount:
 
 class DoublesUnderValueCount:
     """
-    Feature giving the number of singles in the hand below a certain card value
+    Feature giving the number of doubles in the hand below a certain card value
     """
 
     dim = 1
@@ -252,7 +252,7 @@ class DoublesUnderValueCount:
 
 class TriplesUnderValueCount:
     """
-    Feature giving the number of singles in the hand below a certain card value
+    Feature giving the number of triples and larger groups in the hand below a certain card value.
     """
 
     dim = 1
@@ -278,6 +278,117 @@ class TriplesUnderValueCount:
 
         dest_obs[dest_start_index] = min(triple_count, self.max_value)
         info["TriplesUnderValueCount"] = dest_obs[dest_start_index]
+
+
+class SinglesUnderValueCountRelative:
+    """Feature giving the number of singles in the hand below a certain card value that is relative
+    to the highest card in the hand.
+    """
+
+    dim = 1
+    max_value: int
+
+    _relative_threshold: int
+
+    def __init__(self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int):
+        self._relative_threshold = relative_threshold
+        self.max_value = max_value
+
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
+        # Find the highest value in the hand
+        for highest_value in range(12, -1, -1):
+            if full_obs.get_card_count(highest_value) > 0:
+                break
+
+        # Count the singles
+        single_count = 0
+        for i in range(highest_value - self._relative_threshold):
+            card_count = full_obs.get_card_count(i)
+            if card_count == 1:
+                single_count += 1
+
+        dest_obs[dest_start_index] = min(single_count, self.max_value)
+        info["SinglesUnderValueCountRelative"] = dest_obs[dest_start_index]
+
+
+class DoublesUnderValueCountRelative:
+    """Feature giving the number of doubles in the hand below a certain card value
+    that is relative to the highest card in the hand.
+    """
+
+    dim = 1
+    max_value: int
+
+    _relative_threshold: int
+
+    def __init__(self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int):
+        self._relative_threshold = relative_threshold
+        self.max_value = max_value
+
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
+        # Find the highest value in the hand
+        for highest_value in range(12, -1, -1):
+            if full_obs.get_card_count(highest_value) > 0:
+                break
+
+        # Count the doubles
+        double_count = 0
+        for i in range(highest_value - self._relative_threshold):
+            card_count = full_obs.get_card_count(i)
+            if card_count == 2:
+                double_count += 1
+
+        dest_obs[dest_start_index] = min(double_count, self.max_value)
+        info["DoublesUnderValueCountRelative"] = dest_obs[dest_start_index]
+
+
+class TriplesUnderValueCountRelative:
+    """Feature giving the number of triples and larger groups in the hand below a certain card value
+    that is relative to the highest card in the hand.
+    """
+
+    dim = 1
+    max_value: int
+
+    _relative_threshold: int
+
+    def __init__(self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int):
+        self._relative_threshold = relative_threshold
+        self.max_value = max_value
+
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
+        # Find the highest value in the hand
+        for highest_value in range(12, -1, -1):
+            if full_obs.get_card_count(highest_value) > 0:
+                break
+
+        # Count the groups
+        triple_count = 0
+        for i in range(highest_value - self._relative_threshold):
+            card_count = full_obs.get_card_count(i)
+            if card_count >= 3:
+                triple_count += 1
+
+        dest_obs[dest_start_index] = min(triple_count, self.max_value)
+        info["TriplesUnderValueCountRelative"] = dest_obs[dest_start_index]
 
 
 class ValuesInRangeCount:
