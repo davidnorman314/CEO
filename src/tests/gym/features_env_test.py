@@ -63,6 +63,28 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
         return ret
 
 
+def create_ceo_env(hands: list[Hand]) -> tuple[SeatCEOEnv, Observation]:
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+    )
+    factory = ObservationFactory(env.num_players)
+
+    observation_array = env.reset()
+    observation = factory.create_observation(array=observation_array)
+
+    return env, observation
+
+
 def test_SeatCEOFeaturesEnv_check_env():
     """
     Test SeatCEOFeaturesEnv using the Gym check_env
@@ -367,25 +389,6 @@ def test_OtherPlayerHandCount():
     assert feature_array[0] == 4
 
 
-def create_ceo_env(hands: list[Hand]) -> tuple[SeatCEOEnv, ObservationFactory]:
-    # Make the players
-    behavior2 = MockPlayerBehavior()
-    behavior3 = MockPlayerBehavior()
-    behavior4 = MockPlayerBehavior()
-    behaviors = [behavior2, behavior3, behavior4]
-
-    env = SeatCEOEnv(
-        num_players=4,
-        behaviors=behaviors,
-        hands=hands,
-        listener=PrintAllEventListener(),
-        skip_passing=True,
-    )
-    factory = ObservationFactory(env.num_players)
-
-    return env, factory
-
-
 def test_HandCardCountRelative():
     """
     Test the HandCardCountRelative feature
@@ -431,14 +434,11 @@ def test_HandCardCountRelative():
 
     hands = [hand1, hand2, hand3, hand4]
 
-    env, factory = create_ceo_env(hands)
+    env, observation = create_ceo_env(hands)
 
     feature_0 = HandCardCountRelative(env, relative_card_value=0, max_value=4)
     feature_1 = HandCardCountRelative(env, relative_card_value=-1, max_value=4)
     feature_2 = HandCardCountRelative(env, relative_card_value=-2, max_value=4)
-
-    observation_array = env.reset()
-    observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
     info = dict()
@@ -461,14 +461,11 @@ def test_HandCardCountRelative():
 
     hands = [hand1, hand2, hand3, hand4]
 
-    env, factory = create_ceo_env(hands)
+    env, observation = create_ceo_env(hands)
 
     feature_0 = HandCardCountRelative(env, relative_card_value=0, max_value=4)
     feature_1 = HandCardCountRelative(env, relative_card_value=-1, max_value=4)
     feature_2 = HandCardCountRelative(env, relative_card_value=-2, max_value=4)
-
-    observation_array = env.reset()
-    observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
     info = dict()
@@ -488,14 +485,11 @@ def test_HandCardCountRelative():
 
     hands = [hand1, hand2, hand3, hand4]
 
-    env, factory = create_ceo_env(hands)
+    env, observation = create_ceo_env(hands)
 
     feature_0 = HandCardCountRelative(env, relative_card_value=0, max_value=4)
     feature_1 = HandCardCountRelative(env, relative_card_value=-1, max_value=4)
     feature_2 = HandCardCountRelative(env, relative_card_value=-2, max_value=4)
-
-    observation_array = env.reset()
-    observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
     info = dict()
@@ -518,14 +512,11 @@ def test_HandCardCountRelative():
 
     hands = [hand1, hand2, hand3, hand4]
 
-    env, factory = create_ceo_env(hands)
+    env, observation = create_ceo_env(hands)
 
     feature_0 = HandCardCountRelative(env, relative_card_value=0, max_value=3)
     feature_1 = HandCardCountRelative(env, relative_card_value=-1, max_value=3)
     feature_2 = HandCardCountRelative(env, relative_card_value=-2, max_value=3)
-
-    observation_array = env.reset()
-    observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
     info = dict()
@@ -585,13 +576,10 @@ def test_HighestCard():
 
     hands = [hand1, hand2, hand3, hand4]
 
-    env, factory = create_ceo_env(hands)
+    env, observation = create_ceo_env(hands)
 
     feature_6 = HighestCard(env, min_card_value=6)
     feature_10 = HighestCard(env, min_card_value=10)
-
-    observation_array = env.reset()
-    observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
     info = dict()
@@ -610,16 +598,13 @@ def test_HighestCard():
 
     hands = [hand1, hand2, hand3, hand4]
 
-    env, factory = create_ceo_env(hands)
+    env, observation = create_ceo_env(hands)
 
     feature_6 = HighestCard(env, min_card_value=6)
     feature_10 = HighestCard(env, min_card_value=10)
 
     assert feature_6.max_value == 6
     assert feature_10.max_value == 2
-
-    observation_array = env.reset()
-    observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
     info = dict()
@@ -638,13 +623,10 @@ def test_HighestCard():
 
     hands = [hand1, hand2, hand3, hand4]
 
-    env, factory = create_ceo_env(hands)
+    env, observation = create_ceo_env(hands)
 
     feature_6 = HighestCard(env, min_card_value=6)
     feature_10 = HighestCard(env, min_card_value=10)
-
-    observation_array = env.reset()
-    observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
     info = dict()
