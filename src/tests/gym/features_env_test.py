@@ -343,3 +343,23 @@ def test_OtherPlayerHandCount():
 
     feature_2.calc(observation, feature_array, 0, info)
     assert feature_array[0] == 5
+
+    # Test max_value
+    feature_0 = OtherPlayerHandCount(env, other_player_index=0, max_value=4)
+    feature_1 = OtherPlayerHandCount(env, other_player_index=1, max_value=4)
+    feature_2 = OtherPlayerHandCount(env, other_player_index=2, max_value=4)
+
+    observation_array = env.reset()
+    observation = factory.create_observation(array=observation_array)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_0.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+    feature_1.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4
+
+    feature_2.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 4

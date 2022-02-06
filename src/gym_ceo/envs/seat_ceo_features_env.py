@@ -82,12 +82,13 @@ class OtherPlayerHandCount:
     """
 
     dim = 1
-    max_value = 5
 
     other_player_index: int
+    max_value: int
 
-    def __init__(self, full_env: SeatCEOEnv, *, other_player_index: int):
+    def __init__(self, full_env: SeatCEOEnv, *, other_player_index: int, max_value: int = 5):
         self.other_player_index = other_player_index
+        self.max_value = max_value
 
     def calc(
         self,
