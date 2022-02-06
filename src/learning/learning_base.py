@@ -132,7 +132,7 @@ class LearningBase:
         q_table = self._qtable._Q
         state_count = self._qtable._state_count
 
-        episodes = 10000
+        episodes = 20000
 
         stats = play_qagent.play(
             episodes,
