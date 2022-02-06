@@ -51,6 +51,40 @@ class BottomHalfTableMinCards:
         info["BottomHalfTableMinCards"] = feature_value
 
 
+class HighestCard:
+    """Feature giving the value of highest card in the hand. The feature value is zero if
+    the highest value in the hand equals min_card_value. The maximum possible value
+    is 12 - min_card_value.
+    """
+
+    dim = 1
+    max_value: int
+
+    min_card_value: int
+
+    def __init__(self, full_env: SeatCEOEnv, *, min_card_value: int):
+        self.min_card_value = min_card_value
+
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
+        # Find the highest value in the hand
+        for highest_value in range(12, -1, -1):
+            if full_obs.get_card_count(highest_value) > 0:
+                break
+
+        feature_value = highest_value - self.min_card_value
+        if feature_value < 0:
+            feature_value = 0
+
+        dest_obs[dest_start_index] = feature_value
+        info[f"HighestCard value={highest_value}"] = feature_value
+
+
 class HandCardCount:
     """
     Feature giving the number of cards of a given value in the hand
