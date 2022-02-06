@@ -64,6 +64,7 @@ class HighestCard:
 
     def __init__(self, full_env: SeatCEOEnv, *, min_card_value: int):
         self.min_card_value = min_card_value
+        self.max_value = 12 - self.min_card_value
 
     def calc(
         self,

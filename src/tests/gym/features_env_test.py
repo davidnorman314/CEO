@@ -615,6 +615,9 @@ def test_HighestCard():
     feature_6 = HighestCard(env, min_card_value=6)
     feature_10 = HighestCard(env, min_card_value=10)
 
+    assert feature_6.max_value == 6
+    assert feature_10.max_value == 2
+
     observation_array = env.reset()
     observation = factory.create_observation(array=observation_array)
 
