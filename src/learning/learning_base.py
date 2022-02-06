@@ -44,6 +44,9 @@ class LearningBase:
         else:
             self._azure_client = None
 
+        self._disable_agent_testing = kwargs["disable_agent_testing"]
+        del kwargs["disable_agent_testing"]
+
         self._env = env
         self._base_env = env
         self._qtable = QTable(env, **kwargs)
@@ -122,6 +125,9 @@ class LearningBase:
 
     def do_play_test(self, training_episodes: int):
         """Plays many hands with the current agent and logs the results."""
+
+        if self._disable_agent_testing:
+            return
 
         q_table = self._qtable._Q
         state_count = self._qtable._state_count

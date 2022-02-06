@@ -28,6 +28,7 @@ def do_learning(
     random_seed: int,
     do_profile: bool,
     pickle_file: str,
+    disable_agent_testing: bool,
     post_train_stats_episodes: int,
 ):
     print("Loading configuration from", configfile)
@@ -43,6 +44,7 @@ def do_learning(
         kwargs["azure_client"] = azure_client
 
     kwargs["train_episodes"] = config["episodes"]
+    kwargs["disable_agent_testing"] = disable_agent_testing
 
     if random_seed is not None:
         print("Random seed", random_seed)
@@ -173,6 +175,13 @@ def main():
         default=None,
         help="How many episodes should be run when testing the trained agent.",
     )
+    parser.add_argument(
+        "--disable-agent-testing",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Disables testing the agent during search.",
+    )
 
     args = parser.parse_args()
 
@@ -183,6 +192,7 @@ def main():
         args.seed,
         args.profile,
         args.pickle_file,
+        args.disable_agent_testing,
         args.post_train_stats_episodes,
     )
 
