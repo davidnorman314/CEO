@@ -11,6 +11,7 @@ from gym_ceo.envs.seat_ceo_features_env import (
     TriplesUnderValueCount,
     ValuesInRangeCount,
     OtherPlayerHandCount,
+    HandCardCountRelative,
 )
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.observation import Observation, ObservationFactory
@@ -363,3 +364,176 @@ def test_OtherPlayerHandCount():
 
     feature_2.calc(observation, feature_array, 0, info)
     assert feature_array[0] == 4
+
+
+def create_ceo_env(hands: list[Hand]) -> tuple[SeatCEOEnv, ObservationFactory]:
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+    )
+    factory = ObservationFactory(env.num_players)
+
+    return env, factory
+
+
+def test_HandCardCountRelative():
+    """
+    Test the HandCardCountRelative feature
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(5)
+    cv7 = CardValue(5)
+    cv8 = CardValue(5)
+    cv9 = CardValue(5)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+    cv12 = CardValue(12)
+
+    # Make non-ceo hands
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv2, 1)
+    hand2.add_cards(cv4, 2)
+
+    hand3 = Hand()
+    hand3.add_cards(cv0, 1)
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv5, 3)
+
+    hand4 = Hand()
+    hand4.add_cards(cv1, 3)
+    hand4.add_cards(cv2, 3)
+    hand4.add_cards(cv3, 3)
+
+    # Test when the highest card is an ace
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv3, 3)
+    hand1.add_cards(cv11, 2)
+    hand1.add_cards(cv12, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, factory = create_ceo_env(hands)
+
+    feature_0 = HandCardCountRelative(env, relative_card_value=0, max_value=4)
+    feature_1 = HandCardCountRelative(env, relative_card_value=-1, max_value=4)
+    feature_2 = HandCardCountRelative(env, relative_card_value=-2, max_value=4)
+
+    observation_array = env.reset()
+    observation = factory.create_observation(array=observation_array)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_0.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    feature_1.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_2.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test when the highest card is a king
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv3, 3)
+    hand1.add_cards(cv10, 2)
+    hand1.add_cards(cv11, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, factory = create_ceo_env(hands)
+
+    feature_0 = HandCardCountRelative(env, relative_card_value=0, max_value=4)
+    feature_1 = HandCardCountRelative(env, relative_card_value=-1, max_value=4)
+    feature_2 = HandCardCountRelative(env, relative_card_value=-2, max_value=4)
+
+    observation_array = env.reset()
+    observation = factory.create_observation(array=observation_array)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_0.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    feature_1.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_2.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test small max value
+    hand1 = Hand()
+    hand1.add_cards(cv0, 2)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, factory = create_ceo_env(hands)
+
+    feature_0 = HandCardCountRelative(env, relative_card_value=0, max_value=4)
+    feature_1 = HandCardCountRelative(env, relative_card_value=-1, max_value=4)
+    feature_2 = HandCardCountRelative(env, relative_card_value=-2, max_value=4)
+
+    observation_array = env.reset()
+    observation = factory.create_observation(array=observation_array)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_0.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 2
+
+    feature_1.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_2.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test max value
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv3, 3)
+    hand1.add_cards(cv10, 8)
+    hand1.add_cards(cv12, 4)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, factory = create_ceo_env(hands)
+
+    feature_0 = HandCardCountRelative(env, relative_card_value=0, max_value=3)
+    feature_1 = HandCardCountRelative(env, relative_card_value=-1, max_value=3)
+    feature_2 = HandCardCountRelative(env, relative_card_value=-2, max_value=3)
+
+    observation_array = env.reset()
+    observation = factory.create_observation(array=observation_array)
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    feature_0.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3
+
+    feature_1.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_2.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 3

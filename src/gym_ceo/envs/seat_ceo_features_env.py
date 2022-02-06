@@ -76,6 +76,51 @@ class HandCardCount:
         info["HandCardCount " + str(self.card_value_index)] = feature_value
 
 
+class HandCardCountRelative:
+    """
+    Feature giving the number of cards of a given value in the hand, relative to the
+    highest card. So it can give the number of highest cards, second highest, etc.
+    """
+
+    dim = 1
+    max_value: int
+    relative_card_value: int
+
+    def __init__(self, full_env: SeatCEOEnv, *, relative_card_value: int, max_value):
+        """Creates a feature giving the number of cards with value highest_value +
+        relative_card_value. The argument relative_card_value must be zero or negative."""
+
+        assert relative_card_value <= 0
+
+        self.relative_card_value = relative_card_value
+        self.max_value = max_value
+
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
+        # Find the highest value in the hand
+        for highest_value in range(12, -1, -1):
+            if full_obs.get_card_count(highest_value) > 0:
+                break
+
+        value = highest_value + self.relative_card_value
+
+        if value >= 0:
+            card_count = full_obs.get_card_count(value)
+        else:
+            card_count = 0
+
+        feature_value = min(card_count, self.max_value)
+        dest_obs[dest_start_index] = feature_value
+        info[
+            f"HandCardCountRelative(relative={self.relative_card_value}, value={value}, highest={highest_value})"
+        ] = feature_value
+
+
 class OtherPlayerHandCount:
     """
     Feature giving the number of cards in another players hand
