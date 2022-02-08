@@ -419,7 +419,7 @@ def create_pool(
     evaluation_interval = datetime.timedelta(minutes=5)
     network_config = batchmodels.NetworkConfiguration(subnet_id=subnet_result.id)
     public_ip_config = batchmodels.PublicIPAddressConfiguration(provision="noPublicIPAddresses")
-    new_pool = batchmodels.PoolAddParameter(
+    pool_add_parameters = batchmodels.PoolAddParameter(
         id=pool_id,
         virtual_machine_configuration=batchmodels.VirtualMachineConfiguration(
             image_reference=batchmodels.ImageReference(virtual_machine_image_id=image_version.id),
@@ -436,7 +436,7 @@ def create_pool(
         network_configuration=network_config,
         public_ip_address_configuration=public_ip_config,
     )
-    pool_creation_result = batch_client.pool.add(new_pool)
+    pool_creation_result = batch_client.pool.add(pool_add_parameters)
 
     print(f"Created pool {pool_id}. Result", pool_creation_result)
 

@@ -3,7 +3,7 @@
     "location": "westus3",
     "resource_group": "ReinforcementLearning",
     "batch_account": "davidbatchacct",
-    "vm_size": "Standard_D2s_v3",
+    "vm_size": "Standard_E2_v3",
     "vm_config": {
         "name": "RLBatchVM",
         "vnet_name": "ReinforcementLearning-vnet",
