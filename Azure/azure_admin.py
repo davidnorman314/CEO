@@ -244,18 +244,13 @@ def provision_vm(
     print(f"Provisioned virtual machine {vm_result.name}. Note that the VM is running.")
 
 
-def create_pool(
+def create_vm_image(
     account_info: AccountInfo,
     credential: EnvironmentCredential,
     vm_name: str,
-    vm_size: str,
-    vnet_name: str,
-    subnet_name: str,
-    node_agent_sku_id: str,
-    pool_config: dict(),
     gallery_config: dict(),
 ):
-    """Creates an Azure Batch pool using the given VM."""
+    """Creates a VM image from a VM and adds it to a gallery. The image can be used to create a pool."""
     compute_client = ComputeManagementClient(credential, account_info.subscription_id)
 
     # Find the VM
@@ -297,6 +292,7 @@ def create_pool(
     # Create the identifier for the image
     gallery_name = gallery_config["name"]
     gallery_image_name = gallery_config["gallery_image_name"]
+    gallery_image_version_name = gallery_config["gallery_image_version_name"]
     gallery_image_identifier = GalleryImageIdentifier(
         publisher=gallery_config["identifier"]["publisher"],
         offer=gallery_config["identifier"]["offer"],
@@ -349,13 +345,28 @@ def create_pool(
         account_info.resource_group,
         gallery_name,
         gallery_image_name,
-        "1.0.0",
+        gallery_image_version_name,
         gallery_image_version,
     )
 
     image_version = create_image_version_poller.result()
 
-    print("Added image to gallery", image_version)
+    print("Added VM image to gallery", image_version)
+
+
+def create_pool(
+    account_info: AccountInfo,
+    credential: EnvironmentCredential,
+    vm_size: str,
+    vnet_name: str,
+    subnet_name: str,
+    node_agent_sku_id: str,
+    pool_config: dict(),
+    gallery_config: dict(),
+):
+    """Creates an Azure Batch pool using the VM image from the configuration."""
+
+    compute_client = ComputeManagementClient(credential, account_info.subscription_id)
 
     # Authenticate using the service principal
     client_id_var = "AZURE_CLIENT_ID"
@@ -379,6 +390,17 @@ def create_pool(
         secret=client_secret,
         tenant=tenant,
         resource=RESOURCE,
+    )
+
+    gallery_name = gallery_config["name"]
+    gallery_image_name = gallery_config["gallery_image_name"]
+    gallery_image_version_name = gallery_config["gallery_image_version_name"]
+
+    image_version = compute_client.gallery_image_versions.get(
+        account_info.resource_group,
+        gallery_name,
+        gallery_image_name,
+        gallery_image_version_name,
     )
 
     # Find the virtual network ID.
@@ -843,6 +865,14 @@ def main():
         help="Create the VM.",
     )
     parser.add_argument(
+        "--create-vm-image",
+        dest="create_vm_image",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Create the VM image and add to a gallery.",
+    )
+    parser.add_argument(
         "--create-pool",
         dest="create_pool",
         action="store_const",
@@ -910,11 +940,17 @@ def main():
         get_batch_vm_images(account_info, batch_account_key, node_agent_sku_id)
     if args.create_vm:
         provision_vm(account_info, credential, vm_size, config["vm_config"])
+    if args.create_vm_image:
+        create_vm_image(
+            account_info,
+            credential,
+            vm_name,
+            config["gallery_config"],
+        )
     if args.create_pool:
         create_pool(
             account_info,
             credential,
-            vm_name,
             vm_size,
             vnet_name,
             subnet_name,

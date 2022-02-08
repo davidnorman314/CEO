@@ -27,6 +27,7 @@
         "name": "rlazuregallery",
         "image_name": "rl_image",
         "gallery_image_name": "rl_image_gallery",
+        "gallery_image_version_name": "1.0.0",
         "identifier": {
             "publisher": "david",
             "offer": "davidoffer",
