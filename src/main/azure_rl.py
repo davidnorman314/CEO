@@ -151,7 +151,14 @@ def get_training_progress(client: AzureClient, pickle_file: str):
 
     features_and_stats.sort()
     for pct_win, episodes, start_training in features_and_stats:
-        print("pct_win", pct_win, "episode", episode, start_training["training_id"])
+        print(
+            "pct_win",
+            pct_win,
+            "episode",
+            episode,
+            start_training["learning_type"],
+            start_training["training_id"],
+        )
         for feature_def in start_training["feature_defs"]:
             print("  ", feature_def)
 
