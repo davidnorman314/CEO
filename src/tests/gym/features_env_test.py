@@ -865,9 +865,9 @@ def test_OtherPlayerHandCount():
     )
     factory = ObservationFactory(env.num_players)
 
-    feature_0 = OtherPlayerHandCount(env, other_player_index=0)
-    feature_1 = OtherPlayerHandCount(env, other_player_index=1)
-    feature_2 = OtherPlayerHandCount(env, other_player_index=2)
+    feature_0 = OtherPlayerHandCount(env, other_player_index=0, max_value=5)
+    feature_1 = OtherPlayerHandCount(env, other_player_index=1, max_value=5)
+    feature_2 = OtherPlayerHandCount(env, other_player_index=2, max_value=5)
 
     observation_array = env.reset()
     observation = factory.create_observation(array=observation_array)

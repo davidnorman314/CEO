@@ -166,7 +166,7 @@ class OtherPlayerHandCount:
     other_player_index: int
     max_value: int
 
-    def __init__(self, full_env: SeatCEOEnv, *, other_player_index: int, max_value: int = 5):
+    def __init__(self, full_env: SeatCEOEnv, *, other_player_index: int, max_value: int):
         self.other_player_index = other_player_index
         self.max_value = max_value
 
@@ -661,6 +661,7 @@ class SeatCEOFeaturesEnv(gym.Env):
         for i in range(half_players - 1):
             feature_params = dict()
             feature_params["other_player_index"] = i
+            feature_params["max_value"] = 5
             self.feature_defs.append(("OtherPlayerHandCount", feature_params))
 
         if False:
