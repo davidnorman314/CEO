@@ -43,6 +43,7 @@ def get_training_progress(client: AzureClient, pickle_file: str):
 
     trainings_rows_list = []
     progress_rows_list = []
+    features_and_stats = []
     for training_id, training_dict in all_trainings.items():
         start_training = training_dict["start_training"]
 
@@ -63,9 +64,11 @@ def get_training_progress(client: AzureClient, pickle_file: str):
         if "train_stats" in training_dict:
             train_stats = training_dict["train_stats"]
 
+        final_pct_win = None
         if "post_train_test_stats" in training_dict:
             post_train_test_stats = training_dict["post_train_test_stats"]
-            cols["final_pct_win"] = post_train_test_stats["pct_win"]
+            final_pct_win = post_train_test_stats["pct_win"]
+            cols["final_pct_win"] = final_pct_win
         else:
             cols["final_pct_win"] = None
 
@@ -102,12 +105,15 @@ def get_training_progress(client: AzureClient, pickle_file: str):
                 all_test_stats[train_stats["training_episodes"]] = train_stats["pct_win"]
 
         # Process the log messages for the training.
+        max_progress_pct_win = -1.0
+        max_episode = -1
         for line in lines:
             line_json = json.loads(line)
             if "record_type" not in line_json or line_json["record_type"] == "log":
                 progress_row = dict()
 
                 episode = line_json["episode"]
+                max_episode = max(episode, max_episode)
 
                 progress_row["training_id"] = training_id
                 progress_row["episode"] = episode
@@ -117,11 +123,18 @@ def get_training_progress(client: AzureClient, pickle_file: str):
                 progress_row["explore_rate"] = line_json["explore_rate"]
 
                 if episode in all_test_stats:
-                    progress_row["pct_win"] = all_test_stats[episode]
+                    pct_win = all_test_stats[episode]
+                    progress_row["pct_win"] = pct_win
+                    max_progress_pct_win = max(pct_win, max_progress_pct_win)
                 else:
                     progress_row["pct_win"] = None
 
                 progress_rows_list.append(progress_row)
+
+        if final_pct_win is None:
+            final_pct_win = max_progress_pct_win
+
+        features_and_stats.append((final_pct_win, max_episode, start_training))
 
     trainings_df = pd.DataFrame(trainings_rows_list)
     progress_df = pd.DataFrame(progress_rows_list)
@@ -135,6 +148,12 @@ def get_training_progress(client: AzureClient, pickle_file: str):
     print("Saving results to", pickle_file)
     with open(pickle_file, "wb") as f:
         f.write(pickeled_data)
+
+    features_and_stats.sort()
+    for pct_win, episodes, start_training in features_and_stats:
+        print("pct_win", pct_win, "episode", episode, start_training["training_id"])
+        for feature_def in start_training["feature_defs"]:
+            print("  ", feature_def)
 
 
 def get_results(client: AzureClient):
@@ -157,6 +176,11 @@ def get_results(client: AzureClient):
         elif training["record_type"] == "train_stats":
             training_id = training["training_id"]
             all_trainings[training_id]["train_stats"] = training
+        elif training["record_type"] == "end_training":
+            training_id = training["training_id"]
+            all_trainings[training_id]["end_training"] = training
+        else:
+            print("Unknown", training)
 
     for training_id, training_dict in all_trainings.items():
         start_training = training_dict["start_training"]
