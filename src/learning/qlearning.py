@@ -215,7 +215,7 @@ class QLearning(LearningBase):
                     states_visited,
                 )
 
-            if episode > 0 and episode % 20000 == 0 and episode < self._train_episodes:
+            if episode > 0 and episode % 100000 == 0 and episode < self._train_episodes:
                 self.do_play_test(episode)
 
             if False and episode > 0 and episode % 20000 == 0:

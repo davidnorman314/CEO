@@ -627,7 +627,7 @@ def do_training(
         echo Starting python;
         python --version;
         source /home/david/py39/bin/activate;
-        python -m learning.learning --azure --post-train-stats-episodes 20000 ../../config.json;
+        python -m learning.learning --azure --post-train-stats-episodes 100000 ../../config.json;
         retVal=$?;
         echo Python finished exit code $retVal;
         if [ $retVal -ne 0 ]; then dmesg; fi;
