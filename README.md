@@ -37,3 +37,5 @@ pytest -s -k game
 ## Azure administation
 
 `python azure_admin.py <options>`
+
+`python azure_admin.py --train ../data/experiment_2022-02-12.json`
