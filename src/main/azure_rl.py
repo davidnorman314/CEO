@@ -149,7 +149,7 @@ def get_training_progress(client: AzureClient, pickle_file: str):
     with open(pickle_file, "wb") as f:
         f.write(pickeled_data)
 
-    features_and_stats.sort()
+    features_and_stats.sort(key=lambda tup: (tup[0], tup[1]))
     for pct_win, episodes, start_training in features_and_stats:
         print(
             "pct_win",
