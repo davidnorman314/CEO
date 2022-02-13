@@ -37,6 +37,9 @@ class AzureClient:
         self.log_blob_name = "log_" + str(uuid.uuid4())
         self.pickle_blob_name = "pkl_" + str(uuid.uuid4())
 
+        print("Log blob", self.log_blob_name)
+        print("Pickle blob", self.pickle_blob_name)
+
         # Connect to Azure
         self.blob_service_client = BlobServiceClient.from_connection_string(self.connect_str)
         self.container_client = self.blob_service_client.get_container_client(self.container_name)
@@ -50,6 +53,7 @@ class AzureClient:
         feature_defs: list,
     ):
         self._training_id = "tid_" + str(uuid.uuid4())
+        print("Training id", self._training_id)
 
         desc = dict()
         desc["record_type"] = "start_training"
