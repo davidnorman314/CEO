@@ -1,6 +1,7 @@
 """Program that downloads reinforcement learning information from Azure blob storage
 """
 import argparse
+import datetime
 import json
 import pickle
 import azure.core.exceptions
@@ -10,8 +11,12 @@ import numpy as np
 
 from azure_rl.azure_client import AzureClient
 
+from dateutil import parser as dateparser
 
-def get_training_progress(client: AzureClient, pickle_file: str):
+
+def get_training_progress(
+    client: AzureClient, pickle_file: str, *, earliest_start: datetime = None
+):
     """Loads all information from each traning and creates a pickle file
     with information about training progress for each one."""
     trainings = client.get_all_trainings()
@@ -27,6 +32,7 @@ def get_training_progress(client: AzureClient, pickle_file: str):
         if training["record_type"] == "start_training":
             all_trainings[training_id] = dict()
             all_trainings[training_id]["start_training"] = training
+            all_trainings[training_id]["start"] = dateparser.parse(training["start_time"])
         elif training["record_type"] == "end_training":
             all_trainings[training_id]["end_training"] = training
         elif training["record_type"] == "post_train_stats":
@@ -45,6 +51,9 @@ def get_training_progress(client: AzureClient, pickle_file: str):
     progress_rows_list = []
     features_and_stats = []
     for training_id, training_dict in all_trainings.items():
+        if earliest_start > training_dict["start"]:
+            continue
+
         start_training = training_dict["start_training"]
 
         cols = dict()
@@ -105,7 +114,7 @@ def get_training_progress(client: AzureClient, pickle_file: str):
                 all_test_stats[train_stats["training_episodes"]] = train_stats["pct_win"]
 
         # Process the log messages for the training.
-        max_progress_pct_win = -1.0
+        max_progress_pct_win = -100.0
         max_episode = -1
         for line in lines:
             line_json = json.loads(line)
@@ -130,6 +139,28 @@ def get_training_progress(client: AzureClient, pickle_file: str):
                     progress_row["pct_win"] = None
 
                 progress_rows_list.append(progress_row)
+            elif line_json["record_type"] == "test_stats":
+                progress_row = dict()
+
+                episode = line_json["training_episodes"]
+                max_episode = max(episode, max_episode)
+
+                progress_row["training_id"] = training_id
+                progress_row["episode"] = episode
+                progress_row["avg_rewards"] = None
+                progress_row["recent_rewards"] = None
+                progress_row["states_visited"] = None
+                progress_row["explore_rate"] = None
+
+                pct_win = line_json["pct_win"]
+                progress_row["pct_win"] = pct_win
+                max_progress_pct_win = max(pct_win, max_progress_pct_win)
+
+                progress_rows_list.append(progress_row)
+            elif line_json["record_type"] == "start_training":
+                pass
+            else:
+                print("Unknown", line_json)
 
         if final_pct_win is None:
             final_pct_win = max_progress_pct_win
@@ -158,12 +189,13 @@ def get_training_progress(client: AzureClient, pickle_file: str):
             episode,
             start_training["learning_type"],
             start_training["training_id"],
+            start_training["log_blob_name"],
         )
         for feature_def in start_training["feature_defs"]:
             print("  ", feature_def)
 
 
-def get_results(client: AzureClient):
+def get_results(client: AzureClient, earliest_start: datetime = None):
     trainings = client.get_all_trainings()
 
     all_trainings = dict()
@@ -177,6 +209,7 @@ def get_results(client: AzureClient):
             training_id = training["training_id"]
             all_trainings[training_id] = dict()
             all_trainings[training_id]["start_training"] = training
+            all_trainings[training_id]["start"] = dateparser.parse(training["start_time"])
         elif training["record_type"] == "post_train_stats":
             training_id = training["training_id"]
             all_trainings[training_id]["post_train_stats"] = training
@@ -190,6 +223,9 @@ def get_results(client: AzureClient):
             print("Unknown", training)
 
     for training_id, training_dict in all_trainings.items():
+        if earliest_start > training_dict["start"]:
+            continue
+
         start_training = training_dict["start_training"]
 
         train_stats = None
@@ -263,8 +299,20 @@ def main():
         default=None,
         help="The name of the file where the downloaded data should be saved.",
     )
+    parser.add_argument(
+        "--earliest-start",
+        dest="earliest_start",
+        type=str,
+        default=None,
+        help="Only return trainings that start after the given time.",
+    )
 
     args = parser.parse_args()
+
+    kwargs = dict()
+    if args.earliest_start:
+        kwargs["earliest_start"] = dateparser.parse(args.earliest_start)
+        print("Only returning trainings that started after", kwargs["earliest_start"])
 
     client = AzureClient()
 
@@ -274,9 +322,9 @@ def main():
         for training in trainings:
             print(training)
     elif args.get_results:
-        get_results(client)
+        get_results(client, **kwargs)
     elif args.get_training_progress:
-        get_training_progress(client, args.get_training_progress)
+        get_training_progress(client, args.get_training_progress, **kwargs)
     elif args.blob_name and args.filename:
         blob = client.get_blob_and_save(args.blob_name, args.filename)
     elif args.blob_name:
