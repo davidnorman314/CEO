@@ -167,6 +167,25 @@ def get_training_progress(
 
         features_and_stats.append((final_pct_win, max_episode, start_training))
 
+    # Combine rows for the same episode
+    progress_rows_list.sort(key=lambda row: (row["training_id"], row["episode"]))
+    fixed_progress_rows_list = []
+    for row in progress_rows_list:
+        if len(fixed_progress_rows_list) == 0:
+            fixed_progress_rows_list.append(row)
+            continue
+
+        prev_row = fixed_progress_rows_list[-1]
+        # print("prev", prev_row, "row", row)
+        if prev_row["episode"] == row["episode"]:
+            for key, value in row.items():
+                if value is not None:
+                    prev_row[key] = value
+        else:
+            fixed_progress_rows_list.append(row)
+
+    progress_rows_list = fixed_progress_rows_list
+
     trainings_df = pd.DataFrame(trainings_rows_list)
     progress_df = pd.DataFrame(progress_rows_list)
 
