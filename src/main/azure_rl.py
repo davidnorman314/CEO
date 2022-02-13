@@ -51,7 +51,7 @@ def get_training_progress(
     progress_rows_list = []
     features_and_stats = []
     for training_id, training_dict in all_trainings.items():
-        if earliest_start > training_dict["start"]:
+        if earliest_start is not None and earliest_start > training_dict["start"]:
             continue
 
         start_training = training_dict["start_training"]
@@ -186,7 +186,7 @@ def get_training_progress(
             "pct_win",
             pct_win,
             "episode",
-            episode,
+            episodes,
             start_training["learning_type"],
             start_training["training_id"],
             start_training["log_blob_name"],
@@ -223,7 +223,7 @@ def get_results(client: AzureClient, earliest_start: datetime = None):
             print("Unknown", training)
 
     for training_id, training_dict in all_trainings.items():
-        if earliest_start > training_dict["start"]:
+        if earliest_start is not None and earliest_start > training_dict["start"]:
             continue
 
         start_training = training_dict["start_training"]
