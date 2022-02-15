@@ -96,25 +96,9 @@ def get_training_progress(
         if len(lines[-1]) == 0:
             lines.pop()
 
-        # Process the train stats from the log
-        all_test_stats = dict()
-
-        for line in lines:
-            line_json = json.loads(line)
-            if "record_type" not in line_json:
-                continue
-
-            if line_json["record_type"] == "test_stats":
-                all_test_stats[line_json["training_episodes"]] = line_json["pct_win"]
-
-        # Process the train stats for the training. TODO: The stats have been moved to the
-        # log file, so this can be removed.
-        if "train_stats" in training_dict:
-            for train_stats in training_dict["train_stats"]:
-                all_test_stats[train_stats["training_episodes"]] = train_stats["pct_win"]
-
         # Process the log messages for the training.
         max_progress_pct_win = -100.0
+        recent_progress_pct_win = None
         max_episode = -1
         for line in lines:
             line_json = json.loads(line)
@@ -130,13 +114,7 @@ def get_training_progress(
                 progress_row["recent_rewards"] = line_json["recent_reward"]
                 progress_row["states_visited"] = line_json["states_visited"]
                 progress_row["explore_rate"] = line_json["explore_rate"]
-
-                if episode in all_test_stats:
-                    pct_win = all_test_stats[episode]
-                    progress_row["pct_win"] = pct_win
-                    max_progress_pct_win = max(pct_win, max_progress_pct_win)
-                else:
-                    progress_row["pct_win"] = None
+                progress_row["pct_win"] = None
 
                 progress_rows_list.append(progress_row)
             elif line_json["record_type"] == "test_stats":
@@ -155,6 +133,7 @@ def get_training_progress(
                 pct_win = line_json["pct_win"]
                 progress_row["pct_win"] = pct_win
                 max_progress_pct_win = max(pct_win, max_progress_pct_win)
+                recent_progress_pct_win = pct_win
 
                 progress_rows_list.append(progress_row)
             elif line_json["record_type"] == "start_training":
@@ -163,9 +142,13 @@ def get_training_progress(
                 print("Unknown", line_json)
 
         if final_pct_win is None:
-            final_pct_win = max_progress_pct_win
+            final_pct_win = recent_progress_pct_win
+        else:
+            max_progress_pct_win = max(final_pct_win, max_progress_pct_win)
 
-        features_and_stats.append((final_pct_win, max_episode, start_training))
+        features_and_stats.append(
+            (final_pct_win, max_progress_pct_win, max_episode, start_training)
+        )
 
     # Combine rows for the same episode
     progress_rows_list.sort(key=lambda row: (row["training_id"], row["episode"]))
@@ -200,10 +183,12 @@ def get_training_progress(
         f.write(pickeled_data)
 
     features_and_stats.sort(key=lambda tup: (tup[0], tup[1]))
-    for pct_win, episodes, start_training in features_and_stats:
+    for final_pct_win, max_pct_win, episodes, start_training in features_and_stats:
         print(
-            "pct_win",
-            pct_win,
+            "final_pct_win",
+            final_pct_win,
+            "max_pct_win",
+            max_pct_win,
             "episode",
             episodes,
             start_training["learning_type"],
