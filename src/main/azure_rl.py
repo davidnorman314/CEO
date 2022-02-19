@@ -60,6 +60,7 @@ def get_training_progress(
         cols["training_id"] = training_id
         cols["learning_type"] = start_training["learning_type"]
         cols["start"] = pd.to_datetime(start_training["start_time"])
+        cols["lambda"] = start_training["params"]["decay"]
 
         if "end_training" in training_dict:
             end_training = training_dict["end_training"]
@@ -145,6 +146,9 @@ def get_training_progress(
             final_pct_win = recent_progress_pct_win
         else:
             max_progress_pct_win = max(final_pct_win, max_progress_pct_win)
+
+        cols["last_pct_win"] = final_pct_win
+        cols["max_pct_win"] = max_progress_pct_win
 
         features_and_stats.append(
             (final_pct_win, max_progress_pct_win, max_episode, start_training)
