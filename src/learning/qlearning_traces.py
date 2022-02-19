@@ -84,6 +84,10 @@ class QLearningTraces(LearningBase):
         if decay is None:
             return "The parameter decay is missing"
 
+        alpha_exponent = params["alpha_exponent"]
+        if alpha_exponent is None:
+            return "The parameter alpha_exponent is missing"
+
         print("Training with", self._train_episodes, "episodes")
 
         # Log the start of training to Azure, if necessary.
@@ -95,6 +99,7 @@ class QLearningTraces(LearningBase):
             params["max_epsilon"] = max_epsilon
             params["min_epsilon"] = min_epsilon
             params["decay"] = decay
+            params["alpha_exponent"] = alpha_exponent
 
             self._azure_client.start_training(
                 "qlearning_traces",
@@ -272,7 +277,7 @@ class QLearningTraces(LearningBase):
                 # Find the step size alpha
                 # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
                 # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
-                alpha = 1.0 / (state_visit_count ** 0.85)
+                alpha = 1.0 / (state_visit_count ** alpha_exponent)
 
                 # Update Q and the traces
                 for update_tuple in eligibility_traces.keys():
@@ -470,6 +475,7 @@ def main():
     params["max_epsilon"] = 0.5
     params["min_epsilon"] = 0.01
     params["decay"] = 0.00001
+    params["alpha_exponent"] = 0.85
 
     qlearning = QLearningTraces(env, **kwargs)
 

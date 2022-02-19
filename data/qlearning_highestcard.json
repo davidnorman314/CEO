@@ -6,7 +6,8 @@
         "epsilon": 1,
         "max_epsilon": 0.5,
         "min_epsilon": 0.01,
-        "decay": 0.00001
+        "decay": 0.00001,
+        "alpha_exponent": 0.85
     },
     "features": [
         {

@@ -51,6 +51,10 @@ class QLearning(LearningBase):
         if decay is None:
             return "The parameter decay is missing"
 
+        alpha_exponent = params["alpha_exponent"]
+        if alpha_exponent is None:
+            return "The parameter alpha_exponent is missing"
+
         print("Training with", self._train_episodes, "episodes")
 
         # Log the start of training to Azure, if necessary.
@@ -61,6 +65,7 @@ class QLearning(LearningBase):
             params["max_epsilon"] = max_epsilon
             params["min_epsilon"] = min_epsilon
             params["decay"] = decay
+            params["alpha_exponent"] = alpha_exponent
 
             self._azure_client.start_training(
                 "qlearning",
@@ -149,7 +154,8 @@ class QLearning(LearningBase):
                 # Calculate the learning rate based on the state count.
                 # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
                 # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
-                alpha = 1.0 / (state_visit_count ** 0.85)
+                # They recommend 0.85.
+                alpha = 1.0 / (state_visit_count ** alpha_exponent)
 
                 state_action_value = self._qtable.state_action_value(state_action_tuple)
                 delta = alpha * (reward + discount_factor * new_state_value - state_action_value)
@@ -327,6 +333,7 @@ if __name__ == "__main__":
     params["max_epsilon"] = 0.5
     params["min_epsilon"] = 0.01
     params["decay"] = 0.0000001
+    params["alpha_exponent"] = 0.85
 
     qlearning = QLearning(env, base_env, **kwargs)
 
