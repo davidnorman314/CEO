@@ -61,6 +61,10 @@ def get_training_progress(
         cols["learning_type"] = start_training["learning_type"]
         cols["start"] = pd.to_datetime(start_training["start_time"])
         cols["lambda"] = start_training["params"]["decay"]
+        if "alpha_exponent" in start_training["params"]:
+            cols["alpha_exponent"] = start_training["params"]["alpha_exponent"]
+        else:
+            cols["alpha_exponent"] = 0.85
 
         if "end_training" in training_dict:
             end_training = training_dict["end_training"]
