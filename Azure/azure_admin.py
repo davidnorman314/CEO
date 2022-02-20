@@ -760,6 +760,11 @@ def run_test_job(
         retVal=0;
         if [ $retVal -eq 0 ]; then echo in a if 0; fi;
         if [ $retVal -ne 0 ]; then echo in a if not 0; fi;
+        echo start env vars;
+        /bin/sh -c 'echo start env vars';
+        /bin/sh -c 'echo job id $AZ_BATCH_JOB_ID';
+        /bin/sh -c 'echo task id $AZ_BATCH_TASK_ID';
+        echo end env vars;
         echo Done;"
         """
 
