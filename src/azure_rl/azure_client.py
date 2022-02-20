@@ -66,6 +66,19 @@ class AzureClient:
         desc["feature_defs"] = feature_defs
         desc["training_id"] = self._training_id
 
+        # Add information about the Azure task execution
+        azure_task = os.getenv("AZ_BATCH_TASK_ID")
+        if azure_task:
+            desc["azure_task"] = azure_task
+
+            azure_job = os.getenv("AZ_BATCH_JOB_ID")
+            if azure_job:
+                desc["azure_job"] = azure_job
+
+            azure_node_id = os.getenv("AZ_BATCH_NODE_ID")
+            if azure_node_id:
+                desc["azure_node_id"] = azure_node_id
+
         # Use ndjson format
         json_str = json.dumps(desc, separators=(",", ":"), indent=None)
         json_str = json_str + "\n"
