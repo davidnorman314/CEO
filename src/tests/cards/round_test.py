@@ -61,7 +61,7 @@ class TrickState(StateBase):
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface):
     trick_states: list[TrickState]
-    cards_remaining: list[rd.RoundState]
+    cards_remaining: list[int]
 
     value_to_play: list[hand.CardValue]
     to_play_next_index: int
@@ -78,7 +78,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
 
     def lead(self, player_position: int, hand: hand.Hand, state: rd.RoundState) -> hand.CardValue:
         self.trick_states.append(LeadState(player_position))
-        self.cards_remaining.append(state.cards_remaining)
+        self.cards_remaining.append(list(state.cards_remaining))
 
         if len(self.value_to_play) <= self.to_play_next_index:
             assert "No more values to play" != ""
@@ -100,7 +100,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         self.trick_states.append(
             TrickState(starting_position, player_position, cur_trick_value, cur_trick_count)
         )
-        self.cards_remaining.append(state.cards_remaining)
+        self.cards_remaining.append(list(state.cards_remaining))
 
         if len(self.value_to_play) <= self.to_play_next_index:
             assert "No more values to play" != ""
@@ -969,13 +969,13 @@ def test_AsyncRound():
         while True:
             if gen_tuple[0] == "lead":
                 player4_trick_states.append(LeadState(gen_tuple[1]))
-                player4_cards_remaining.append(gen_tuple[3].cards_remaining)
+                player4_cards_remaining.append(list(gen_tuple[3].cards_remaining))
                 cv = to_lead4.pop(0)
             elif gen_tuple[0] == "play":
                 player4_trick_states.append(
                     TrickState(gen_tuple[1], gen_tuple[2], gen_tuple[4], gen_tuple[5])
                 )
-                player4_cards_remaining.append(gen_tuple[6].cards_remaining)
+                player4_cards_remaining.append(list(gen_tuple[6].cards_remaining))
                 cv = to_play4.pop(0)
             else:
                 assert "Unexpected action" == ""
