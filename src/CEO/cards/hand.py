@@ -53,8 +53,11 @@ class Hand:
     Class representing a CEO hand
     """
 
+    _total_cards: int
+
     def __init__(self):
         self._cards = array.array("i", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        self._total_cards = 0
 
     def add_cards(self, card_value: CardValue, count: int):
         """
@@ -64,6 +67,7 @@ class Hand:
         assert isinstance(card_value, CardValue)
 
         self._cards[card_value.value] += count
+        self._total_cards += count
 
     def remove_cards(self, card_value: CardValue, count: int):
         """
@@ -75,12 +79,13 @@ class Hand:
         assert self._cards[card_value.value] >= count
 
         self._cards[card_value.value] -= count
+        self._total_cards -= count
 
     def is_empty(self) -> bool:
-        return sum(self._cards) == 0
+        return self._total_cards == 0
 
     def card_count(self) -> int:
-        return sum(self._cards)
+        return self._total_cards
 
     def count(self, card_value: CardValue) -> int:
         return self._cards[card_value.value]
@@ -100,6 +105,7 @@ class Hand:
         assert self._cards[index] >= cards.count
 
         self._cards[index] -= cards.count
+        self._total_cards -= cards.count
 
     def to_dict(self):
         """
