@@ -312,11 +312,11 @@ class QLearningTraces(LearningBase):
 
                 # Save information from after the update
                 episode_info.value_after = self._qtable.state_action_value(state_action_tuple)
-                # episode_info.value_after = self.self._Q[state_action_tuple]
-                episode_info.hand = copy.deepcopy(info)
                 episode_info.action_type = action_type
                 episode_info.alpha = alpha
                 episode_info.state_visit_count = state_visit_count
+                # episode_info.value_after = self.self._Q[state_action_tuple]
+                # episode_info.hand = copy.deepcopy(info)
 
                 # Increasing our total reward and updating the state
                 episode_reward += reward

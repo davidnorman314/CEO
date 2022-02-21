@@ -162,10 +162,10 @@ class QLearning(LearningBase):
                 self._qtable.update_state_visit_value(state_action_tuple, delta)
 
                 episode_info.value_after = self._qtable.state_action_value(state_action_tuple)
-                episode_info.hand = copy.deepcopy(info)
                 episode_info.action_type = action_type
                 episode_info.alpha = alpha
                 episode_info.state_visit_count = state_visit_count
+                # episode_info.hand = copy.deepcopy(info)
 
                 # print("hand 2", info["hand"])
                 # print("New q", type(self._Q[state_action_tuple]))
@@ -315,6 +315,8 @@ if __name__ == "__main__":
     if args.azure:
         kwargs["azure_client"] = AzureClient()
 
+    kwargs["disable_agent_testing"] = True
+
     do_log = False
     if args.log:
         do_log = args.log
@@ -328,18 +330,18 @@ if __name__ == "__main__":
     # Set up default parameters
     params = dict()
     params["discount_factor"] = 0.7
-    params["lambda"] = 0.5
+    params["lambda"] = 1e-6
     params["epsilon"] = 1
     params["max_epsilon"] = 0.5
     params["min_epsilon"] = 0.01
     params["decay"] = 0.0000001
-    params["alpha_exponent"] = 0.85
+    params["alpha_exponent"] = 0.70
 
     qlearning = QLearning(env, base_env, **kwargs)
 
     if args.profile:
         print("Running with profiling")
-        cProfile.run("qlearning.train()", sort=SortKey.CUMULATIVE)
+        cProfile.run("qlearning.train(params, do_log)", sort=SortKey.CUMULATIVE)
     else:
         qlearning.train(params, do_log)
 
