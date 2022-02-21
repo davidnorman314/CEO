@@ -61,6 +61,7 @@ def get_training_progress(
         cols["learning_type"] = start_training["learning_type"]
         cols["start"] = pd.to_datetime(start_training["start_time"])
         cols["lambda"] = start_training["params"]["decay"]
+        cols["discount"] = start_training["params"]["discount_factor"]
         if "alpha_exponent" in start_training["params"]:
             cols["alpha_exponent"] = start_training["params"]["alpha_exponent"]
         else:
@@ -148,8 +149,14 @@ def get_training_progress(
 
         if final_pct_win is None:
             final_pct_win = recent_progress_pct_win
+
         else:
             max_progress_pct_win = max(final_pct_win, max_progress_pct_win)
+
+        if final_pct_win is None:
+            final_pct_win = -1.0
+        if max_progress_pct_win is None:
+            max_progress_pct_win = -1.0
 
         cols["last_pct_win"] = final_pct_win
         cols["max_pct_win"] = max_progress_pct_win
