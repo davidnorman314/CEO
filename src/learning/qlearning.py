@@ -26,9 +26,10 @@ class QLearning(LearningBase):
 
     class AlphaType(Enum):
         STATE_VISIT_COUNT = 1
+        EPISODE_COUNT = 2
+        CONSTANT = 3
 
     _train_episodes: int
-    _alpha_type: AlphaType
 
     def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000, **kwargs):
         super().__init__(env, base_env, **kwargs)
@@ -61,14 +62,27 @@ class QLearning(LearningBase):
             raise ValueError("The parameter alpha_type_str is missing")
 
         if alpha_type_str == "state_visit_count":
-            self._alpha_type = self.AlphaType.STATE_VISIT_COUNT
+            alpha_type = self.AlphaType.STATE_VISIT_COUNT
+        elif alpha_type_str == "constant":
+            alpha_type = self.AlphaType.CONSTANT
+        elif alpha_type_str == "episode_count":
+            alpha_type = self.AlphaType.EPISODE_COUNT
         else:
             raise ValueError("Invalid alpha_type: " + alpha_type_str)
 
-        if self._alpha_type == self._alpha_type.STATE_VISIT_COUNT:
+        alpha_exponent = None
+        alpha_constant = None
+        if (
+            alpha_type == self.AlphaType.STATE_VISIT_COUNT
+            or alpha_type == self.AlphaType.EPISODE_COUNT
+        ):
             alpha_exponent = params["alpha_exponent"]
             if alpha_exponent is None:
                 return "The parameter alpha_exponent is missing"
+        elif alpha_type == self.AlphaType.CONSTANT:
+            alpha_constant = params["alpha"]
+            if alpha_constant is None:
+                return "The parameter alpha is missing"
 
         print("Training with", self._train_episodes, "episodes")
 
@@ -80,7 +94,11 @@ class QLearning(LearningBase):
             params["max_epsilon"] = max_epsilon
             params["min_epsilon"] = min_epsilon
             params["decay"] = decay
-            params["alpha_exponent"] = alpha_exponent
+            params["alpha_type"] = alpha_type_str
+            if alpha_exponent is not None:
+                params["alpha_exponent"] = alpha_exponent
+            if alpha_constant is not None:
+                params["alpha_constant"] = alpha_constant
 
             self._azure_client.start_training(
                 "qlearning",
@@ -166,11 +184,22 @@ class QLearning(LearningBase):
                 if state_visit_count == 1:
                     states_visited += 1
 
-                # Calculate the learning rate based on the state count.
-                # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
-                # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
-                # They recommend 0.85.
-                alpha = 1.0 / (state_visit_count ** alpha_exponent)
+                if alpha_type == self.AlphaType.STATE_VISIT_COUNT:
+                    # Calculate the learning rate based on the state count.
+                    # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
+                    # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
+                    # They recommend 0.85.
+                    alpha = 1.0 / (state_visit_count ** alpha_exponent)
+                elif alpha_type == self.AlphaType.EPISODE_COUNT:
+                    # Calculate the learning rate based on the state count.
+                    # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
+                    # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
+                    # They recommend 0.85.
+                    alpha = 1.0 / (episode ** alpha_exponent)
+                elif alpha_type == self.AlphaType.CONSTANT:
+                    alpha = alpha_constant
+                else:
+                    raise ValueError("alpha_type is not defined")
 
                 state_action_value = self._qtable.state_action_value(state_action_tuple)
                 delta = alpha * (reward + discount_factor * new_state_value - state_action_value)
