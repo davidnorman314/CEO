@@ -11,6 +11,7 @@ from collections import deque
 
 import cProfile
 from pstats import SortKey
+from enum import Enum
 
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
 from gym_ceo.envs.actions import ActionEnum
@@ -23,7 +24,11 @@ class QLearning(LearningBase):
     Class implementing q-learning for an OpenAI gym
     """
 
+    class AlphaType(Enum):
+        STATE_VISIT_COUNT = 1
+
     _train_episodes: int
+    _alpha_type: AlphaType
 
     def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000, **kwargs):
         super().__init__(env, base_env, **kwargs)
@@ -33,27 +38,37 @@ class QLearning(LearningBase):
         # Validate the parameters
         discount_factor = params["discount_factor"]
         if discount_factor is None:
-            return "The parameter discount_factor is missing"
+            raise ValueError("The parameter discount_factor is missing")
 
         epsilon = params["epsilon"]
         if epsilon is None:
-            return "The parameter epsilon is missing"
+            raise ValueError("The parameter epsilon is missing")
 
         max_epsilon = params["max_epsilon"]
         if max_epsilon is None:
-            return "The parameter max_epsilon is missing"
+            raise ValueError("The parameter max_epsilon is missing")
 
         min_epsilon = params["min_epsilon"]
         if min_epsilon is None:
-            return "The parameter min_epsilon is missing"
+            raise ValueError("The parameter min_epsilon is missing")
 
         decay = params["decay"]
         if decay is None:
-            return "The parameter decay is missing"
+            raise ValueError("The parameter decay is missing")
 
-        alpha_exponent = params["alpha_exponent"]
-        if alpha_exponent is None:
-            return "The parameter alpha_exponent is missing"
+        alpha_type_str = params["alpha_type"]
+        if alpha_type_str is None:
+            raise ValueError("The parameter alpha_type_str is missing")
+
+        if alpha_type_str == "state_visit_count":
+            self._alpha_type = self.AlphaType.STATE_VISIT_COUNT
+        else:
+            raise ValueError("Invalid alpha_type: " + alpha_type_str)
+
+        if self._alpha_type == self._alpha_type.STATE_VISIT_COUNT:
+            alpha_exponent = params["alpha_exponent"]
+            if alpha_exponent is None:
+                return "The parameter alpha_exponent is missing"
 
         print("Training with", self._train_episodes, "episodes")
 
@@ -335,6 +350,7 @@ if __name__ == "__main__":
     params["max_epsilon"] = 0.5
     params["min_epsilon"] = 0.01
     params["decay"] = 0.0000001
+    params["alpha_type"] = "state_visit_count"
     params["alpha_exponent"] = 0.70
 
     qlearning = QLearning(env, base_env, **kwargs)

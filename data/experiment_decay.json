@@ -9,6 +9,7 @@
             "max_epsilon": 0.5,
             "min_epsilon": 0.01,
             "decay": 0.001,
+            "alpha_type": "state_visit_count",
             "alpha_exponent": 0.85
         }
     },
@@ -22,6 +23,7 @@
             "max_epsilon": 0.5,
             "min_epsilon": 0.01,
             "decay": 0.0001,
+            "alpha_type": "state_visit_count",
             "alpha_exponent": 0.85
         }
     },
@@ -35,6 +37,7 @@
             "max_epsilon": 0.5,
             "min_epsilon": 0.01,
             "decay": 0.00001,
+            "alpha_type": "state_visit_count",
             "alpha_exponent": 0.85
         }
     },
@@ -48,6 +51,7 @@
             "max_epsilon": 0.5,
             "min_epsilon": 0.01,
             "decay": 0.000001,
+            "alpha_type": "state_visit_count",
             "alpha_exponent": 0.85
         }
     }
