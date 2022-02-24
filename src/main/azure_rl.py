@@ -14,11 +14,8 @@ from azure_rl.azure_client import AzureClient
 from dateutil import parser as dateparser
 
 
-def get_training_progress(
-    client: AzureClient, pickle_file: str, *, earliest_start: datetime = None
-):
-    """Loads all information from each traning and creates a pickle file
-    with information about training progress for each one."""
+def extract_trainings(client: AzureClient, *, earliest_start: datetime.datetime = None):
+    """Loads all information from each training returns it."""
     trainings = client.get_all_trainings()
 
     all_trainings = dict()
@@ -47,12 +44,87 @@ def get_training_progress(
         else:
             print("Found other", training)
 
+    # Remove the trainings we don't want to process
+    all_trainings = {k: v for k, v in all_trainings.items() if earliest_start < v["start"]}
+
+    # Add information from the logs
+    for training_id, training_dict in all_trainings.items():
+        start_training = training_dict["start_training"]
+
+        final_pct_win = None
+        post_train_test_stats = None
+        if "post_train_test_stats" in training_dict:
+            post_train_test_stats = training_dict["post_train_test_stats"]
+            final_pct_win = post_train_test_stats["pct_win"]
+
+        # Get the log messages
+        log_blob_name = start_training["log_blob_name"]
+
+        try:
+            blob = client.get_blob(log_blob_name)
+        except azure.core.exceptions.ResourceNotFoundError:
+            print(f"Blob {log_blob_name} does not exist")
+            continue
+
+        lines = blob.split("\n")
+        if len(lines[-1]) == 0:
+            lines.pop()
+
+        # Process the log messages for the training.
+        max_episode = 0
+        max_pct_win = -100.0
+        recent_progress_pct_win = None
+        log_list = []
+        training_dict["log_list"] = log_list
+        test_stats_list = []
+        training_dict["test_stats_list"] = test_stats_list
+        for line in lines:
+            line_json = json.loads(line)
+            if "record_type" not in line_json or line_json["record_type"] == "log":
+                episode = line_json["episode"]
+                max_episode = max(episode, max_episode)
+
+                log_list.append(line_json)
+            elif line_json["record_type"] == "test_stats":
+                test_stats_list.append(line_json)
+
+                pct_win = line_json["pct_win"]
+                max_pct_win = max(pct_win, max_pct_win)
+                recent_progress_pct_win = pct_win
+            elif line_json["record_type"] == "start_training":
+                pass
+            else:
+                print("Unknown", line_json)
+
+        if final_pct_win is None:
+            final_pct_win = recent_progress_pct_win
+        else:
+            max_pct_win = max(final_pct_win, max_pct_win)
+
+        if final_pct_win is None:
+            final_pct_win = -1.0
+        if max_pct_win is None:
+            max_pct_win = -1.0
+
+        training_dict["final_pct_win"] = final_pct_win
+        training_dict["max_pct_win"] = max_pct_win
+        training_dict["max_episode"] = max_episode
+
+    return all_trainings
+
+
+def get_training_progress(
+    client: AzureClient, pickle_file: str, *, earliest_start: datetime.datetime = None
+):
+    """Loads all information from each trainings and creates a pickle file
+    with information about training progress for each one."""
+
+    all_trainings = extract_trainings(client, earliest_start=earliest_start)
+
     trainings_rows_list = []
     progress_rows_list = []
     features_and_stats = []
     for training_id, training_dict in all_trainings.items():
-        if earliest_start is not None and earliest_start > training_dict["start"]:
-            continue
 
         start_training = training_dict["start_training"]
 
@@ -75,95 +147,67 @@ def get_training_progress(
             cols["end"] = None
             cols["finished"] = False
 
-        train_stats = None
-        if "train_stats" in training_dict:
-            train_stats = training_dict["train_stats"]
-
-        final_pct_win = None
         if "post_train_test_stats" in training_dict:
             post_train_test_stats = training_dict["post_train_test_stats"]
-            final_pct_win = post_train_test_stats["pct_win"]
-            cols["final_pct_win"] = final_pct_win
+            cols["final_pct_win"] = post_train_test_stats["pct_win"]
         else:
             cols["final_pct_win"] = None
 
+        max_episode = training_dict["max_episode"]
+        cols["max_episode"] = max_episode
+
         trainings_rows_list.append(cols)
 
-        # Get the log messages
-        log_blob_name = start_training["log_blob_name"]
+        # Process the progress log messages
+        for line_json in training_dict["log_list"]:
+            progress_row = dict()
 
-        try:
-            blob = client.get_blob(log_blob_name)
-        except azure.core.exceptions.ResourceNotFoundError:
-            print(f"Blob {log_blob_name} does not exist")
-            continue
+            episode = line_json["episode"]
+            max_episode = max(episode, max_episode)
 
-        lines = blob.split("\n")
-        if len(lines[-1]) == 0:
-            lines.pop()
+            progress_row["training_id"] = training_id
+            progress_row["episode"] = episode
+            progress_row["avg_rewards"] = line_json["avg_reward"]
+            progress_row["recent_rewards"] = line_json["recent_reward"]
+            progress_row["states_visited"] = line_json["states_visited"]
+            progress_row["explore_rate"] = line_json["explore_rate"]
+            progress_row["pct_win"] = None
 
-        # Process the log messages for the training.
+            progress_rows_list.append(progress_row)
+
+        # Process the statistics from testing during training
         max_progress_pct_win = -100.0
-        recent_progress_pct_win = None
-        max_episode = -1
-        for line in lines:
-            line_json = json.loads(line)
-            if "record_type" not in line_json or line_json["record_type"] == "log":
-                progress_row = dict()
+        for line_json in training_dict["test_stats_list"]:
+            progress_row = dict()
 
-                episode = line_json["episode"]
-                max_episode = max(episode, max_episode)
+            episode = line_json["training_episodes"]
+            max_episode = max(episode, max_episode)
 
-                progress_row["training_id"] = training_id
-                progress_row["episode"] = episode
-                progress_row["avg_rewards"] = line_json["avg_reward"]
-                progress_row["recent_rewards"] = line_json["recent_reward"]
-                progress_row["states_visited"] = line_json["states_visited"]
-                progress_row["explore_rate"] = line_json["explore_rate"]
-                progress_row["pct_win"] = None
+            progress_row["training_id"] = training_id
+            progress_row["episode"] = episode
+            progress_row["avg_rewards"] = None
+            progress_row["recent_rewards"] = None
+            progress_row["states_visited"] = None
+            progress_row["explore_rate"] = None
 
-                progress_rows_list.append(progress_row)
-            elif line_json["record_type"] == "test_stats":
-                progress_row = dict()
+            pct_win = line_json["pct_win"]
+            progress_row["pct_win"] = pct_win
+            max_progress_pct_win = max(pct_win, max_progress_pct_win)
 
-                episode = line_json["training_episodes"]
-                max_episode = max(episode, max_episode)
+            progress_rows_list.append(progress_row)
 
-                progress_row["training_id"] = training_id
-                progress_row["episode"] = episode
-                progress_row["avg_rewards"] = None
-                progress_row["recent_rewards"] = None
-                progress_row["states_visited"] = None
-                progress_row["explore_rate"] = None
-
-                pct_win = line_json["pct_win"]
-                progress_row["pct_win"] = pct_win
-                max_progress_pct_win = max(pct_win, max_progress_pct_win)
-                recent_progress_pct_win = pct_win
-
-                progress_rows_list.append(progress_row)
-            elif line_json["record_type"] == "start_training":
-                pass
-            else:
-                print("Unknown", line_json)
-
-        if final_pct_win is None:
-            final_pct_win = recent_progress_pct_win
-
-        else:
-            max_progress_pct_win = max(final_pct_win, max_progress_pct_win)
+        final_pct_win = training_dict["final_pct_win"]
+        max_pct_win = training_dict["max_pct_win"]
 
         if final_pct_win is None:
             final_pct_win = -1.0
-        if max_progress_pct_win is None:
-            max_progress_pct_win = -1.0
+        if max_pct_win is None:
+            max_pct_win = -1.0
 
         cols["last_pct_win"] = final_pct_win
-        cols["max_pct_win"] = max_progress_pct_win
+        cols["max_pct_win"] = max_pct_win
 
-        features_and_stats.append(
-            (final_pct_win, max_progress_pct_win, max_episode, start_training)
-        )
+        features_and_stats.append((final_pct_win, max_pct_win, max_episode, start_training))
 
     # Combine rows for the same episode
     progress_rows_list.sort(key=lambda row: (row["training_id"], row["episode"]))
