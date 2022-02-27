@@ -380,7 +380,7 @@ if __name__ == "__main__":
     params["min_epsilon"] = 0.01
     params["decay"] = 0.0000001
     params["alpha_type"] = "state_visit_count"
-    params["alpha_exponent"] = 0.70
+    params["alpha_exponent"] = 0.60
 
     qlearning = QLearning(env, base_env, **kwargs)
 

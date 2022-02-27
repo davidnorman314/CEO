@@ -8,6 +8,6 @@
         "min_epsilon": 0.01,
         "decay": 0.000001,
         "alpha_type": "state_visit_count",
-        "alpha_exponent": 0.85
+        "alpha_exponent": 0.6
     }
 }
