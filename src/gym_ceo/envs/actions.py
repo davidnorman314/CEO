@@ -1,5 +1,5 @@
 from CEO.cards.player import *
-from CEO.cards.hand import *
+from CEO.cards.hand import HandInterface
 from CEO.cards.simplebehavior import SimpleBehaviorBase
 
 from gym.spaces import Box, Discrete
@@ -25,7 +25,7 @@ class Actions(SimpleBehaviorBase):
 
     def play(
         self,
-        hand: Hand,
+        hand: HandInterface,
         cur_trick_value: CardValue,
         cur_trick_count: int,
         action_number: int,
@@ -55,7 +55,7 @@ class Actions(SimpleBehaviorBase):
         return ret
 
     def play_lowest(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
+        self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
 
         if cur_trick_value is None:
@@ -69,7 +69,7 @@ class Actions(SimpleBehaviorBase):
         return playable_list[0].cv
 
     def play_lowest_without_breaking_sets(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
+        self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
 
         if cur_trick_value is None:
@@ -87,7 +87,7 @@ class Actions(SimpleBehaviorBase):
         return None
 
     def play_second_lowest(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
+        self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
 
         if cur_trick_value is None:
@@ -104,7 +104,7 @@ class Actions(SimpleBehaviorBase):
         return playable_list[1].cv
 
     def play_second_lowest_without_breaking_sets(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
+        self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
         """
         Play the second lowest card without breaking up any sets. If there is a single value
@@ -136,7 +136,7 @@ class Actions(SimpleBehaviorBase):
         return None
 
     def play_highest(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
+        self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
 
         if cur_trick_value is None:
@@ -150,7 +150,7 @@ class Actions(SimpleBehaviorBase):
         return playable_list[-1].cv
 
     def pass_on_trick(
-        self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int
+        self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
         return None
 
@@ -216,7 +216,7 @@ class ActionSpaceFactory(SimpleBehaviorBase):
         ]
     )
 
-    def create_lead(self, hand: Hand):
+    def create_lead(self, hand: HandInterface):
         # Count the number of playable card values.
         playable_card_values = 0
         for cv in range(13):
@@ -230,7 +230,7 @@ class ActionSpaceFactory(SimpleBehaviorBase):
         else:
             return self.action_space_lead
 
-    def create_play(self, hand: Hand, cur_trick_value: CardValue, cur_trick_count: int):
+    def create_play(self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int):
         """Create the action space where the player will play on the given trick"""
         playable_cards = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
         playable_card_count = len(playable_cards)

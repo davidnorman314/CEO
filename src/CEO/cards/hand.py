@@ -1,4 +1,5 @@
 import array
+from abc import ABC, abstractmethod
 
 
 class CardValue:
@@ -48,7 +49,27 @@ class PlayedCards:
         self.count = count
 
 
-class Hand:
+class HandInterface(ABC):
+    """Abstract base class for Hand classes."""
+
+    @abstractmethod
+    def card_count(self) -> int:
+        pass
+
+    @abstractmethod
+    def count(self, card_value: CardValue) -> int:
+        pass
+
+    @abstractmethod
+    def max_card_value(self) -> CardValue:
+        pass
+
+    @abstractmethod
+    def play_cards(self, cards: PlayedCards):
+        pass
+
+
+class Hand(HandInterface):
     """
     Class representing a CEO hand
     """
