@@ -150,3 +150,6 @@ class Observation:
 
     def get_array(self):
         return self._obs
+
+    def copy(self):
+        return Observation(self._factory, array=self._obs.copy())
