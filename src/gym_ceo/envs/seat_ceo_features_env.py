@@ -702,13 +702,13 @@ class SeatCEOFeaturesEnv(gym.Env):
         self.action_space = self.full_env.action_space
 
         info = dict()
-        return self._make_observation(full_obs, info)
+        return self.make_feature_observation(full_obs, info)
 
     def step(self, action):
         full_obs, reward, done, info = self.full_env.step(action)
         self.action_space = self.full_env.action_space
 
-        obs = self._make_observation(full_obs, info)
+        obs = self.make_feature_observation(full_obs, info)
         return obs, reward, done, info
 
     def render(self, mode="human"):
@@ -717,7 +717,7 @@ class SeatCEOFeaturesEnv(gym.Env):
     def close(self):
         pass
 
-    def _make_observation(self, full_obs_array, info: dict):
+    def make_feature_observation(self, full_obs_array, info: dict):
         if full_obs_array is None:
             return None
 
