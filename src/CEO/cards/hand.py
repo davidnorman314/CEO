@@ -97,6 +97,24 @@ class HandInterface(ABC):
     def play_cards(self, cards: PlayedCards):
         pass
 
+    def get_playable_cards(
+        self, cur_trick_value: CardValue, trick_card_count: int
+    ) -> list[PlayableCard]:
+        """
+        Returns a list of all cards that can be played on the trick.
+        """
+
+        assert cur_trick_value is not None
+
+        ret = []
+        for i in range(cur_trick_value.value + 1, 13):
+            cv = CardValue(i)
+            hand_count = self.count(cv)
+            if hand_count >= trick_card_count:
+                ret.append(PlayableCard(cv, hand_count, trick_card_count))
+
+        return ret
+
 
 class Hand(HandInterface):
     """
@@ -156,24 +174,6 @@ class Hand(HandInterface):
 
         self._cards[index] -= cards.count
         self._total_cards -= cards.count
-
-    def get_playable_cards(
-        self, cur_trick_value: CardValue, trick_card_count: int
-    ) -> list[PlayableCard]:
-        """
-        Returns a list of all cards that can be played on the trick.
-        """
-
-        assert cur_trick_value is not None
-
-        ret = []
-        for i in range(cur_trick_value.value + 1, 13):
-            cv = CardValue(i)
-            hand_count = self.count(cv)
-            if hand_count >= trick_card_count:
-                ret.append(PlayableCard(cv, hand_count, trick_card_count))
-
-        return ret
 
     def to_dict(self):
         """
