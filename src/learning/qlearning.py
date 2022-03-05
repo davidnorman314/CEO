@@ -6,7 +6,7 @@ import random
 import copy
 import math
 from azure_rl.azure_client import AzureClient
-from learning.learning_base import LearningBase, EpisodeInfo
+from learning.learning_base import QTableLearningBase, EpisodeInfo
 from collections import deque
 
 import cProfile
@@ -19,7 +19,7 @@ from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
 
-class QLearning(LearningBase):
+class QLearning(QTableLearningBase):
     """
     Class implementing q-learning for an OpenAI gym
     """
@@ -32,7 +32,7 @@ class QLearning(LearningBase):
     _train_episodes: int
 
     def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000, **kwargs):
-        super().__init__(env, base_env, **kwargs)
+        super().__init__("qlearning", env, base_env, **kwargs)
         self._train_episodes = train_episodes
 
     def train(self, params: dict, do_log: bool):
@@ -391,4 +391,4 @@ if __name__ == "__main__":
         qlearning.train(params, do_log)
 
     # Save the agent in a pickle file.
-    qlearning.pickle("qlearning", "qlearning.pickle")
+    qlearning.pickle("qlearning.pickle")

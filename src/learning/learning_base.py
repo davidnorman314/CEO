@@ -24,8 +24,8 @@ class LearningBase:
     """
 
     _env: gym.Env
-    _qtable: QTable
 
+    _type: str
     _search_statistics: list[dict]
     _start_time: datetime.datetime
     _last_backup_pickle_time: datetime.datetime
@@ -33,11 +33,8 @@ class LearningBase:
 
     _azure_client: AzureClient
 
-    def __init__(self, env: gym.Env, base_env: gym.Env, **kwargs):
-        """Constructor for a learning base class object.
-        The kwargs are passed to the QTable constructor so it can be initialized
-        for multiprocessing.
-        """
+    def __init__(self, type: str, env: gym.Env, base_env: gym.Env, **kwargs):
+        """Constructor for a learning base class object."""
         if "azure_client" in kwargs:
             self._azure_client = kwargs["azure_client"]
             del kwargs["azure_client"]
@@ -47,9 +44,9 @@ class LearningBase:
         self._disable_agent_testing = kwargs["disable_agent_testing"]
         del kwargs["disable_agent_testing"]
 
+        self._type = type
         self._env = env
         self._base_env = env
-        self._qtable = QTable(env, **kwargs)
 
         self._search_statistics = []
         self._start_time = datetime.datetime.now()
@@ -94,15 +91,14 @@ class LearningBase:
 
                 self._last_azure_log_time = now
 
-    def pickle(self, typestr: str, filename: str):
+    def pickle(self, filename: str):
         pickle_dict = dict()
-        pickle_dict["Q"] = self._qtable._Q
-        pickle_dict["StateCount"] = self._qtable._state_count
-        pickle_dict["Type"] = typestr
-        pickle_dict["MaxActionValue"] = self._qtable._max_action_value
+        pickle_dict["Type"] = self._type
         pickle_dict["SearchStats"] = self._search_statistics
         pickle_dict["FeatureDefs"] = self._env.feature_defs
         pickle_dict["NumPlayers"] = self._env.num_players
+
+        self._init_pickle_dict(pickle_dict)
 
         data = pickle.dumps(pickle_dict, pickle.HIGHEST_PROTOCOL)
 
@@ -115,13 +111,28 @@ class LearningBase:
         if self._azure_client:
             self._azure_client.upload_pickle(data=data)
 
-    def mean_squared_difference(self, o) -> int:
-        """
-        Calculates the mean squared difference between this QTable and the
-        passed QTable.
-        """
+    def _init_pickle_dict(self, pickle_dict: dict):
+        raise NotImplementedError("Must be implemented in derived class")
 
-        return np.square(self._Q - o).mean(axis=None)
+
+class QTableLearningBase(LearningBase):
+    _qtable: QTable
+
+    def __init__(self, type: str, env: gym.Env, base_env: gym.Env, **kwargs):
+        """Constructor for a learning base class object that uses a Q table.
+        The kwargs are passed to the QTable constructor so it can be initialized
+        for multiprocessing.
+        """
+        super().__init__(type, env, base_env, **kwargs)
+
+        del kwargs["disable_agent_testing"]
+
+        self._qtable = QTable(env, **kwargs)
+
+    def _init_pickle_dict(self, pickle_dict: dict):
+        pickle_dict["Q"] = self._qtable._Q
+        pickle_dict["MaxActionValue"] = self._qtable._max_action_value
+        pickle_dict["StateCount"] = self._qtable._state_count
 
     def do_play_test(self, training_episodes: int):
         """Plays many hands with the current agent and logs the results."""
@@ -152,3 +163,11 @@ class LearningBase:
                 total_losses=stats.total_losses,
                 pct_win=stats.pct_win,
             )
+
+    def mean_squared_difference(self, o) -> int:
+        """
+        Calculates the mean squared difference between this QTable and the
+        passed QTable.
+        """
+
+        return np.square(self._Q - o).mean(axis=None)

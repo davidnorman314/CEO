@@ -20,6 +20,8 @@ pytest -s -k game
 
 `python -m learning.monte_carlo --train --episodes 5000 --processes 3`
 
+`python -m learning.learning --pickle-file training.pkl --disable-agent-testing ../data/qlearning.json`
+
 `python -m learning.learning --pickle-file training.pkl --disable-agent-testing ../data/qlearning_traces_features.json`
 
 ## Use trained agents to play

@@ -89,7 +89,7 @@ def do_learning(
 
     # Save the agent in a pickle file.
     if pickle_file or azure_client:
-        learning.pickle("qlearning_traces", pickle_file)
+        learning.pickle(pickle_file)
 
     # Run a final test of the agent, if necessary
     if post_train_stats_episodes:

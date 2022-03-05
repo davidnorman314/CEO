@@ -6,7 +6,7 @@ import random
 import copy
 import math
 from azure_rl.azure_client import AzureClient
-from learning.learning_base import LearningBase, EpisodeInfo
+from learning.learning_base import QTableLearningBase, EpisodeInfo
 from collections import deque
 
 import cProfile
@@ -17,7 +17,7 @@ from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
 
-class QLearningTraces(LearningBase):
+class QLearningTraces(QTableLearningBase):
     """
     Class implementing Watkins Q(\lambda) with eligibility traces for an OpenAI gym.
     See:
@@ -30,7 +30,7 @@ class QLearningTraces(LearningBase):
     _train_episodes: int
 
     def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000, **kwargs):
-        super().__init__(env, base_env, **kwargs)
+        super().__init__("qlearning_traces", env, base_env, **kwargs)
         self._train_episodes = train_episodes
 
     def _pick_action(self, state_tuple: tuple, epsilon: float) -> ActionEnum:
@@ -487,7 +487,7 @@ def main():
 
     # Save the agent in a pickle file.
     file_name = "qlearning_traces.pickle"
-    qlearning.pickle("qlearning_traces", file_name)
+    qlearning.pickle(file_name)
 
 
 if __name__ == "__main__":

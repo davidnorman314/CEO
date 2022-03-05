@@ -104,7 +104,7 @@ class QTable:
 
             init_from_shared = False
         else:
-            raise Exception("Incorrect args in QTable constructor")
+            raise Exception("Incorrect args in QTable constructor: " + str(kwargs))
 
         if init_from_shared:
             self._Q = np.frombuffer(self.q_raw_array, dtype=q_type).reshape(q_dims)

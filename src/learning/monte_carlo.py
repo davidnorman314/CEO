@@ -12,7 +12,7 @@ from typing import List, Tuple
 from copy import copy, deepcopy
 import numpy as np
 from numpy.lib.arraysetops import isin
-from learning.learning_base import LearningBase
+from learning.learning_base import QTableLearningBase
 from collections import deque
 from multiprocessing import RawArray, Pool
 
@@ -41,7 +41,7 @@ class SearchStatistics:
         self.explore_count += other.explore_count
 
 
-class MonteCarloLearning(LearningBase):
+class MonteCarloLearning(QTableLearningBase):
 
     _base_env: gym.Env
 
@@ -50,7 +50,7 @@ class MonteCarloLearning(LearningBase):
         The kwargs are passed to the QTable constructor so it can be initialized
         for multiprocessing.
         """
-        super().__init__(env, **kwargs)
+        super().__init__("monte_carlo", env, **kwargs)
 
         self._base_env = base_env
 
@@ -328,7 +328,7 @@ def train_and_save(episodes: int, process_count: int):
     learning.train(episodes, process_count)
 
     # Save the agent in a pickle file.
-    learning.pickle("monte_carlo", "monte_carlo.pickle")
+    learning.pickle("monte_carlo.pickle")
 
 
 worker_base_env = None
