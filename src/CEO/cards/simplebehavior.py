@@ -2,35 +2,6 @@ from CEO.cards.player import *
 from CEO.cards.hand import *
 
 
-class PlayableCard:
-    cv: CardValue
-    count_matches: bool
-    breaks_pair: bool
-    breaks_triple: bool
-    breaks_quadruple: bool
-    breaks_large: bool
-
-    def __init__(self, cv: CardValue, hand_card_count: int, trick_card_count: int):
-        self.cv = cv
-
-        self.count_matches = False
-        self.breaks_pair = False
-        self.breaks_triple = False
-        self.breaks_quadruple = False
-        self.breaks_large = False
-
-        if hand_card_count == trick_card_count:
-            self.count_matches = True
-        elif hand_card_count == 2:
-            self.breaks_pair = True
-        elif hand_card_count == 3:
-            self.breaks_triple = True
-        elif hand_card_count == 3:
-            self.breaks_quadruple = True
-        elif hand_card_count == 3:
-            self.breaks_large = True
-
-
 class SimpleBehaviorBase:
     def get_playable_cards(
         self, hand: Hand, cur_trick_value: CardValue, trick_card_count: int
