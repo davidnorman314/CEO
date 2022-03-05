@@ -33,7 +33,7 @@ class LearningBase:
 
     _azure_client: AzureClient
 
-    def __init__(self, type: str, env: gym.Env, base_env: gym.Env, **kwargs):
+    def __init__(self, type: str, env: gym.Env, **kwargs):
         """Constructor for a learning base class object."""
         if "azure_client" in kwargs:
             self._azure_client = kwargs["azure_client"]
@@ -123,7 +123,7 @@ class QTableLearningBase(LearningBase):
         The kwargs are passed to the QTable constructor so it can be initialized
         for multiprocessing.
         """
-        super().__init__(type, env, base_env, **kwargs)
+        super().__init__(type, env, **kwargs)
 
         del kwargs["disable_agent_testing"]
 
