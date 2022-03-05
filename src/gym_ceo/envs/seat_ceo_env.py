@@ -6,11 +6,12 @@ from gym.utils import seeding
 
 from gym_ceo.envs.actions import Actions, ActionEnum, ActionSpaceFactory, CEOActionSpace
 from gym_ceo.envs.observation import Observation, ObservationFactory
+from gym_ceo.envs.observation_hand import ObservationHand
 
 from CEO.cards.round import Round, RoundState
 from CEO.cards.eventlistener import EventListenerInterface
 from CEO.cards.deck import Deck
-from CEO.cards.hand import Hand, CardValue
+from CEO.cards.hand import Hand, CardValue, PlayedCards
 from CEO.cards.simplebehavior import BasicBehavior, SimpleBehaviorBase
 from CEO.cards.player import Player, PlayerBehaviorInterface
 from CEO.cards.passcards import PassCards
@@ -280,3 +281,43 @@ class SeatCEOEnv(gym.Env):
             cur_hand=cur_hand,
             state=state,
         )
+
+    def get_afterstate(self, observation_array: np.ndarray, action) -> np.ndarray:
+        """Creates the afterstate from taking the given action from the state
+        given by the observation."""
+
+        # Create an observation and a hand from the array
+        observation = self.observation_factory.create_observation(array=observation_array)
+        hand = ObservationHand(observation)
+
+        cur_trick_count = observation.get_cur_trick_count()
+        if cur_trick_count > 0:
+            cur_trick_value = CardValue(int(observation.get_cur_trick_value()))
+        else:
+            cur_trick_value = None
+
+        # Perform the action on the hand
+        played_value = self._actions.play(
+            hand,
+            cur_trick_value,
+            cur_trick_count,
+            action,
+        )
+
+        # See if we pass
+        if played_value is None:
+            return observation_array.copy()
+
+        if cur_trick_count == 0:
+            cur_trick_count = hand.count(played_value)
+
+        played_cards = PlayedCards(played_value, cur_trick_count)
+
+        hand.play_cards(played_cards)
+
+        # Create an observation for the afterstate
+        afterstate = self.observation_factory.create_observation(
+            array=observation_array, update_hand=hand
+        )
+
+        return afterstate.get_array()

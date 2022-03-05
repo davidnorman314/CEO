@@ -67,6 +67,11 @@ class Observation:
         cur_card_count: The number of cards that must be played on the trick.
         state: RoundState object
 
+        To create an observation from another observation while updating the cards in the
+        hand:
+        array: ndarray for the original observation
+        update_hand: HandInterface object giving the hand
+
         To create an observation from an ndarray:
         array: ndarray for the observation.
         """
@@ -125,6 +130,16 @@ class Observation:
             self._obs[obs_index_cur_trick_value] = cur_card_value.value
             self._obs[obs_index_cur_trick_count] = cur_card_count
             self._obs[obs_index_start_player] = starting_player
+
+        elif "update_hand" in kwargs:
+            update_hand = kwargs["update_hand"]
+
+            # Create the return array
+            self._obs = kwargs["array"].copy()
+
+            # Update the cards in the hand
+            for v in range(13):
+                self._obs[obs_index_hand_cards + v] = update_hand.count(CardValue(v))
 
         elif "array" in kwargs:
             assert isinstance(kwargs["array"], np.ndarray)
