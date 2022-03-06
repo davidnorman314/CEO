@@ -1315,3 +1315,130 @@ def test_SeatCEOEnv_CardActionSpace_PassOnTrick():
 
     assert reward > 0
     assert done
+
+
+def test_SeatCEOEnv_CardActionSpace_get_afterstate():
+    """
+    Test SetCEOEnv.get_afterstate() when the environment is using card action spaces.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+
+    # Make the hands
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 2)
+    hand1.add_cards(cv2, 3)
+    hand1.add_cards(cv3, 4)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv3, 2)
+    hand2.add_cards(cv7, 1)
+    hand2.add_cards(cv6, 3)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv4, 2)
+    hand3.add_cards(cv5, 1)
+    hand3.add_cards(cv7, 3)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+    hand4.add_cards(cv0, 1)
+    hand4.add_cards(cv6, 1)
+    hand4.add_cards(cv8, 3)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    # action: Lead lowest = cv0
+    behavior2.value_to_play.append(cv1)
+    behavior3.value_to_play.append(cv2)
+    behavior4.value_to_play.append(cv3)
+
+    behavior4.value_to_play.append(cv0)
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        use_card_action_space=True,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+    )
+
+    observation_factory = env.observation_factory
+
+    observation_array = env.reset()
+    observation = observation_factory.create_observation(array=observation_array)
+
+    assert observation.get_card_count(0) == 1
+    assert observation.get_card_count(1) == 2
+    assert observation.get_card_count(2) == 3
+    assert observation.get_card_count(3) == 4
+
+    # Test afterstate after lead highest
+    action = env.action_space.n - 1
+    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    assert afterstate.get_card_count(0) == 1
+    assert afterstate.get_card_count(1) == 2
+    assert afterstate.get_card_count(2) == 3
+    assert afterstate.get_card_count(3) == 0
+
+    # Test afterstate after lead lowest
+    action = 0
+    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    assert afterstate.get_card_count(0) == 0
+    assert afterstate.get_card_count(1) == 2
+    assert afterstate.get_card_count(2) == 3
+    assert afterstate.get_card_count(3) == 4
+
+    # Lead lowest
+    observation_array, reward, done, info = env.step(0)
+
+    observation = observation_factory.create_observation(array=observation_array)
+
+    assert observation.get_card_count(0) == 0
+    assert observation.get_card_count(1) == 2
+    assert observation.get_card_count(2) == 3
+    assert observation.get_card_count(3) == 4
+
+    # Test afterstate after play highest
+    action = env.action_space.n - 2
+    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    assert afterstate.get_card_count(0) == 0
+    assert afterstate.get_card_count(1) == 2
+    assert afterstate.get_card_count(2) == 3
+    assert afterstate.get_card_count(3) == 3
+
+    # Test afterstate after pass
+    action = env.action_space.n - 1
+    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    assert afterstate.get_card_count(0) == 0
+    assert afterstate.get_card_count(1) == 2
+    assert afterstate.get_card_count(2) == 3
+    assert afterstate.get_card_count(3) == 4
