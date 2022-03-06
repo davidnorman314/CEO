@@ -32,11 +32,7 @@ class SeatCEOFeaturesEnv(gym.Env):
     # The number of players
     num_players: int
 
-    # Feature definitions
-    feature_defs: list
-
-    # Objects to calculate the features
-    _feature_calculators: list
+    _observation_factory: FeatureObservationFactory
 
     _observation_dimension: int
 
@@ -46,51 +42,21 @@ class SeatCEOFeaturesEnv(gym.Env):
         self.max_action_value = full_env.max_action_value
         self.num_players = full_env.num_players
 
-        self._feature_calculators = []
-
-        # Get default feature definitions
-        if feature_defs:
-            self.feature_defs = feature_defs
-        else:
+        # Get feature definitions
+        if feature_defs is None:
             print("Using default features")
-            self.feature_defs = self.get_default_features(full_env)
+            feature_defs = self.get_default_features(full_env)
 
-        # Create the features
-        for feature_class, kwargs in self.feature_defs:
-            class_obj = globals()[feature_class]
-            feature = class_obj(full_env, **kwargs)
+        self._observation_factory = FeatureObservationFactory(full_env, feature_defs)
 
-            self._feature_calculators.append(feature)
+        self.observation_space = self._observation_factory.observation_space
+        self._observation_dimension = self._observation_factory.observation_dimension
 
-        # Calculate the observation space
-        obs_space_low = []
-        obs_space_high = []
-        obs_space_possible_values = 1
-        for calculator in self._feature_calculators:
-            for i in range(calculator.dim):
-                obs_space_low.append(0)
-                obs_space_high.append(calculator.max_value)
-                obs_space_possible_values = obs_space_possible_values * (calculator.max_value + 1)
-            print(
-                "Calculator",
-                type(calculator),
-                "dim",
-                calculator.dim,
-                "max",
-                calculator.max_value,
-            )
-        self.observation_space = Box(
-            low=np.array(obs_space_low),
-            high=np.array(obs_space_high),
-            dtype=np.int32,
-        )
-
-        self._observation_dimension = len(obs_space_high)
         print(
             "SeatCEOFeatures env has",
             self._observation_dimension,
             "dimensional observation space with ",
-            obs_space_possible_values,
+            self._observation_factory.obs_space_possible_values,
             "possible values",
         )
 
@@ -157,18 +123,4 @@ class SeatCEOFeaturesEnv(gym.Env):
         pass
 
     def make_feature_observation(self, full_obs_array, info: dict):
-        if full_obs_array is None:
-            return None
-
-        full_obs = Observation(self.full_env.observation_factory, array=full_obs_array)
-
-        feature_obs_array = np.zeros(self._observation_dimension)
-
-        i = 0
-        for calculator in self._feature_calculators:
-            ret = calculator.calc(full_obs, feature_obs_array, i, info)
-            assert ret is None
-
-            i = i + calculator.dim
-
-        return feature_obs_array
+        return self._observation_factory.make_feature_observation(full_obs_array, info)
