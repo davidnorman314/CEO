@@ -16,7 +16,7 @@ import learning.play_qagent as play_qagent
 import cProfile
 from pstats import SortKey
 
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, ActionEnum, CEOActionSpace
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 

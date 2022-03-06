@@ -161,6 +161,10 @@ class Observation:
         return self._obs[self._factory._obs_index_cur_trick_count]
 
     def get_cur_trick_value(self):
+        # See if we lead
+        if self.get_cur_trick_count() == 0:
+            return None
+
         return self._obs[self._factory._obs_index_cur_trick_value]
 
     def get_array(self):

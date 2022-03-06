@@ -29,7 +29,7 @@ class Actions(SimpleBehaviorBase):
         cur_trick_value: CardValue,
         cur_trick_count: int,
         action_number: int,
-    ):
+    ) -> CardValue:
         if action_number == ActionEnum.PASS_ON_TRICK_NUM:
             if cur_trick_value is None:
                 print("Action pass for lead")
@@ -158,13 +158,25 @@ class Actions(SimpleBehaviorBase):
 class CEOActionSpace(Discrete):
     actions: list[ActionEnum]
 
+    _actions_obj: Actions
+
     def __init__(self, actions: list[int]):
         super(CEOActionSpace, self).__init__(len(actions))
 
         self.actions = actions
+        self._actions_obj = Actions()
 
     def find_full_action(self, full_action: int) -> int:
         return self.actions.index(full_action)
+
+    def card_to_play(
+        self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int, action: int
+    ) -> CardValue:
+        full_action = self.actions[action]
+
+        cv = self._actions_obj.play(hand, cur_trick_value, cur_trick_count, full_action)
+
+        return cv
 
     def __eq__(self, other):
         if not super(CEOActionSpace, self).__eq__(other):
@@ -216,6 +228,12 @@ class ActionSpaceFactory(SimpleBehaviorBase):
         ]
     )
 
+    def __init__(self):
+        pass
+
+    def default_lead(self):
+        return self.action_space_lead
+
     def create_lead(self, hand: HandInterface):
         # Count the number of playable card values.
         playable_card_values = 0
@@ -259,3 +277,70 @@ class ActionSpaceFactory(SimpleBehaviorBase):
             return self.action_space_two_legal_play
         else:
             return self.action_space_play
+
+
+class CardActionSpace(Discrete):
+    def __init__(self, card_count: int):
+        super(CardActionSpace, self).__init__(card_count)
+
+    def card_to_play(
+        self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int, action: int
+    ) -> CardValue:
+        if cur_trick_value is None:
+            # The action is to lead
+            playable_card_values = -1
+            for cv in range(13):
+                if hand.count(CardValue(cv)) > 0:
+                    playable_card_values += 1
+
+                    if playable_card_values == action:
+                        return CardValue(cv)
+
+            assert "Action to large when leading" == ""
+        else:
+            # The action is to play on a trick
+            playable_cards = hand.get_playable_cards(cur_trick_value, cur_trick_count)
+
+            if action == len(playable_cards):
+                # Pass
+                return None
+
+            return playable_cards[action].cv
+
+    def __eq__(self, other):
+        if not super(CardActionSpace, self).__eq__(other):
+            return False
+
+        return self.n == other.n
+
+
+class CardActionSpaceFactory(SimpleBehaviorBase):
+    """Class that calculates the correct card action space based on the hand and trick. Here
+    the action space corresponds to playing a given card in the hand"""
+
+    _spaces: list[CardActionSpace]
+
+    def __init__(self):
+        self._spaces = []
+
+        for cv in range(14):
+            self._spaces.append(CardActionSpace(cv))
+
+    def default_lead(self):
+        return self._spaces[-1]
+
+    def create_lead(self, hand: HandInterface):
+        """Create the action space where the player will lead"""
+        # Count the number of playable card values.
+        playable_card_values = 0
+        for cv in range(13):
+            if hand.count(CardValue(cv)) > 0:
+                playable_card_values += 1
+
+        return self._spaces[playable_card_values]
+
+    def create_play(self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int):
+        """Create the action space where the player will play on the given trick"""
+        playable_cards = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
+
+        return self._spaces[len(playable_cards) + 1]

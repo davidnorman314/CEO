@@ -4,7 +4,12 @@ from gym import error, spaces, utils
 from gym.spaces import Box, Discrete
 from gym.utils import seeding
 
-from gym_ceo.envs.actions import Actions, ActionEnum, ActionSpaceFactory, CEOActionSpace
+from gym_ceo.envs.actions import (
+    ActionSpaceFactory,
+    CEOActionSpace,
+    CardActionSpaceFactory,
+    ActionEnum,
+)
 from gym_ceo.envs.observation import Observation, ObservationFactory
 from gym_ceo.envs.observation_hand import ObservationHand
 
@@ -71,7 +76,6 @@ class SeatCEOEnv(gym.Env):
     _listener: EventListenerInterface
     _hands: list[Hand]
     _observation_dimension: int
-    _actions: Actions
     _info = dict()
 
     _skip_passing: bool
@@ -87,6 +91,7 @@ class SeatCEOEnv(gym.Env):
     def __init__(
         self,
         num_players=6,
+        use_card_action_space=False,
         behaviors=[],
         hands=[],
         listener=EventListenerInterface(),
@@ -100,8 +105,6 @@ class SeatCEOEnv(gym.Env):
             self._listener = EventListenerInterface()
         else:
             self._listener = listener
-
-        self._actions = Actions()
 
         self._hands = hands
 
@@ -124,15 +127,21 @@ class SeatCEOEnv(gym.Env):
             dtype=np.int32,
         )
 
-        self._action_space_factory = ActionSpaceFactory()
-        self.action_space = ActionSpaceFactory.action_space_lead
-        self.max_action_value = len(ActionEnum)
+        if not use_card_action_space:
+            # Use the action space with a limited number of choices
+            self._action_space_factory = ActionSpaceFactory()
+            self.max_action_value = len(ActionEnum)
+        else:
+            # Use the action space where all cards in the hand can be played
+            self._action_space_factory = CardActionSpaceFactory()
+            self.max_action_value = 13
+
+        self.action_space = self._action_space_factory.default_lead()
 
         self._simple_behavior_base = SimpleBehaviorBase()
 
     def reset(self, hands: list[Hand] = None):
         self._listener.start_round(self._players)
-        self.action_space = ActionSpaceFactory.action_space_lead
 
         # Deal the cards
         if hands is not None:
@@ -149,6 +158,8 @@ class SeatCEOEnv(gym.Env):
         self._round = Round(self._players, self._hands, self._listener)
         self._gen = self._round.play_generator()
 
+        self.action_space = self._action_space_factory.create_lead(self._hands[0])
+
         gen_tuple = next(self._gen)
         assert gen_tuple[0] == "lead"
 
@@ -164,18 +175,14 @@ class SeatCEOEnv(gym.Env):
 
         assert action < self.action_space.n
 
-        full_action = self.action_space.actions[action]
-
-        cv = self._actions.play(
-            self._cur_hand, self._cur_trick_value, self._cur_trick_count, full_action
+        cv = self.action_space.card_to_play(
+            self._cur_hand, self._cur_trick_value, self._cur_trick_count, action
         )
 
         if cv is None and self._cur_trick_value is None:
             print(
                 "Action",
                 action,
-                "full action",
-                full_action,
                 "returned None to play on trick. Hand",
                 self._cur_hand,
             )
@@ -291,23 +298,21 @@ class SeatCEOEnv(gym.Env):
         hand = ObservationHand(observation)
 
         cur_trick_count = observation.get_cur_trick_count()
-        if cur_trick_count > 0:
+        if observation.get_cur_trick_value() is not None:
             cur_trick_value = CardValue(int(observation.get_cur_trick_value()))
         else:
             cur_trick_value = None
 
-        # Perform the action on the hand
-        played_value = self._actions.play(
-            hand,
-            cur_trick_value,
-            cur_trick_count,
-            action,
+        # Get the card to play
+        played_value = self.action_space.card_to_play(
+            hand, cur_trick_value, cur_trick_count, action
         )
 
         # See if we pass
         if played_value is None:
             return observation_array.copy()
 
+        # Perform the action on the hand
         if cur_trick_count == 0:
             cur_trick_count = hand.count(played_value)
 

@@ -12,7 +12,8 @@ from collections import deque
 import cProfile
 from pstats import SortKey
 
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, ActionEnum, CEOActionSpace
+from gym_ceo.envs.actions import ActionEnum
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
