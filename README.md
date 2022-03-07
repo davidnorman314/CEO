@@ -14,6 +14,8 @@ pytest -s -k game
 
 `python -m learning.qlearning --episodes 1000000`
 
+`python -m learning.qlearning_afterstates --episodes 10000000`
+
 `python -m learning.qlearning_traces --episodes 100000`
 
 `python -m learning.monte_carlo --train --episodes 1000000`

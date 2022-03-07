@@ -5,6 +5,7 @@ import datetime
 from azure_rl.azure_client import AzureClient
 
 from learning.qtable import QTable
+from learning.value_table import ValueTable
 import learning.play_qagent as play_qagent
 
 
@@ -171,3 +172,61 @@ class QTableLearningBase(LearningBase):
         """
 
         return np.square(self._Q - o).mean(axis=None)
+
+
+class ValueTableLearningBase(LearningBase):
+    _valuetable: ValueTable
+
+    def __init__(self, type: str, env: gym.Env, **kwargs):
+        """Constructor for a learning base class object that uses a value table."""
+        super().__init__(type, env, **kwargs)
+
+        del kwargs["disable_agent_testing"]
+
+        self._valuetable = None
+
+    def _set_observation_space(self, observation_space, **kwargs):
+        self._valuetable = ValueTable(observation_space, **kwargs)
+
+    def _init_pickle_dict(self, pickle_dict: dict):
+        pickle_dict["ValueTable"] = self._valuetable._V
+        pickle_dict["MaxActionValue"] = self._valuetable._max_action_value
+        pickle_dict["StateCount"] = self._valuetable._state_count
+
+    def do_play_test(self, training_episodes: int):
+        """Plays many hands with the current agent and logs the results."""
+
+        if self._disable_agent_testing:
+            return
+
+        value_table = self._valuetable._V
+        state_count = self._valuetable._state_count
+
+        episodes = 100000
+
+        stats = play_qagent.play(
+            episodes,
+            False,
+            False,
+            env=self._env,
+            base_env=self._base_env,
+            value_table=value_table,
+            state_count=state_count,
+        )
+
+        if self._azure_client:
+            self._azure_client.save_test_stats(
+                training_episodes=training_episodes,
+                episodes=stats.episodes,
+                total_wins=stats.total_wins,
+                total_losses=stats.total_losses,
+                pct_win=stats.pct_win,
+            )
+
+    def mean_squared_difference(self, o) -> int:
+        """
+        Calculates the mean squared difference between this QTable and the
+        passed QTable.
+        """
+
+        return np.square(self._V - o).mean(axis=None)
