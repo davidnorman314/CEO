@@ -7,6 +7,7 @@ import argparse
 import json
 import random
 
+from learning.qlearning_afterstates import QLearningAfterstates
 from learning.qlearning_traces import QLearningTraces
 from learning.qlearning import QLearning
 from azure_rl.azure_client import AzureClient
@@ -67,12 +68,15 @@ def do_learning(
     listener = PrintAllEventListener()
     listener = EventListenerInterface()
     base_env = SeatCEOEnv(listener=listener)
-    env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
 
     learning_type = config["learning_type"]
     if learning_type == "qlearning_traces":
+        env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
         learning = QLearningTraces(env, base_env, **kwargs)
+    elif learning_type == "qlearning_afterstates":
+        learning = QLearningAfterstates(base_env, **kwargs)
     elif learning_type == "qlearning":
+        env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
         learning = QLearning(env, base_env, **kwargs)
     else:
         print("Unknown learning type", learning_type)
