@@ -3,6 +3,8 @@ import gym.spaces
 import numpy as np
 from multiprocessing import RawArray
 
+from gym_ceo.envs.features import FeatureObservationFactory
+
 
 class ValueTable:
     """Class implementing a table giving the estimated expected value for each state."""
@@ -130,3 +132,27 @@ class ValueTable:
 
     def get_shared_arrays(self):
         return self.q_raw_array, self.state_count_raw_array
+
+    def find_greedy_action(
+        self, env: gym.Env, obs_factory: FeatureObservationFactory, state: np.ndarray
+    ) -> tuple[int, float]:
+        greedy_action = None
+        greedy_reward = -1000000
+        info = dict()
+
+        for action in range(env.action_space.n):
+            afterstate_observation = env.get_afterstate(state, action)
+            afterstate_feature_observation = obs_factory.make_feature_observation(
+                afterstate_observation, info
+            )
+
+            # Get the estimated expected reward for the afterstate
+            afterstate_tuple = tuple(afterstate_feature_observation.astype(int))
+
+            reward = self.state_value(afterstate_tuple)
+
+            if reward > greedy_reward:
+                greedy_reward = reward
+                greedy_action = action
+
+        return (greedy_action, greedy_reward)

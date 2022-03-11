@@ -158,11 +158,6 @@ class QLearningAfterstates(ValueTableLearningBase):
                 # Perform the action
                 new_state, reward, done, info = self._env.step(action)
 
-                # print("state", state)
-                # print("state_tuple", state_tuple)
-                # print("action", action)
-                # print("done", done)
-
                 if new_state is not None:
                     # The estimated state value of new_state is the maximum expected
                     # value across all actions
@@ -319,29 +314,10 @@ class QLearningAfterstates(ValueTableLearningBase):
 
         return afterstate_feature_observation
 
-    def find_greedy_action(self, state: np.ndarray) -> int:
+    def find_greedy_action(self, state: np.ndarray) -> tuple[int, float]:
         """Checks all possible actions to find the greedy one."""
 
-        greedy_action = None
-        greedy_reward = -1000000
-        info = dict()
-
-        for action in range(self._env.action_space.n):
-            afterstate_observation = self._env.get_afterstate(state, action)
-            afterstate_feature_observation = self._obs_factory.make_feature_observation(
-                afterstate_observation, info
-            )
-
-            # Get the estimated expected reward for the afterstate
-            afterstate_tuple = tuple(afterstate_feature_observation.astype(int))
-
-            reward = self._valuetable.state_value(afterstate_tuple)
-
-            if reward > greedy_reward:
-                greedy_reward = reward
-                greedy_action = action
-
-        return (greedy_action, greedy_reward)
+        return self._valuetable.find_greedy_action(self._env, self._obs_factory, state)
 
     def get_default_features(self, env: SeatCEOEnv):
         self.feature_defs = []
