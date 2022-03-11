@@ -23,6 +23,7 @@ class QLearningAfterstates(ValueTableLearningBase):
     Class implementing q-learning using afterstates for an OpenAI gym
     """
 
+    feature_defs: list
     _obs_factory: FeatureObservationFactory
 
     class AlphaType(Enum):
@@ -36,9 +37,9 @@ class QLearningAfterstates(ValueTableLearningBase):
         super().__init__("qlearning_afterstates", env, **kwargs)
         self._train_episodes = train_episodes
 
-        feature_defs = self.get_default_features(env)
+        self.feature_defs = self.get_default_features(env)
 
-        self._obs_factory = FeatureObservationFactory(env, feature_defs)
+        self._obs_factory = FeatureObservationFactory(env, self.feature_defs)
 
         super()._set_observation_space(self._obs_factory.observation_space)
 
@@ -437,4 +438,4 @@ if __name__ == "__main__":
         qlearning.train(params, do_log)
 
     # Save the agent in a pickle file.
-    qlearning.pickle("qlearning_afterstates.pickle")
+    qlearning.pickle("qlearning_afterstates.pickle", feature_defs=qlearning.feature_defs)

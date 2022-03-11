@@ -92,12 +92,16 @@ class LearningBase:
 
                 self._last_azure_log_time = now
 
-    def pickle(self, filename: str):
+    def pickle(self, filename: str, feature_defs=None):
         pickle_dict = dict()
         pickle_dict["Type"] = self._type
         pickle_dict["SearchStats"] = self._search_statistics
-        pickle_dict["FeatureDefs"] = self._env.feature_defs
         pickle_dict["NumPlayers"] = self._env.num_players
+
+        if feature_defs is not None:
+            pickle_dict["FeatureDefs"] = feature_defs
+        else:
+            pickle_dict["FeatureDefs"] = self._env.feature_defs
 
         self._init_pickle_dict(pickle_dict)
 
@@ -190,7 +194,6 @@ class ValueTableLearningBase(LearningBase):
 
     def _init_pickle_dict(self, pickle_dict: dict):
         pickle_dict["ValueTable"] = self._valuetable._V
-        pickle_dict["MaxActionValue"] = self._valuetable._max_action_value
         pickle_dict["StateCount"] = self._valuetable._state_count
 
     def do_play_test(self, training_episodes: int):
