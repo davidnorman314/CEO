@@ -1,5 +1,6 @@
 {
     "learning_type": "qlearning_afterstates",
+    "action_space_type": "card",
     "episodes": 1000,
     "params": {
         "discount_factor": 0.7,

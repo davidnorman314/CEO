@@ -57,6 +57,10 @@ def do_learning(
     else:
         random.seed(0)
 
+    env_kwargs = dict()
+    if "action_space_type" in config:
+        env_kwargs["action_space_type"] = config["action_space_type"]
+
     # Get the feature definitions, if any.
     feature_defs = None
     if "features" in config:
@@ -71,7 +75,7 @@ def do_learning(
     # Create the environment
     listener = PrintAllEventListener()
     listener = EventListenerInterface()
-    base_env = SeatCEOEnv(listener=listener)
+    base_env = SeatCEOEnv(listener=listener, **env_kwargs)
 
     learning_type = config["learning_type"]
     learning = None

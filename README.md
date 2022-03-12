@@ -1,7 +1,7 @@
 # Reinforcement learning for the card game CEO
 
 ## Run a specific test
-pytest -s -k game
+`pytest -s -k game`
 
 ## Play games from the command line
 `python -m main.console_game`
@@ -39,6 +39,8 @@ pytest -s -k game
 `python -m main.azure_rl --get-rl-trainings`
 
 `python -m main.azure_rl --get-blob blob_name --save-file save.txt`
+
+`python -m main.azure_rl --get-training-progress ../notebooks/progress.pkl --earliest-start 2022-03-10T00:00:00`
 
 ## Azure administation
 

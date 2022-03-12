@@ -1,3 +1,4 @@
+from argparse import ArgumentError
 import gym
 import numpy as np
 from gym import error, spaces, utils
@@ -91,11 +92,12 @@ class SeatCEOEnv(gym.Env):
     def __init__(
         self,
         num_players=6,
-        use_card_action_space=False,
         behaviors=[],
         hands=[],
         listener=EventListenerInterface(),
         skip_passing=False,
+        *,
+        action_space_type="ceo",
     ):
         self.num_players = num_players
         self.seat_number = 0
@@ -127,14 +129,18 @@ class SeatCEOEnv(gym.Env):
             dtype=np.int32,
         )
 
-        if not use_card_action_space:
+        if action_space_type == "ceo":
             # Use the action space with a limited number of choices
             self._action_space_factory = ActionSpaceFactory()
             self.max_action_value = len(ActionEnum)
-        else:
+            print("Using CEO action space")
+        elif action_space_type == "card":
             # Use the action space where all cards in the hand can be played
             self._action_space_factory = CardActionSpaceFactory()
             self.max_action_value = 13
+            print("Using card action space")
+        else:
+            raise ArgumentError("Invalid action_space_type: ", action_space_type)
 
         self.action_space = self._action_space_factory.default_lead()
 
