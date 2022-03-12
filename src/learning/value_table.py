@@ -33,10 +33,10 @@ class ValueTable:
         """
 
         # Extract the space
+        print("Observation space", observation_space)
         obs_shape = observation_space.shape
         assert len(obs_shape) == 1
 
-        print("Observation space", observation_space)
         print("Observation space shape", obs_shape)
 
         # Calculate the shape of the arrays
@@ -94,9 +94,9 @@ class ValueTable:
             self.state_count_raw_array = kwargs["shared_state_count"]
 
             init_from_shared = True
-        elif "q" in kwargs and "state_count" in kwargs:
+        elif "v" in kwargs and "state_count" in kwargs:
             # Initialize from the passed arrays
-            self._V = kwargs["q"]
+            self._V = kwargs["v"]
             self._state_count = kwargs["state_count"]
 
             init_from_shared = False
