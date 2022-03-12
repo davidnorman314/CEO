@@ -222,6 +222,7 @@ def create_agent(
     q_table=None,
     value_table=None,
     state_count=None,
+    feature_defs=None,
 ):
 
     if local_file or azure_blob_name:
@@ -230,6 +231,7 @@ def create_agent(
         assert not q_table
         assert not value_table
         assert not state_count
+        assert not feature_defs
 
         # Load the pickle file and use it to create the environment and agent.
         if local_file:

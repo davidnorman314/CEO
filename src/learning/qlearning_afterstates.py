@@ -259,7 +259,7 @@ class QLearningAfterstates(ValueTableLearningBase):
                 and episode % self._during_training_stats_frequency == 0
                 and episode < self._train_episodes
             ):
-                self.do_play_test(episode)
+                self.do_play_test(episode, self.feature_defs)
 
             if False and episode > 0 and episode % 20000 == 0:
                 # Log the states for this episode

@@ -154,7 +154,7 @@ class QTableLearningBase(LearningBase):
         pickle_dict["MaxActionValue"] = self._qtable._max_action_value
         pickle_dict["StateCount"] = self._qtable._state_count
 
-    def do_play_test(self, training_episodes: int):
+    def do_play_test(self, training_episodes: int, **kwargs):
         """Plays many hands with the current agent and logs the results."""
 
         if self._disable_agent_testing:
@@ -171,6 +171,7 @@ class QTableLearningBase(LearningBase):
             base_env=self._base_env,
             q_table=q_table,
             state_count=state_count,
+            **kwargs
         )
 
         if self._azure_client:
@@ -209,7 +210,7 @@ class ValueTableLearningBase(LearningBase):
         pickle_dict["ValueTable"] = self._valuetable._V
         pickle_dict["StateCount"] = self._valuetable._state_count
 
-    def do_play_test(self, training_episodes: int):
+    def do_play_test(self, training_episodes: int, feature_defs: list):
         """Plays many hands with the current agent and logs the results."""
 
         if self._disable_agent_testing:
@@ -228,6 +229,7 @@ class ValueTableLearningBase(LearningBase):
             base_env=self._base_env,
             value_table=value_table,
             state_count=state_count,
+            feature_defs=feature_defs,
         )
 
         if self._azure_client:
