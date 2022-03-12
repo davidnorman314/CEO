@@ -48,13 +48,16 @@ class LearningBase:
         self._disable_agent_testing = kwargs["disable_agent_testing"]
         del kwargs["disable_agent_testing"]
 
-        if "during_training_stats_episodes" in kwargs:
+        if "during_training_stats_episodes" in kwargs and kwargs["during_training_stats_episodes"]:
             self._during_training_stats_episodes = kwargs["during_training_stats_episodes"]
             del kwargs["during_training_stats_episodes"]
         else:
             self._during_training_stats_episodes = 100000
 
-        if "during_training_stats_frequency" in kwargs:
+        if (
+            "during_training_stats_frequency" in kwargs
+            and kwargs["during_training_stats_frequency"]
+        ):
             self._during_training_stats_frequency = kwargs["during_training_stats_frequency"]
             del kwargs["during_training_stats_frequency"]
         else:
