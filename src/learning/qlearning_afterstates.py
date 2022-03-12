@@ -110,10 +110,10 @@ class QLearningAfterstates(ValueTableLearningBase):
 
             self._azure_client.start_training(
                 "qlearning",
-                self._env.env.num_players,
-                self._env.env.seat_number,
+                self._env.num_players,
+                self._env.seat_number,
                 params,
-                self._env.feature_defs,
+                self.feature_defs,
             )
 
         # Training the agent
