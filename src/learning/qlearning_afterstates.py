@@ -254,7 +254,11 @@ class QLearningAfterstates(ValueTableLearningBase):
                     states_visited,
                 )
 
-            if episode > 0 and episode % 100000 == 0 and episode < self._train_episodes:
+            if (
+                episode > 0
+                and episode % self._during_training_stats_frequency == 0
+                and episode < self._train_episodes
+            ):
                 self.do_play_test(episode)
 
             if False and episode > 0 and episode % 20000 == 0:

@@ -32,6 +32,9 @@ class LearningBase:
     _last_backup_pickle_time: datetime.datetime
     _last_azure_log_time: datetime.datetime
 
+    _during_training_stats_episodes: int
+    _during_training_stats_frequency: int
+
     _azure_client: AzureClient
 
     def __init__(self, type: str, env: gym.Env, **kwargs):
@@ -44,6 +47,18 @@ class LearningBase:
 
         self._disable_agent_testing = kwargs["disable_agent_testing"]
         del kwargs["disable_agent_testing"]
+
+        if "during_training_stats_episodes" in kwargs:
+            self._during_training_stats_episodes = kwargs["during_training_stats_episodes"]
+            del kwargs["during_training_stats_episodes"]
+        else:
+            self._during_training_stats_episodes = 100000
+
+        if "during_training_stats_frequency" in kwargs:
+            self._during_training_stats_frequency = kwargs["during_training_stats_frequency"]
+            del kwargs["during_training_stats_frequency"]
+        else:
+            self._during_training_stats_frequency = 100000
 
         self._type = type
         self._env = env
@@ -148,10 +163,8 @@ class QTableLearningBase(LearningBase):
         q_table = self._qtable._Q
         state_count = self._qtable._state_count
 
-        episodes = 100000
-
         stats = play_qagent.play(
-            episodes,
+            self._during_training_stats_episodes,
             False,
             False,
             env=self._env,

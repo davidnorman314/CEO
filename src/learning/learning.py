@@ -31,6 +31,8 @@ def do_learning(
     pickle_file: str,
     disable_agent_testing: bool,
     post_train_stats_episodes: int,
+    during_training_stats_episodes: int = None,
+    during_training_stats_frequency: int = None,
 ):
     print("Loading configuration from", configfile)
     with open(configfile) as f:
@@ -46,6 +48,8 @@ def do_learning(
 
     kwargs["train_episodes"] = config["episodes"]
     kwargs["disable_agent_testing"] = disable_agent_testing
+    kwargs["during_training_stats_episodes"] = during_training_stats_episodes
+    kwargs["during_training_stats_frequency"] = during_training_stats_frequency
 
     if random_seed is not None:
         print("Random seed", random_seed)
@@ -177,7 +181,19 @@ def main():
         "--post-train-stats-episodes",
         type=int,
         default=None,
-        help="How many episodes should be run when testing the trained agent.",
+        help="How many episodes should be run when testing the trained agent after training.",
+    )
+    parser.add_argument(
+        "--during-training-stats-episodes",
+        type=int,
+        default=None,
+        help="How many episodes should be run when testing the agent during training.",
+    )
+    parser.add_argument(
+        "--during-training-stats-frequency",
+        type=int,
+        default=None,
+        help="How frequently during training the agent should be tested.",
     )
     parser.add_argument(
         "--disable-agent-testing",
@@ -189,6 +205,12 @@ def main():
 
     args = parser.parse_args()
 
+    kwargs = dict()
+    if args.during_training_stats_episodes:
+        kwargs["during_training_stats_episodes"] = args.during_training_stats_episodes
+    if args.during_training_stats_frequency:
+        kwargs["during_training_stats_frequency"] = args.during_training_stats_frequency
+
     do_learning(
         args.configfile[0],
         args.azure,
@@ -198,6 +220,7 @@ def main():
         args.pickle_file,
         args.disable_agent_testing,
         args.post_train_stats_episodes,
+        **kwargs,
     )
 
 
