@@ -74,6 +74,7 @@ def do_learning(
     base_env = SeatCEOEnv(listener=listener)
 
     learning_type = config["learning_type"]
+    learning = None
     if learning_type == "qlearning_traces":
         env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
         learning = QLearningTraces(env, base_env, **kwargs)
@@ -91,7 +92,12 @@ def do_learning(
     final_search_statistics = None
     if do_profile:
         print("Running with profiling")
-        cProfile.run("qlearning.train()", sort=SortKey.CUMULATIVE)
+        print(learning)
+        locals = {"learning": learning, "params": params, "do_logging": do_logging}
+        globals = {}
+        cProfile.runctx(
+            "learning.train(params, do_logging)", locals, globals, sort=SortKey.CUMULATIVE
+        )
     else:
         final_search_statistics = learning.train(params, do_logging)
 
