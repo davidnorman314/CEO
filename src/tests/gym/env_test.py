@@ -1001,7 +1001,7 @@ def test_SeatCEOEnv_CardActionSpace():
     behaviors = [behavior2, behavior3, behavior4]
 
     env = SeatCEOEnv(
-        use_card_action_space=True,
+        action_space_type="card",
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1128,7 +1128,7 @@ def test_SeatCEOEnv_CardActionSpace_NotPlayable():
     behaviors = [behavior2, behavior3, behavior4]
 
     env = SeatCEOEnv(
-        use_card_action_space=True,
+        action_space_type="card",
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1258,7 +1258,7 @@ def test_SeatCEOEnv_CardActionSpace_PassOnTrick():
     behaviors = [behavior2, behavior3, behavior4]
 
     env = SeatCEOEnv(
-        use_card_action_space=True,
+        action_space_type="card",
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1375,7 +1375,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     behaviors = [behavior2, behavior3, behavior4]
 
     env = SeatCEOEnv(
-        use_card_action_space=True,
+        action_space_type="card",
         num_players=4,
         behaviors=behaviors,
         hands=hands,
