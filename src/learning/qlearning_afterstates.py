@@ -351,17 +351,19 @@ class QLearningAfterstates(ValueTableLearningBase):
         feature_params["threshold"] = min_card_exact_feature
         self.feature_defs.append(("TriplesUnderValueCount", feature_params))
 
-        if False:
-            # We can't include these features, since they can be different in the
-            # state and afterstate.
-            feature_params = dict()
-            self.feature_defs.append(("TrickPosition", feature_params))
+        feature_params = dict()
+        self.feature_defs.append(("TrickPosition", feature_params))
 
+        if False:
+            # This isn't useful as-is for afterstates, since the feature information
+            # is relative to cards in the hand. One possible replacement feature
+            # would be one that told whether later players could play on the trick, i.e.,
+            # if the number of cards in their hand is larger or smaller than the trick count.
             feature_params = dict()
             self.feature_defs.append(("CurTrickValue", feature_params))
 
-            feature_params = dict()
-            self.feature_defs.append(("CurTrickCount", feature_params))
+        feature_params = dict()
+        self.feature_defs.append(("CurTrickCount", feature_params))
 
         return self.feature_defs
 
