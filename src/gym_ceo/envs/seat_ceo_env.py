@@ -328,7 +328,7 @@ class SeatCEOEnv(gym.Env):
 
         # Create an observation for the afterstate
         afterstate = self.observation_factory.create_observation(
-            array=observation_array, update_hand=hand
+            array=observation_array, update_hand=hand, update_played_cards=played_cards
         )
 
         return afterstate.get_array()

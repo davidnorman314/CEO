@@ -33,10 +33,10 @@ class ValueTable:
         """
 
         # Extract the space
-        print("Observation space", observation_space)
         obs_shape = observation_space.shape
         assert len(obs_shape) == 1
 
+        print("Observation space", observation_space)
         print("Observation space shape", obs_shape)
 
         # Calculate the shape of the arrays

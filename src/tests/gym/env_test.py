@@ -811,7 +811,8 @@ def test_SeatCEOEnv_CanNotPlay_ThreeTricks():
 
 def test_SeatCEOEnv_get_afterstate():
     """
-    Test SetCEOEnv.get_afterstate().
+    Test SetCEOEnv.get_afterstate(). This is an end-to-end test where the environment
+    creates the observation.
     """
 
     # Create CardValue objects for ease of use later
@@ -1319,7 +1320,8 @@ def test_SeatCEOEnv_CardActionSpace_PassOnTrick():
 
 def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     """
-    Test SetCEOEnv.get_afterstate() when the environment is using card action spaces.
+    Test SetCEOEnv.get_afterstate() when the environment is using card action spaces. This is an
+    end-to-end test where the environment creates the observation.
     """
 
     # Create CardValue objects for ease of use later
@@ -1403,6 +1405,10 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert afterstate.get_card_count(2) == 3
     assert afterstate.get_card_count(3) == 0
 
+    assert afterstate.get_cur_trick_count() == 4
+    assert afterstate.get_cur_trick_value() == 3
+    assert afterstate.get_starting_player() == 0
+
     # Test afterstate after lead lowest
     action = 0
     afterstate_array = env.get_afterstate(observation_array, action)
@@ -1412,6 +1418,10 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert afterstate.get_card_count(1) == 2
     assert afterstate.get_card_count(2) == 3
     assert afterstate.get_card_count(3) == 4
+
+    assert afterstate.get_cur_trick_count() == 1
+    assert afterstate.get_cur_trick_value() == 0
+    assert afterstate.get_starting_player() == 0
 
     # Lead lowest
     observation_array, reward, done, info = env.step(0)
@@ -1423,6 +1433,10 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert observation.get_card_count(2) == 3
     assert observation.get_card_count(3) == 4
 
+    assert observation.get_cur_trick_count() == 1
+    assert observation.get_cur_trick_value() == 0
+    assert observation.get_starting_player() == 3
+
     # Test afterstate after play highest
     action = env.action_space.n - 2
     afterstate_array = env.get_afterstate(observation_array, action)
@@ -1433,6 +1447,10 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert afterstate.get_card_count(2) == 3
     assert afterstate.get_card_count(3) == 3
 
+    assert afterstate.get_cur_trick_count() == 1
+    assert afterstate.get_cur_trick_value() == 3
+    assert afterstate.get_starting_player() == 3
+
     # Test afterstate after pass
     action = env.action_space.n - 1
     afterstate_array = env.get_afterstate(observation_array, action)
@@ -1442,3 +1460,180 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert afterstate.get_card_count(1) == 2
     assert afterstate.get_card_count(2) == 3
     assert afterstate.get_card_count(3) == 4
+
+    assert afterstate.get_cur_trick_count() == 1
+    assert afterstate.get_cur_trick_value() == 0
+    assert afterstate.get_starting_player() == 3
+
+
+def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
+    """
+    Test SetCEOEnv.get_afterstate() when the environment is using card action spaces. Test
+    that the trick information is correctly updated.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+
+    # Set up the environment.
+    hand1 = Hand()
+    hand1.add_cards(cv1, 1)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    hands = [hand1, hand2, hand3, hand4]
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        action_space_type="card",
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+    )
+
+    observation_factory = env.observation_factory
+
+    # Test when the agent leads
+    hand = Hand()
+    hand.add_cards(cv0, 1)
+    hand.add_cards(cv1, 2)
+    hand.add_cards(cv2, 3)
+    hand.add_cards(cv3, 4)
+    hand_card_count = 4
+
+    hands = [hand, hand2, hand3, hand4]
+
+    state = rd.RoundState(hands)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand, starting_player=0, state=state
+    )
+
+    assert observation.get_card_count(0) == 1
+    assert observation.get_card_count(1) == 2
+    assert observation.get_card_count(2) == 3
+    assert observation.get_card_count(3) == 4
+
+    assert observation.get_cur_trick_count() == 0
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_starting_player() == 0
+
+    # Test afterstate after lead highest
+    action = hand_card_count - 1
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    assert afterstate.get_card_count(0) == 1
+    assert afterstate.get_card_count(1) == 2
+    assert afterstate.get_card_count(2) == 3
+    assert afterstate.get_card_count(3) == 0
+
+    assert afterstate.get_cur_trick_count() == 4
+    assert afterstate.get_cur_trick_value() == 3
+    assert afterstate.get_starting_player() == 0
+
+    # Test afterstate after lead lowest
+    action = 0
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    assert afterstate.get_card_count(0) == 0
+    assert afterstate.get_card_count(1) == 2
+    assert afterstate.get_card_count(2) == 3
+    assert afterstate.get_card_count(3) == 4
+
+    assert afterstate.get_cur_trick_count() == 1
+    assert afterstate.get_cur_trick_value() == 0
+    assert afterstate.get_starting_player() == 0
+
+    # Test when the agent plays on a trick.
+    hand = Hand()
+    hand.add_cards(cv0, 4)
+    hand.add_cards(cv1, 4)
+    hand.add_cards(cv2, 4)
+    hand.add_cards(cv3, 4)
+
+    hands = [hand, hand2, hand3, hand4]
+
+    state = rd.RoundState(hands)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand,
+        starting_player=3,
+        cur_card_value=cv0,
+        cur_card_count=2,
+        state=state,
+    )
+
+    assert observation.get_card_count(0) == 4
+    assert observation.get_card_count(1) == 4
+    assert observation.get_card_count(2) == 4
+    assert observation.get_card_count(3) == 4
+
+    assert observation.get_cur_trick_count() == 2
+    assert observation.get_cur_trick_value() == 0
+    assert observation.get_starting_player() == 3
+
+    # Test afterstate after play highest
+    action = hand_card_count - 2
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    assert afterstate.get_card_count(0) == 4
+    assert afterstate.get_card_count(1) == 4
+    assert afterstate.get_card_count(2) == 4
+    assert afterstate.get_card_count(3) == 2
+
+    assert afterstate.get_cur_trick_count() == 2
+    assert afterstate.get_cur_trick_value() == 3
+    assert afterstate.get_starting_player() == 3
+
+    # Test afterstate after play lowest
+    action = 0
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    assert afterstate.get_card_count(0) == 4
+    assert afterstate.get_card_count(1) == 2
+    assert afterstate.get_card_count(2) == 4
+    assert afterstate.get_card_count(3) == 4
+
+    assert afterstate.get_cur_trick_count() == 2
+    assert afterstate.get_cur_trick_value() == 1
+    assert afterstate.get_starting_player() == 3
+
+    # Test afterstate after pass
+    action = hand_card_count - 1
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    assert afterstate.get_card_count(0) == 4
+    assert afterstate.get_card_count(1) == 4
+    assert afterstate.get_card_count(2) == 4
+    assert afterstate.get_card_count(3) == 4
+
+    assert afterstate.get_cur_trick_count() == 2
+    assert afterstate.get_cur_trick_value() == 0
+    assert afterstate.get_starting_player() == 3

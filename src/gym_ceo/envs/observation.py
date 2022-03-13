@@ -1,6 +1,6 @@
 import numpy as np
 
-from CEO.cards.hand import Hand, CardValue
+from CEO.cards.hand import Hand, CardValue, PlayedCards
 
 
 class ObservationFactory:
@@ -88,7 +88,6 @@ class Observation:
         if "type" in kwargs and kwargs["type"] == "lead":
             cur_hand = kwargs["cur_hand"]
             starting_player = kwargs["starting_player"]
-            cur_hand = kwargs["cur_hand"]
             state = kwargs["state"]
 
             # Create the return array
@@ -110,7 +109,6 @@ class Observation:
         elif "type" in kwargs and kwargs["type"] == "play":
             cur_hand = kwargs["cur_hand"]
             starting_player = kwargs["starting_player"]
-            cur_hand = kwargs["cur_hand"]
             cur_card_value = kwargs["cur_card_value"]
             cur_card_count = kwargs["cur_card_count"]
             state = kwargs["state"]
@@ -131,8 +129,9 @@ class Observation:
             self._obs[obs_index_cur_trick_count] = cur_card_count
             self._obs[obs_index_start_player] = starting_player
 
-        elif "update_hand" in kwargs:
+        elif "update_hand" in kwargs and "update_played_cards" in kwargs:
             update_hand = kwargs["update_hand"]
+            played_cards: PlayedCards = kwargs["update_played_cards"]
 
             # Create the return array
             self._obs = kwargs["array"].copy()
@@ -141,12 +140,16 @@ class Observation:
             for v in range(13):
                 self._obs[obs_index_hand_cards + v] = update_hand.count(CardValue(v))
 
+            # Update the played cards
+            self._obs[obs_index_cur_trick_value] = played_cards.value.value
+            self._obs[obs_index_cur_trick_count] = played_cards.count
+
         elif "array" in kwargs:
             assert isinstance(kwargs["array"], np.ndarray)
             self._obs = kwargs["array"]
 
         else:
-            raise Exception("Illegal arguments")
+            raise Exception("Illegal arguments: " + str(kwargs))
 
     def get_card_count(self, card_value: int):
         return self._obs[self._factory._obs_index_hand_cards + card_value]
