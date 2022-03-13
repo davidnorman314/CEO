@@ -11,10 +11,11 @@ class RoundState:
 
     cards_remaining: MutableSequence[int]
 
-    def __init__(self):
-        pass
+    def __init__(self, hands: list[Hand] = None):
+        if hands is not None:
+            self.initialize(hands)
 
-    def initialize(self, players, hands: list[Hand]):
+    def initialize(self, hands: list[Hand]):
         self.cards_remaining = array.array("i", [hand.card_count() for hand in hands])
 
 

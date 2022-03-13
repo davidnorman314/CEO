@@ -58,7 +58,7 @@ class Round:
         assert not cur_hand.is_empty()
 
         state = RoundState()
-        state.initialize(self._players, self._hands)
+        state.initialize(self._hands)
 
         self._listener.before_lead(starting_player, cur_player, cur_hand, state)
 
@@ -97,7 +97,7 @@ class Round:
                 continue
 
             state = RoundState()
-            state.initialize(self._players, self._hands)
+            state.initialize(self._hands)
 
             self._listener.before_play_cards(
                 starting_player,
