@@ -145,6 +145,7 @@ class Observation:
         elif "update_hand" in kwargs and "update_played_cards" in kwargs:
             update_hand = kwargs["update_hand"]
             played_cards: PlayedCards = kwargs["update_played_cards"]
+            update_last_player: int = kwargs["update_last_player"]
 
             # Create the return array
             self._obs = kwargs["array"].copy()
@@ -156,6 +157,7 @@ class Observation:
             # Update the played cards
             self._obs[obs_index_cur_trick_value] = played_cards.value.value
             self._obs[obs_index_cur_trick_count] = played_cards.count
+            self._obs[obs_index_last_player] = update_last_player
 
         elif "array" in kwargs:
             assert isinstance(kwargs["array"], np.ndarray)

@@ -1016,6 +1016,8 @@ def test_SeatCEOEnv_get_afterstate():
     assert observation.get_card_count(2) == 3
     assert observation.get_card_count(3) == 4
 
+    assert observation.get_last_player() == None
+
     # Test afterstate after lead highest
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
     afterstate_array = env.get_afterstate(observation_array, action)
@@ -1026,6 +1028,8 @@ def test_SeatCEOEnv_get_afterstate():
     assert afterstate.get_card_count(2) == 3
     assert afterstate.get_card_count(3) == 0
 
+    assert afterstate.get_last_player() == 0
+
     # Test afterstate after lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
     afterstate_array = env.get_afterstate(observation_array, action)
@@ -1035,6 +1039,8 @@ def test_SeatCEOEnv_get_afterstate():
     assert afterstate.get_card_count(1) == 2
     assert afterstate.get_card_count(2) == 3
     assert afterstate.get_card_count(3) == 4
+
+    assert afterstate.get_last_player() == 0
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
@@ -1047,6 +1053,8 @@ def test_SeatCEOEnv_get_afterstate():
     assert observation.get_card_count(2) == 3
     assert observation.get_card_count(3) == 4
 
+    assert observation.get_last_player() == 3
+
     # Test afterstate after play highest
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
     afterstate_array = env.get_afterstate(observation_array, action)
@@ -1057,6 +1065,8 @@ def test_SeatCEOEnv_get_afterstate():
     assert afterstate.get_card_count(2) == 3
     assert afterstate.get_card_count(3) == 3
 
+    assert afterstate.get_last_player() == 0
+
     # Test afterstate after pass
     action = env.action_space.find_full_action(ActionEnum.PASS_ON_TRICK_NUM)
     afterstate_array = env.get_afterstate(observation_array, action)
@@ -1066,6 +1076,8 @@ def test_SeatCEOEnv_get_afterstate():
     assert afterstate.get_card_count(1) == 2
     assert afterstate.get_card_count(2) == 3
     assert afterstate.get_card_count(3) == 4
+
+    assert afterstate.get_last_player() == 3
 
 
 def test_SeatCEOEnv_CardActionSpace():
@@ -1526,6 +1538,8 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert observation.get_card_count(2) == 3
     assert observation.get_card_count(3) == 4
 
+    assert observation.get_last_player() == None
+
     # Test afterstate after lead highest
     action = env.action_space.n - 1
     afterstate_array = env.get_afterstate(observation_array, action)
@@ -1539,6 +1553,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert afterstate.get_cur_trick_count() == 4
     assert afterstate.get_cur_trick_value() == 3
     assert afterstate.get_starting_player() == 0
+    assert afterstate.get_last_player() == 0
 
     # Test afterstate after lead lowest
     action = 0
@@ -1553,6 +1568,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert afterstate.get_cur_trick_count() == 1
     assert afterstate.get_cur_trick_value() == 0
     assert afterstate.get_starting_player() == 0
+    assert afterstate.get_last_player() == 0
 
     # Lead lowest
     observation_array, reward, done, info = env.step(0)
@@ -1567,6 +1583,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert observation.get_cur_trick_count() == 1
     assert observation.get_cur_trick_value() == 0
     assert observation.get_starting_player() == 3
+    assert observation.get_last_player() == 3
 
     # Test afterstate after play highest
     action = env.action_space.n - 2
@@ -1581,6 +1598,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert afterstate.get_cur_trick_count() == 1
     assert afterstate.get_cur_trick_value() == 3
     assert afterstate.get_starting_player() == 3
+    assert afterstate.get_last_player() == 0
 
     # Test afterstate after pass
     action = env.action_space.n - 1
@@ -1595,6 +1613,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
     assert afterstate.get_cur_trick_count() == 1
     assert afterstate.get_cur_trick_value() == 0
     assert afterstate.get_starting_player() == 3
+    assert afterstate.get_last_player() == 3
 
 
 def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
@@ -1655,7 +1674,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
 
     hands = [hand, hand2, hand3, hand4]
 
-    state = rd.RoundState(hands)
+    state = rd.RoundState(hands, None)
 
     observation = observation_factory.create_observation(
         type="lead", cur_hand=hand, starting_player=0, state=state
@@ -1707,7 +1726,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
 
     hands = [hand, hand2, hand3, hand4]
 
-    state = rd.RoundState(hands)
+    state = rd.RoundState(hands, 3)
 
     observation = observation_factory.create_observation(
         type="play",
@@ -1726,6 +1745,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
     assert observation.get_cur_trick_count() == 2
     assert observation.get_cur_trick_value() == 0
     assert observation.get_starting_player() == 3
+    assert observation.get_last_player() == 3
 
     # Test afterstate after play highest
     action = hand_card_count - 2
@@ -1740,6 +1760,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
     assert afterstate.get_cur_trick_count() == 2
     assert afterstate.get_cur_trick_value() == 3
     assert afterstate.get_starting_player() == 3
+    assert afterstate.get_last_player() == 0
 
     # Test afterstate after play lowest
     action = 0
@@ -1754,6 +1775,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
     assert afterstate.get_cur_trick_count() == 2
     assert afterstate.get_cur_trick_value() == 1
     assert afterstate.get_starting_player() == 3
+    assert afterstate.get_last_player() == 0
 
     # Test afterstate after pass
     action = hand_card_count - 1
@@ -1768,3 +1790,4 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
     assert afterstate.get_cur_trick_count() == 2
     assert afterstate.get_cur_trick_value() == 0
     assert afterstate.get_starting_player() == 3
+    assert afterstate.get_last_player() == 3
