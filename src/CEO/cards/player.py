@@ -11,12 +11,17 @@ class RoundState:
 
     cards_remaining: MutableSequence[int]
 
-    def __init__(self, hands: list[Hand] = None):
-        if hands is not None:
-            self.initialize(hands)
+    last_player_to_play_index: int
+    """The index of the last player to play on the trick or None if the trick
+    hasn't started."""
 
-    def initialize(self, hands: list[Hand]):
+    def __init__(self, hands: list[Hand] = None, last_player_to_play_index: int = None):
+        if hands is not None:
+            self.initialize(hands, last_player_to_play_index)
+
+    def initialize(self, hands: list[Hand], last_player_to_play_index: int):
         self.cards_remaining = array.array("i", [hand.card_count() for hand in hands])
+        self.last_player_to_play_index = last_player_to_play_index
 
 
 class PlayerBehaviorInterface(ABC):

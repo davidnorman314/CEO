@@ -13,6 +13,9 @@ class ObservationFactory:
     _obs_index_cur_trick_value: int
     _obs_index_cur_trick_count: int
     _obs_index_start_player: int
+    _obs_index_last_player: int
+
+    _obs_value_trick_not_started: int
 
     _num_players: int
 
@@ -24,15 +27,19 @@ class ObservationFactory:
         # One dimension for the current value of the trick
         # One dimension for the number of cards in the trick
         # One dimension for the starting player on the trick
+        # One dimension for the last player that played on the trick.
         self._obs_index_hand_cards = 0
         self._obs_index_other_player_card_count = self._obs_index_hand_cards + 13
         self._obs_index_cur_trick_value = self._obs_index_other_player_card_count + num_players - 1
         self._obs_index_cur_trick_count = self._obs_index_cur_trick_value + 1
         self._obs_index_start_player = self._obs_index_cur_trick_count + 1
+        self._obs_index_last_player = self._obs_index_start_player + 1
+
+        self._obs_value_trick_not_started = num_players
 
         self._num_players = num_players
 
-        self.observation_dimension = self._obs_index_start_player + 1
+        self.observation_dimension = self._obs_index_last_player + 1
 
     def create_observation(self, **kwargs):
         """Creates an observation. See Observation constructor for a description of
@@ -83,6 +90,10 @@ class Observation:
         obs_index_cur_trick_value = self._factory._obs_index_cur_trick_value
         obs_index_cur_trick_count = self._factory._obs_index_cur_trick_count
         obs_index_start_player = self._factory._obs_index_start_player
+        obs_index_last_player = self._factory._obs_index_last_player
+
+        obs_value_trick_not_started = self._factory._obs_value_trick_not_started
+
         num_players = self._factory._num_players
 
         if "type" in kwargs and kwargs["type"] == "lead":
@@ -105,6 +116,7 @@ class Observation:
             self._obs[obs_index_cur_trick_value] = 0
             self._obs[obs_index_cur_trick_count] = 0
             self._obs[obs_index_start_player] = 0
+            self._obs[obs_index_last_player] = obs_value_trick_not_started
 
         elif "type" in kwargs and kwargs["type"] == "play":
             cur_hand = kwargs["cur_hand"]
@@ -128,6 +140,7 @@ class Observation:
             self._obs[obs_index_cur_trick_value] = cur_card_value.value
             self._obs[obs_index_cur_trick_count] = cur_card_count
             self._obs[obs_index_start_player] = starting_player
+            self._obs[obs_index_last_player] = state.last_player_to_play_index
 
         elif "update_hand" in kwargs and "update_played_cards" in kwargs:
             update_hand = kwargs["update_hand"]
@@ -169,6 +182,17 @@ class Observation:
             return None
 
         return self._obs[self._factory._obs_index_cur_trick_value]
+
+    def get_last_player(self):
+        """Returns the index of the last player to play on the trick. None is returned
+        if the trick hasn't started."""
+
+        value = self._obs[self._factory._obs_index_last_player]
+
+        if value == self._factory._obs_value_trick_not_started:
+            return None
+
+        return value
 
     def get_array(self):
         return self._obs

@@ -404,6 +404,7 @@ def test_SeatCEOEnv_observation():
     assert observation.get_starting_player() == 0
     assert observation.get_cur_trick_count() == 0
     assert observation.get_cur_trick_value() == None
+    assert observation.get_last_player() == None
 
     assert observation.get_card_count(0) == 1
     assert observation.get_card_count(1) == 1
@@ -423,6 +424,7 @@ def test_SeatCEOEnv_observation():
     assert observation.get_starting_player() == 3
     assert observation.get_cur_trick_count() == 1
     assert observation.get_cur_trick_value() == 0
+    assert observation.get_last_player() == 3
 
     assert observation.get_card_count(0) == 0
     assert observation.get_card_count(1) == 1
@@ -442,6 +444,7 @@ def test_SeatCEOEnv_observation():
     assert observation.get_starting_player() == 2
     assert observation.get_cur_trick_count() == 2
     assert observation.get_cur_trick_value() == 6
+    assert observation.get_last_player() == 3
 
     assert observation.get_card_count(0) == 0
     assert observation.get_card_count(1) == 0
