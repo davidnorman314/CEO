@@ -325,6 +325,134 @@ def test_SeatCEOEnv_CEOLeadsAndNoOnePlays():
     assert done
 
 
+def test_SeatCEOEnv_observation():
+    """
+    Test the observation returned by SetCEOEnv.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+
+    # Make the hands
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 1)
+    hand1.add_cards(cv2, 3)
+    hand1.add_cards(cv8, 4)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv2, 1)
+    hand2.add_cards(cv7, 1)
+    hand2.add_cards(cv6, 3)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv3, 1)
+    hand3.add_cards(cv5, 2)
+    hand3.add_cards(cv7, 3)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+    hand4.add_cards(cv0, 1)
+    hand4.add_cards(cv6, 2)
+    hand4.add_cards(cv8, 5)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    # action: Lead lowest = cv0
+    behavior2.value_to_play.append(cv1)
+    behavior3.value_to_play.append(cv2)
+    behavior4.value_to_play.append(cv3)
+
+    behavior4.value_to_play.append(cv0)
+    # action: Play lowest = cv1
+    behavior2.value_to_play.append(cv2)
+    behavior3.value_to_play.append(cv3)
+
+    behavior3.value_to_play.append(cv5)
+    behavior4.value_to_play.append(cv6)
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+    )
+
+    observation_factory = env.observation_factory
+
+    observation_array = env.reset()
+    observation = observation_factory.create_observation(array=observation_array)
+
+    assert observation.get_starting_player() == 0
+    assert observation.get_cur_trick_count() == 0
+    assert observation.get_cur_trick_value() == None
+
+    assert observation.get_card_count(0) == 1
+    assert observation.get_card_count(1) == 1
+    assert observation.get_card_count(2) == 3
+    assert observation.get_card_count(8) == 4
+
+    assert observation.get_other_player_card_count(0) == 6
+    assert observation.get_other_player_card_count(1) == 7
+    assert observation.get_other_player_card_count(2) == 9
+
+    # Lead lowest
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
+    observation_array, reward, done, info = env.step(action)
+
+    observation = observation_factory.create_observation(array=observation_array)
+
+    assert observation.get_starting_player() == 3
+    assert observation.get_cur_trick_count() == 1
+    assert observation.get_cur_trick_value() == 0
+
+    assert observation.get_card_count(0) == 0
+    assert observation.get_card_count(1) == 1
+    assert observation.get_card_count(2) == 3
+    assert observation.get_card_count(8) == 4
+
+    assert observation.get_other_player_card_count(0) == 5
+    assert observation.get_other_player_card_count(1) == 6
+    assert observation.get_other_player_card_count(2) == 7
+
+    # Play lowest
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
+    observation_array, reward, done, info = env.step(action)
+
+    observation = observation_factory.create_observation(array=observation_array)
+
+    assert observation.get_starting_player() == 2
+    assert observation.get_cur_trick_count() == 2
+    assert observation.get_cur_trick_value() == 6
+
+    assert observation.get_card_count(0) == 0
+    assert observation.get_card_count(1) == 0
+    assert observation.get_card_count(2) == 3
+    assert observation.get_card_count(8) == 4
+
+    assert observation.get_other_player_card_count(0) == 4
+    assert observation.get_other_player_card_count(1) == 3
+    assert observation.get_other_player_card_count(2) == 5
+
+
 def test_SeatCEOEnv_ActionSpace_Play_SingleCard():
     """
     Test that the action space changes based on the cards available to play.
