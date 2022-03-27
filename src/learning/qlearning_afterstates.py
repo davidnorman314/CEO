@@ -365,8 +365,11 @@ class QLearningAfterstates(ValueTableLearningBase):
             feature_params = dict()
             self.feature_defs.append(("CurTrickValue", feature_params))
 
-        feature_params = dict()
-        self.feature_defs.append(("CurTrickCount", feature_params))
+            # Also probably not useful, since it just gives a litte information about whether
+            # later players will be able to play on the trick. Instead of using it, let's try
+            # to add the information to WillWinTrick_AfterState
+            feature_params = dict()
+            self.feature_defs.append(("CurTrickCount", feature_params))
 
         return self.feature_defs
 
