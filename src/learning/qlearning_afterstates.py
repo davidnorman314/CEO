@@ -334,7 +334,7 @@ class QLearningAfterstates(ValueTableLearningBase):
             self.feature_defs.append(("OtherPlayerHandCount", feature_params))
 
         feature_params = dict()
-        self.feature_defs.append(("WillWinTrick_Afterstate", feature_params))
+        self.feature_defs.append(("WillWinTrick_AfterState", feature_params))
 
         min_card_exact_feature = 9
         for i in range(min_card_exact_feature, 13):
