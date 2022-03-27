@@ -333,6 +333,9 @@ class QLearningAfterstates(ValueTableLearningBase):
             feature_params["max_value"] = 5
             self.feature_defs.append(("OtherPlayerHandCount", feature_params))
 
+        feature_params = dict()
+        self.feature_defs.append(("WillWinTrick_Afterstate", feature_params))
+
         min_card_exact_feature = 9
         for i in range(min_card_exact_feature, 13):
             feature_params = dict()
@@ -427,7 +430,7 @@ if __name__ == "__main__":
     # Set up default parameters
     params = dict()
     params["discount_factor"] = 0.7
-    params["lambda"] = 1e-6
+    params["lambda"] = 1e-5
     params["epsilon"] = 1
     params["max_epsilon"] = 0.5
     params["min_epsilon"] = 0.01
