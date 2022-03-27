@@ -566,6 +566,48 @@ class CurTrickCount:
         info["CurTrickCount"] = obs
 
 
+class WillWinTrick_AfterState:
+    """
+    Boolean-valued feature that is true if and only if the agent must win the trick. This only
+    works if the state is an afterstate.
+    """
+
+    dim = 1
+    max_value = 1
+    num_players: int
+
+    def __init__(self, full_env: SeatCEOEnv):
+        self.num_players = full_env.num_players
+
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
+        trick_start_player = full_obs.get_starting_player()
+        trick_last_player = full_obs.get_last_player()
+        cur_value = full_obs.get_cur_trick_value()
+
+        # We will win if the agent led an ace
+        if cur_value == 12 and trick_last_player == 0:
+            dest_obs[dest_start_index] = 1
+            info["WillWinTrick"] = "played ace"
+
+            return
+
+        # We will win the trick if the person after us led and we play on the trick
+        if trick_start_player == 1 and trick_last_player == 0:
+            dest_obs[dest_start_index] = 1
+            info["WillWinTrick"] = "last player"
+
+            return
+
+        dest_obs[dest_start_index] = 0
+        info["WillWinTrick"] = "May not win"
+
+
 class FeatureObservationFactory:
     """Class that calculates a feature observation from raw observation."""
 

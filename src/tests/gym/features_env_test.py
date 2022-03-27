@@ -6,6 +6,7 @@ from CEO.cards.hand import *
 import CEO.cards.round as rd
 from CEO.cards.simplebehavior import SimpleBehaviorBase
 import CEO.cards.player as player
+from gym_ceo.envs.features import WillWinTrick_AfterState
 from gym_ceo.envs.seat_ceo_features_env import (
     SeatCEOFeaturesEnv,
     TriplesUnderValueCount,
@@ -16,12 +17,13 @@ from gym_ceo.envs.seat_ceo_features_env import (
     SinglesUnderValueCountRelative,
     DoublesUnderValueCountRelative,
     TriplesUnderValueCountRelative,
+    WillWinTrick_AfterState,
 )
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.observation import Observation, ObservationFactory
 from stable_baselines3.common.env_checker import check_env
 
-from gym_ceo.envs.actions import Actions
+from gym_ceo.envs.actions import Actions, ActionEnum, ActionSpaceFactory
 
 import numpy as np
 
@@ -1151,4 +1153,102 @@ def test_HighestCard():
     assert feature_array[0] == 2
 
     feature_10.calc(observation, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+
+def test_AfterState_WillWinTrick_AfterState():
+    """Test the WillWinTrick feature with afterstates."""
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+    cv12 = CardValue(12)
+
+    # Setup the environment
+    hand2 = Hand()
+    hand2.add_cards(cv4, 2)
+
+    hand3 = Hand()
+    hand3.add_cards(cv4, 3)
+
+    hand4 = Hand()
+    hand4.add_cards(cv4, 4)
+
+    hand1 = Hand()
+    hand1.add_cards(cv0, 5)
+    hand1.add_cards(cv1, 1)
+    hand1.add_cards(cv12, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands)
+    observation_factory = env.observation_factory
+
+    feature = WillWinTrick_AfterState(env)
+    feature_array = np.zeros(1)
+    info = dict()
+
+    # Set up for tests where the agent leads
+    hands = [hand1, hand2, hand3, hand4]
+    state = rd.RoundState(hands, None)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand1, starting_player=0, state=state
+    )
+
+    # Test when the agent leads an ace
+    action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    # Test when the agent leads a low card
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Set up for tests where the agent plays last on a trick
+    hands = [hand1, hand2, hand3, hand4]
+    state = rd.RoundState(hands, 1)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=1,
+        cur_card_value=cv0,
+        cur_card_count=1,
+        state=state,
+    )
+
+    # Test when the agent plays
+    action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    # Test when the agent passes
+    action = env.action_space.find_full_action(ActionEnum.PASS_ON_TRICK_NUM)
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature.calc(afterstate, feature_array, 0, info)
     assert feature_array[0] == 0
