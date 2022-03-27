@@ -109,7 +109,7 @@ class QLearningAfterstates(ValueTableLearningBase):
                 params["alpha_constant"] = alpha_constant
 
             self._azure_client.start_training(
-                "qlearning",
+                "qlearning_afterstates",
                 self._env.num_players,
                 self._env.seat_number,
                 params,
@@ -246,7 +246,7 @@ class QLearningAfterstates(ValueTableLearningBase):
                 )
 
                 self.add_search_statistics(
-                    "qlearning",
+                    "qlearning_afterstates",
                     episode,
                     ave_training_rewards,
                     recent_rewards,
