@@ -68,15 +68,17 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
         return ret
 
 
-def create_ceo_env(hands: list[Hand]) -> tuple[SeatCEOEnv, Observation]:
+def create_ceo_env(
+    hands: list[Hand], num_players=4, action_space_type="ceo"
+) -> tuple[SeatCEOEnv, Observation]:
     # Make the players
-    behavior2 = MockPlayerBehavior()
-    behavior3 = MockPlayerBehavior()
-    behavior4 = MockPlayerBehavior()
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = []
+    for i in range(num_players - 1):
+        behaviors.append(MockPlayerBehavior())
 
     env = SeatCEOEnv(
-        num_players=4,
+        action_space_type=action_space_type,
+        num_players=num_players,
         behaviors=behaviors,
         hands=hands,
         listener=PrintAllEventListener(),
@@ -1195,6 +1197,8 @@ def test_AfterState_WillWinTrick_AfterState():
     observation_factory = env.observation_factory
 
     feature = WillWinTrick_AfterState(env)
+    feature.notify_other_features([feature])
+
     feature_array = np.zeros(1)
     info = dict()
 
@@ -1251,4 +1255,341 @@ def test_AfterState_WillWinTrick_AfterState():
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+
+def test_AfterState_WillWinTrick_AfterState_SixPlayers():
+    """Test the WillWinTrick feature with afterstates. Here we have six players.
+    Test when the feature value depends on the number of cards other players have."""
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+    cv12 = CardValue(12)
+
+    # Setup the environment
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 5)
+    hand1.add_cards(cv2, 5)
+    hand1.add_cards(cv3, 5)
+    hand1.add_cards(cv12, 5)
+
+    hand2 = Hand()
+    hand2.add_cards(cv4, 1)
+
+    hand3 = Hand()
+    hand3.add_cards(cv4, 2)
+
+    hand4 = Hand()
+    hand4.add_cards(cv4, 3)
+
+    hand5 = Hand()
+    hand5.add_cards(cv4, 4)
+
+    hand6 = Hand()
+    hand6.add_cards(cv4, 5)
+
+    hands = [hand1, hand2, hand3, hand4, hand5, hand6]
+
+    env, observation = create_ceo_env(hands, num_players=6, action_space_type="card")
+    observation_factory = env.observation_factory
+
+    feature_no_downstream = WillWinTrick_AfterState(env)
+    feature_one_downstream = WillWinTrick_AfterState(env)
+    feature_two_downstream = WillWinTrick_AfterState(env)
+
+    feature_other_1 = OtherPlayerHandCount(env, other_player_index=1, max_value=5)
+    feature_other_2 = OtherPlayerHandCount(env, other_player_index=2, max_value=5)
+
+    feature_no_downstream.notify_other_features([feature_no_downstream])
+    feature_one_downstream.notify_other_features([feature_one_downstream, feature_other_1])
+    feature_two_downstream.notify_other_features(
+        [feature_two_downstream, feature_other_1, feature_other_2]
+    )
+
+    feature_array = np.zeros(1)
+    info = dict()
+
+    # Set up for tests where the agent leads
+    state = rd.RoundState(hands, None)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand1, starting_player=0, state=state
+    )
+
+    # Test when the agent leads one card.
+    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test where the agent plays last on a trick with one card
+    starting_player = 1
+    card_count = 1
+    state = rd.RoundState(hands, starting_player)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=starting_player,
+        cur_card_value=cv0,
+        cur_card_count=card_count,
+        state=state,
+    )
+
+    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    # Test where there is one more player to play on a trick with one card
+    starting_player = 2
+    card_count = 1
+    state = rd.RoundState(hands, starting_player)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=starting_player,
+        cur_card_value=cv0,
+        cur_card_count=card_count,
+        state=state,
+    )
+
+    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test where there is one more player to play on a trick with two cards
+    starting_player = 2
+    card_count = 2
+    state = rd.RoundState(hands, starting_player)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=starting_player,
+        cur_card_value=cv0,
+        cur_card_count=card_count,
+        state=state,
+    )
+
+    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    # Test where there is one more player to play on a trick with three cards
+    starting_player = 2
+    card_count = 3
+    state = rd.RoundState(hands, starting_player)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=starting_player,
+        cur_card_value=cv0,
+        cur_card_count=card_count,
+        state=state,
+    )
+
+    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    # Test where there are two more players to play on a trick with one card
+    starting_player = 3
+    card_count = 1
+    state = rd.RoundState(hands, starting_player)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=starting_player,
+        cur_card_value=cv0,
+        cur_card_count=card_count,
+        state=state,
+    )
+
+    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test where there are two more players to play on a trick with two cards
+    starting_player = 3
+    card_count = 2
+    state = rd.RoundState(hands, starting_player)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=starting_player,
+        cur_card_value=cv0,
+        cur_card_count=card_count,
+        state=state,
+    )
+
+    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test where there are two more players to play on a trick with three cards
+    starting_player = 3
+    card_count = 3
+    state = rd.RoundState(hands, starting_player)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=starting_player,
+        cur_card_value=cv0,
+        cur_card_count=card_count,
+        state=state,
+    )
+
+    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 1
+
+    # Test where there are three more players to play on a trick with one card
+    starting_player = 4
+    card_count = 1
+    state = rd.RoundState(hands, starting_player)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=starting_player,
+        cur_card_value=cv0,
+        cur_card_count=card_count,
+        state=state,
+    )
+
+    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    # Test where the agent passes in a situation where he would win the trick if he played.
+    starting_player = 2
+    card_count = 2
+    state = rd.RoundState(hands, starting_player)
+
+    env.action_space = env._action_space_factory.create_play(hand1, cv0, 1)
+
+    observation = observation_factory.create_observation(
+        type="play",
+        cur_hand=hand1,
+        starting_player=starting_player,
+        cur_card_value=cv0,
+        cur_card_count=card_count,
+        state=state,
+    )
+
+    action = env.action_space.n - 1
+    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate = observation_factory.create_observation(array=afterstate_array)
+
+    feature_no_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_one_downstream.calc(afterstate, feature_array, 0, info)
+    assert feature_array[0] == 0
+
+    feature_two_downstream.calc(afterstate, feature_array, 0, info)
     assert feature_array[0] == 0

@@ -22,6 +22,9 @@ class BottomHalfTableMinCards:
         self._start_check_index = full_env.num_players // 2 - 1
         self._end_check_index = full_env.num_players - 1
 
+    def notify_other_features(self, other_features: list):
+        pass
+
     def calc(
         self,
         full_obs: Observation,
@@ -56,6 +59,9 @@ class HighestCard:
         self.min_card_value = min_card_value
         self.max_value = 12 - self.min_card_value
 
+    def notify_other_features(self, other_features: list):
+        pass
+
     def calc(
         self,
         full_obs: Observation,
@@ -88,6 +94,9 @@ class HandCardCount:
     def __init__(self, full_env: SeatCEOEnv, *, card_value_index: int):
         self.card_value_index = card_value_index
 
+    def notify_other_features(self, other_features: list):
+        pass
+
     def calc(
         self,
         full_obs: Observation,
@@ -119,6 +128,9 @@ class HandCardCountRelative:
 
         self.relative_card_value = relative_card_value
         self.max_value = max_value
+
+    def notify_other_features(self, other_features: list):
+        pass
 
     def calc(
         self,
@@ -160,6 +172,9 @@ class OtherPlayerHandCount:
         self.other_player_index = other_player_index
         self.max_value = max_value
 
+    def notify_other_features(self, other_features: list):
+        pass
+
     def calc(
         self,
         full_obs: Observation,
@@ -193,6 +208,9 @@ class SinglesUnderValueCount:
     def __init__(self, full_env: SeatCEOEnv, *, threshold: int):
         self._threshold = threshold
 
+    def notify_other_features(self, other_features: list):
+        pass
+
     def calc(
         self,
         full_obs: Observation,
@@ -222,6 +240,9 @@ class DoublesUnderValueCount:
 
     def __init__(self, full_env: SeatCEOEnv, *, threshold: int):
         self._threshold = threshold
+
+    def notify_other_features(self, other_features: list):
+        pass
 
     def calc(
         self,
@@ -253,6 +274,9 @@ class TriplesUnderValueCount:
     def __init__(self, full_env: SeatCEOEnv, *, threshold: int):
         self._threshold = threshold
 
+    def notify_other_features(self, other_features: list):
+        pass
+
     def calc(
         self,
         full_obs: Observation,
@@ -283,6 +307,9 @@ class SinglesUnderValueCountRelative:
     def __init__(self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int):
         self._relative_threshold = relative_threshold
         self.max_value = max_value
+
+    def notify_other_features(self, other_features: list):
+        pass
 
     def calc(
         self,
@@ -321,6 +348,9 @@ class DoublesUnderValueCountRelative:
         self._relative_threshold = relative_threshold
         self.max_value = max_value
 
+    def notify_other_features(self, other_features: list):
+        pass
+
     def calc(
         self,
         full_obs: Observation,
@@ -357,6 +387,9 @@ class TriplesUnderValueCountRelative:
     def __init__(self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int):
         self._relative_threshold = relative_threshold
         self.max_value = max_value
+
+    def notify_other_features(self, other_features: list):
+        pass
 
     def calc(
         self,
@@ -399,6 +432,9 @@ class ValuesInRangeCount:
         self._range_end = range_end
         self.max_value = max_value
 
+    def notify_other_features(self, other_features: list):
+        pass
+
     def calc(
         self,
         full_obs: Observation,
@@ -430,6 +466,9 @@ class TrickPosition:
 
     def __init__(self, full_env: SeatCEOEnv):
         self.num_player = full_env.num_players
+
+    def notify_other_features(self, other_features: list):
+        pass
 
     def calc(
         self,
@@ -475,6 +514,9 @@ class CurTrickValue:
     max_value = 7
 
     def __init__(self, full_env: SeatCEOEnv):
+        pass
+
+    def notify_other_features(self, other_features: list):
         pass
 
     def calc(
@@ -542,6 +584,9 @@ class CurTrickCount:
     def __init__(self, full_env: SeatCEOEnv):
         pass
 
+    def notify_other_features(self, other_features: list):
+        pass
+
     def calc(
         self,
         full_obs: Observation,
@@ -572,12 +617,36 @@ class WillWinTrick_AfterState:
     works if the state is an afterstate.
     """
 
+    _notify_called: bool
+
+    _max_watch_other: int
+
     dim = 1
     max_value = 1
     num_players: int
 
     def __init__(self, full_env: SeatCEOEnv):
         self.num_players = full_env.num_players
+        self._notify_called = False
+
+    def notify_other_features(self, other_features: list):
+        self._notify_called = True
+
+        other_players = []
+        for other in other_features:
+            if isinstance(other, OtherPlayerHandCount):
+                other_players.append(other.other_player_index)
+
+        other_players.sort()
+        # test_list = range(1, len(other_players) + 1)
+        # print("eq", test_list == other_players)
+
+        if len(other_players) == 0:
+            self._max_watch_other = 0
+        elif other_players == list(range(1, len(other_players) + 1)):
+            self._max_watch_other = other_players[-1]
+        else:
+            self._max_watch_other = 0
 
     def calc(
         self,
@@ -586,9 +655,12 @@ class WillWinTrick_AfterState:
         dest_start_index: int,
         info: dict,
     ):
-        trick_start_player = full_obs.get_starting_player()
-        trick_last_player = full_obs.get_last_player()
-        cur_value = full_obs.get_cur_trick_value()
+        assert self._notify_called
+
+        trick_start_player = full_obs.get_starting_player().astype(int)
+        trick_last_player = full_obs.get_last_player().astype(int)
+        cur_value = full_obs.get_cur_trick_value().astype(int)
+        trick_size = full_obs.get_cur_trick_count().astype(int)
 
         # We will win if the agent led an ace
         if cur_value == 12 and trick_last_player == 0:
@@ -603,6 +675,29 @@ class WillWinTrick_AfterState:
             info["WillWinTrick"] = "last player"
 
             return
+
+        # If we played on the trick and if we have features for the players yet to play,
+        # we can check their hand counts. Note that this assumes that the feature has values large
+        # enough to differentiate the current trick size.
+        if (
+            trick_start_player != 0
+            and trick_last_player == 0
+            and trick_start_player <= self._max_watch_other + 1
+        ):
+            all_hands_small = True
+            for other_player_index in range(1, trick_start_player):
+                other_card_count = full_obs.get_other_player_card_count(other_player_index - 1)
+                if other_card_count >= trick_size:
+                    all_hands_small = False
+                    break
+
+            if all_hands_small:
+                dest_obs[dest_start_index] = 1
+                info[
+                    "WillWinTrick"
+                ] = f"all small start_player={trick_start_player} max_watch={self._max_watch_other}"
+
+                return
 
         dest_obs[dest_start_index] = 0
         info["WillWinTrick"] = "May not win"
@@ -634,6 +729,9 @@ class FeatureObservationFactory:
             feature = class_obj(full_env, **kwargs)
 
             self._feature_calculators.append(feature)
+
+        for feature_calculator in self._feature_calculators:
+            feature_calculator.notify_other_features(self._feature_calculators)
 
         # Calculate the observation space
         obs_space_low = []
