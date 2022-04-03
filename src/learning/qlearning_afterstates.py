@@ -330,7 +330,7 @@ class QLearningAfterstates(ValueTableLearningBase):
         for i in range(half_players - 1):
             feature_params = dict()
             feature_params["other_player_index"] = i
-            feature_params["max_value"] = 5
+            feature_params["max_value"] = 4
             self.feature_defs.append(("OtherPlayerHandCount", feature_params))
 
         feature_params = dict()
@@ -433,7 +433,6 @@ if __name__ == "__main__":
     # Set up default parameters
     params = dict()
     params["discount_factor"] = 0.7
-    params["lambda"] = 1e-5
     params["epsilon"] = 1
     params["max_epsilon"] = 0.5
     params["min_epsilon"] = 0.01
