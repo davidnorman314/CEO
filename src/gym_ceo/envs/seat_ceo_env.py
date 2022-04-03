@@ -69,6 +69,8 @@ class SeatCEOEnv(gym.Env):
     # The maximum possible action space size
     max_action_space_size: int
 
+    action_space_type: str
+
     num_players: int
 
     seat_number: int
@@ -129,6 +131,7 @@ class SeatCEOEnv(gym.Env):
             dtype=np.int32,
         )
 
+        self.action_space_type = action_space_type
         if action_space_type == "ceo":
             # Use the action space with a limited number of choices
             self._action_space_factory = ActionSpaceFactory()

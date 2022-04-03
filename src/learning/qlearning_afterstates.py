@@ -110,6 +110,7 @@ class QLearningAfterstates(ValueTableLearningBase):
 
             self._azure_client.start_training(
                 "qlearning_afterstates",
+                self._env.action_space_type,
                 self._env.num_players,
                 self._env.seat_number,
                 params,

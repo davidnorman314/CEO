@@ -104,6 +104,7 @@ class QLearningTraces(QTableLearningBase):
 
             self._azure_client.start_training(
                 "qlearning_traces",
+                self._base_env.action_space_type,
                 self._env.full_env.num_players,
                 self._env.full_env.seat_number,
                 params,

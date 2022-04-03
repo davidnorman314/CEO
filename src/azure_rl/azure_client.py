@@ -47,6 +47,7 @@ class AzureClient:
     def start_training(
         self,
         learning_type: str,
+        action_space_type: str,
         player_count: int,
         player_seat: int,
         params: dict,
@@ -58,10 +59,12 @@ class AzureClient:
         desc = dict()
         desc["record_type"] = "start_training"
         desc["learning_type"] = learning_type
+        desc["action_space_type"] = action_space_type
         desc["start_time"] = datetime.datetime.now().isoformat()
         desc["log_blob_name"] = self.log_blob_name
         desc["pickle_blob_name"] = self.pickle_blob_name
         desc["player_count"] = player_count
+        desc["player_seat"] = player_seat
         desc["params"] = params
         desc["feature_defs"] = feature_defs
         desc["training_id"] = self._training_id
