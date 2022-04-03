@@ -1,0 +1,83 @@
+{
+    "learning_type": "qlearning_afterstates",
+    "action_space_type": "card",
+    "episodes": 10000000,
+    "params": {
+        "discount_factor": 0.7,
+        "epsilon": 1,
+        "max_epsilon": 0.5,
+        "min_epsilon": 0.01,
+        "decay": 0.0000001,
+        "alpha_type": "state_visit_count",
+        "alpha_exponent": 0.6
+    },
+    "features": [
+        {
+            "type": "OtherPlayerHandCount",
+            "params": {
+                "other_player_index": 0,
+                "max_value": 4
+            }
+        },
+        {
+            "type": "OtherPlayerHandCount",
+            "params": {
+                "other_player_index": 1,
+                "max_value": 4
+            }
+        },
+        {
+            "type": "WillWinTrick_AfterState",
+            "params": {
+            }
+        },
+        {
+            "type": "HandCardCount",
+            "params": {
+                "card_value_index": 9
+            }
+        },
+        {
+            "type": "HandCardCount",
+            "params": {
+                "card_value_index": 10
+            }
+        },
+        {
+            "type": "HandCardCount",
+            "params": {
+                "card_value_index": 11
+            }
+        },
+        {
+            "type": "HandCardCount",
+            "params": {
+                "card_value_index": 12
+            }
+        },
+        {
+            "type": "ValuesInRangeCount",
+            "params": {
+                "range_begin": 0,
+                "range_end": 3,
+                "max_value": 2
+            }
+        },
+        {
+            "type": "ValuesInRangeCount",
+            "params": {
+                "range_begin": 3,
+                "range_end": 6,
+                "max_value": 2
+            }
+        },
+        {
+            "type": "ValuesInRangeCount",
+            "params": {
+                "range_begin": 6,
+                "range_end": 9,
+                "max_value": 2
+            }
+        }
+    ]
+}

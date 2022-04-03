@@ -83,7 +83,7 @@ def do_learning(
         env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
         learning = QLearningTraces(env, base_env, **kwargs)
     elif learning_type == "qlearning_afterstates":
-        learning = QLearningAfterstates(base_env, **kwargs)
+        learning = QLearningAfterstates(base_env, feature_defs=feature_defs, **kwargs)
     elif learning_type == "qlearning":
         env = SeatCEOFeaturesEnv(base_env, feature_defs=feature_defs)
         learning = QLearning(env, base_env, **kwargs)
