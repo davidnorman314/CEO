@@ -33,11 +33,14 @@ class QLearningAfterstates(ValueTableLearningBase):
 
     _train_episodes: int
 
-    def __init__(self, env: gym.Env, train_episodes=100000, **kwargs):
+    def __init__(self, env: gym.Env, train_episodes=100000, feature_defs=None, **kwargs):
         super().__init__("qlearning_afterstates", env, **kwargs)
         self._train_episodes = train_episodes
 
-        self.feature_defs = self.get_default_features(env)
+        if feature_defs is not None:
+            self.feature_defs = feature_defs
+        else:
+            self.feature_defs = self.get_default_features(env)
 
         self._obs_factory = FeatureObservationFactory(env, self.feature_defs)
 
