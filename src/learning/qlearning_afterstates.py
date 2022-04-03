@@ -329,6 +329,7 @@ class QLearningAfterstates(ValueTableLearningBase):
         return self._valuetable.find_greedy_action(self._env, self._obs_factory, state)
 
     def get_default_features(self, env: SeatCEOEnv):
+        print("Using default parameters.")
         self.feature_defs = []
         half_players = env.num_players // 2
         for i in range(half_players - 1):
