@@ -131,6 +131,10 @@ def get_training_progress(
         cols = dict()
         cols["training_id"] = training_id
         cols["learning_type"] = start_training["learning_type"]
+        if "action_space_type" in start_training:
+            cols["action_space_type"] = start_training["action_space_type"]
+        else:
+            cols["action_space_type"] = ""
         cols["start"] = pd.to_datetime(start_training["start_time"])
         cols["lambda"] = start_training["params"]["decay"]
         cols["discount"] = start_training["params"]["discount_factor"]
