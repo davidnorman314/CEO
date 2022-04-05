@@ -7,7 +7,7 @@ from learning.learning import do_learning
 def test_qlearning(pytestconfig):
     """Test qlearning"""
 
-    configfile = pytestconfig.rootpath / ".." / "data" / "qlearning.json"
+    configfile = pytestconfig.rootpath / "data" / "qlearning.json"
     do_azure = False
     do_logging = False
     random_seed = 0
@@ -26,7 +26,7 @@ def test_qlearning(pytestconfig):
 def test_qlearning_traces(pytestconfig):
     """Test qlearning_traces"""
 
-    configfile = pytestconfig.rootpath / ".." / "data" / "qlearning_traces.json"
+    configfile = pytestconfig.rootpath / "data" / "qlearning_traces.json"
     do_azure = False
     do_logging = False
     random_seed = 0
@@ -45,7 +45,7 @@ def test_qlearning_traces(pytestconfig):
 def test_qlearning_afterstates(pytestconfig):
     """Test qlearning_afterstates"""
 
-    configfile = pytestconfig.rootpath / ".." / "data" / "qlearning_afterstates.json"
+    configfile = pytestconfig.rootpath / "data" / "qlearning_afterstates.json"
     do_azure = False
     do_logging = False
     random_seed = 0
