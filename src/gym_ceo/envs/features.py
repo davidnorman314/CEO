@@ -471,7 +471,7 @@ class HandSummary:
 
     _high_card_index_start: int
     _bucket_index_start: int
-    _hand_count_index_start: int
+    _hand_count_index: int
 
     def __init__(
         self,
@@ -504,16 +504,12 @@ class HandSummary:
         self.dim += bucket_count
         self.max_value = self.max_value + [bucket_obs_max] * bucket_count
 
-        self._hand_count_index_start = self.dim
-        self.dim += 1
-        self.max_value = self.max_value + [13]
-
         if include_hand_count:
-            self._hand_count_index_start = self.dim
+            self._hand_count_index = self.dim
             self.dim += 1
             self.max_value = self.max_value + [12]
         else:
-            self._hand_count_index_start = None
+            self._hand_count_index = None
 
     def notify_other_features(self, other_features: list):
         pass
@@ -544,7 +540,7 @@ class HandSummary:
         dest_start_index: int,
     ):
         """Returns the number of cards in the (i+1)th bucket."""
-        return int(obs[self._hand_count_index_start + dest_start_index]) + 1
+        return int(obs[self._hand_count_index + dest_start_index]) + 1
 
     def calc(
         self,
@@ -596,13 +592,15 @@ class HandSummary:
             bucket_start = bucket_end
         assert bucket_start - 1 == highest_value - self._high_card_exact_count
 
-        # Save the number of cards in the hand
-        hand_card_count = 0
-        for i in range(0, 13):
-            hand_card_count += full_obs.get_card_count(i)
-        feature_value = hand_card_count - 1
-        dest_obs[self._hand_count_index_start + dest_start_index] = feature_value
-        info[f"HandSummary(hand_card_count={hand_card_count})"] = feature_value
+        # Save the number of cards in the hand. Note that the hand must have at least
+        # one card.
+        if self._hand_count_index:
+            hand_card_count = 0
+            for i in range(0, 13):
+                hand_card_count += full_obs.get_card_count(i)
+            feature_value = hand_card_count - 1
+            dest_obs[self._hand_count_index + dest_start_index] = feature_value
+        info[f"HandSummary(bucket_start={bucket_start})"] = feature_value
 
 
 class TrickPosition:
