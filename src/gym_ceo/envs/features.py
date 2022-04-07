@@ -454,6 +454,157 @@ class ValuesInRangeCount:
         ]
 
 
+class HandSummary:
+    """Feature giving a summary of the hand."""
+
+    dim: int
+    max_value: list[int]
+
+    _high_card_exact_count: int
+    _high_card_obs_max: int
+
+    _high_card_value_index: int
+    """The index of value of the highest card in the hand"""
+    _high_card_value_offset: int
+    """The offest for the highest card in the hand. The value of the highest card is the observation
+    plus this offset"""
+
+    _high_card_index_start: int
+    _bucket_index_start: int
+    _hand_count_index_start: int
+
+    def __init__(
+        self,
+        full_env: SeatCEOEnv,
+        *,
+        high_card_exact_count: int,
+        high_card_obs_max: int,
+        bucket_count: int,
+        bucket_obs_max: int,
+        include_hand_count: bool,
+    ):
+        self._high_card_exact_count = high_card_exact_count
+        self._high_card_obs_max = high_card_obs_max
+        self._bucket_count = bucket_count
+        self._bucket_obs_max = bucket_obs_max
+
+        self.dim = 0
+        self.max_value = []
+
+        self._high_card_value_index = self.dim
+        self.dim += 1
+        self._high_card_value_offset = high_card_exact_count + bucket_count - 1
+        self.max_value = self.max_value + [13 - self._high_card_value_offset]
+
+        self._high_card_index_start = self.dim
+        self.dim += high_card_exact_count
+        self.max_value = self.max_value + [high_card_obs_max] * high_card_exact_count
+
+        self._bucket_index_start = self.dim
+        self.dim += bucket_count
+        self.max_value = self.max_value + [bucket_obs_max] * bucket_count
+
+        self._hand_count_index_start = self.dim
+        self.dim += 1
+        self.max_value = self.max_value + [13]
+
+        if include_hand_count:
+            self._hand_count_index_start = self.dim
+            self.dim += 1
+            self.max_value = self.max_value + [12]
+        else:
+            self._hand_count_index_start = None
+
+    def notify_other_features(self, other_features: list):
+        pass
+
+    def get_high_card(
+        self,
+        obs: np.array,
+        dest_start_index: int,
+    ):
+        """Returns the highest card in the hand."""
+        return int(
+            obs[self._high_card_value_index + dest_start_index] + self._high_card_value_offset
+        )
+
+    def get_high_card_count(self, obs: np.array, dest_start_index: int, i: int):
+        """Returns the number of cards with the (i+1)th highest value."""
+        assert i < self._high_card_exact_count
+        return int(obs[self._high_card_index_start + i + dest_start_index])
+
+    def get_bucket_card_count(self, obs: np.array, dest_start_index: int, i: int):
+        """Returns the number of cards in the (i+1)th bucket."""
+        assert i < self._bucket_count
+        return int(obs[self._bucket_index_start + i + dest_start_index])
+
+    def get_hand_card_count(
+        self,
+        obs: np.array,
+        dest_start_index: int,
+    ):
+        """Returns the number of cards in the (i+1)th bucket."""
+        return int(obs[self._hand_count_index_start + dest_start_index]) + 1
+
+    def calc(
+        self,
+        full_obs: Observation,
+        dest_obs: np.array,
+        dest_start_index: int,
+        info: dict,
+    ):
+        # find the highest value in the hand
+        for highest_value in range(12, -1, -1):
+            if full_obs.get_card_count(highest_value) > 0:
+                break
+
+        # Save the highest value as a feature. The minimum value for the feature is zero, which
+        # corresponds to a highest value where there is one card value for each exact card count
+        # and each bucket (of size one).
+        if highest_value < self._high_card_value_offset:
+            highest_value = self._high_card_value_offset
+        feature_value = highest_value - self._high_card_value_offset
+        dest_obs[self._high_card_value_index + dest_start_index] = feature_value
+
+        # Save the counts of the high cards that we track exactly.
+        for i in range(self._high_card_exact_count):
+            card_value = highest_value - i
+            card_count = full_obs.get_card_count(card_value)
+
+            feature_value = min(card_count, self._high_card_obs_max)
+            dest_obs[self._high_card_index_start + i + dest_start_index] = feature_value
+
+        # Calculate the bucket parameters
+        max_bucket_card_value = highest_value - self._high_card_exact_count
+        base_bucket_width = (max_bucket_card_value + 1) // self._bucket_count
+        extra_values = (max_bucket_card_value + 1) - base_bucket_width * self._bucket_count
+
+        # Save the counts of cards in each bucket
+        bucket_start = 0
+        for i in range(self._bucket_count):
+            bucket_end = bucket_start + base_bucket_width
+            if i < extra_values:
+                bucket_end += 1
+
+            card_count = 0
+            for card_value in range(bucket_start, bucket_end):
+                card_count += full_obs.get_card_count(card_value)
+
+            feature_value = min(card_count, self._bucket_obs_max)
+            dest_obs[self._bucket_index_start + i + dest_start_index] = feature_value
+
+            bucket_start = bucket_end
+        assert bucket_start - 1 == highest_value - self._high_card_exact_count
+
+        # Save the number of cards in the hand
+        hand_card_count = 0
+        for i in range(0, 13):
+            hand_card_count += full_obs.get_card_count(i)
+        feature_value = hand_card_count - 1
+        dest_obs[self._hand_count_index_start + dest_start_index] = feature_value
+        info[f"HandSummary(hand_card_count={hand_card_count})"] = feature_value
+
+
 class TrickPosition:
     """
     Feature giving the position the player is for the trick: lead, in the middle, or
@@ -738,12 +889,25 @@ class FeatureObservationFactory:
         obs_space_high = []
         self.obs_space_possible_values = 1
         for calculator in self._feature_calculators:
-            for i in range(calculator.dim):
+            max_value = calculator.max_value
+            if isinstance(max_value, int):
+                assert calculator.dim == 1
                 obs_space_low.append(0)
-                obs_space_high.append(calculator.max_value)
-                self.obs_space_possible_values = self.obs_space_possible_values * (
-                    calculator.max_value + 1
-                )
+                obs_space_high.append(max_value)
+
+                self.obs_space_possible_values = self.obs_space_possible_values * (max_value + 1)
+            elif isinstance(max_value, list):
+                assert calculator.dim == len(max_value)
+                for max_value_single in max_value:
+                    obs_space_low.append(0)
+                    obs_space_high.append(max_value_single)
+
+                    self.obs_space_possible_values = self.obs_space_possible_values * (
+                        max_value_single + 1
+                    )
+            else:
+                raise ArgumentError("Unknown max_value type: ", type(max_value))
+
             print(
                 "Calculator",
                 type(calculator),
@@ -752,6 +916,9 @@ class FeatureObservationFactory:
                 "max",
                 calculator.max_value,
             )
+
+        print("Observation space low:", obs_space_low)
+        print("Observation space high:", obs_space_high)
         self.observation_space = Box(
             low=np.array(obs_space_low),
             high=np.array(obs_space_high),

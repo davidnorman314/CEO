@@ -1,6 +1,11 @@
 import pytest
 import random as random
+from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
+import pytest
+import random as random
+
+from gym_ceo.envs.observation_hand import ObservationHand
 from learning.learning import do_learning
 
 
@@ -46,6 +51,25 @@ def test_qlearning_afterstates(pytestconfig):
     """Test qlearning_afterstates"""
 
     configfile = pytestconfig.rootpath / "data" / "qlearning_afterstates.json"
+    do_azure = False
+    do_logging = False
+    random_seed = 0
+    do_profile = False
+    pickle_file = None
+
+    search_statistics = do_learning(
+        configfile, do_azure, do_logging, random_seed, do_profile, pickle_file, False, None
+    )
+
+    assert search_statistics["episode"] == 1000
+    assert search_statistics["avg_reward"] < 0.0
+    assert search_statistics["states_visited"] > 1000
+
+
+def test_qlearning_afterstates_handsummary(pytestconfig):
+    """Test qlearning_afterstates with the HandSummary feature"""
+
+    configfile = pytestconfig.rootpath / "data" / "qlearning_afterstates_handsummary.json"
     do_azure = False
     do_logging = False
     random_seed = 0

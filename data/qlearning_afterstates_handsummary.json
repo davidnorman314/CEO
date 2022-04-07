@@ -1,0 +1,45 @@
+{
+    "learning_type": "qlearning_afterstates",
+    "action_space_type": "card",
+    "episodes": 1000,
+    "params": {
+        "discount_factor": 0.7,
+        "epsilon": 1,
+        "max_epsilon": 0.5,
+        "min_epsilon": 0.01,
+        "decay": 0.0000001,
+        "alpha_type": "state_visit_count",
+        "alpha_exponent": 0.6
+    },
+    "features": [
+        {
+            "type": "OtherPlayerHandCount",
+            "params": {
+                "other_player_index": 0,
+                "max_value": 4
+            }
+        },
+        {
+            "type": "OtherPlayerHandCount",
+            "params": {
+                "other_player_index": 1,
+                "max_value": 4
+            }
+        },
+        {
+            "type": "WillWinTrick_AfterState",
+            "params": {
+            }
+        },
+        {
+            "type": "HandSummary",
+            "params": {
+                "high_card_exact_count": 3,
+                "high_card_obs_max": 3,
+                "bucket_count": 4,
+                "bucket_obs_max": 4,
+                "include_hand_count": true
+            }
+        }
+    ]
+}

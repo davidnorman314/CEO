@@ -18,6 +18,7 @@ from gym_ceo.envs.seat_ceo_features_env import (
     DoublesUnderValueCountRelative,
     TriplesUnderValueCountRelative,
     WillWinTrick_AfterState,
+    HandSummary,
 )
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.observation import Observation, ObservationFactory
@@ -1593,3 +1594,317 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
 
     feature_two_downstream.calc(afterstate, feature_array, 0, info)
     assert feature_array[0] == 0
+
+
+def test_HandSummary():
+    """
+    Test the HandSummary features
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+    cv12 = CardValue(12)
+
+    # Setup the environment
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+
+    hand2 = Hand()
+    hand2.add_cards(cv4, 1)
+
+    hand3 = Hand()
+    hand3.add_cards(cv4, 2)
+
+    hand4 = Hand()
+    hand4.add_cards(cv4, 3)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    env, observation = create_ceo_env(hands, num_players=4)
+    observation_factory = env.observation_factory
+
+    feature_2_3 = HandSummary(
+        env,
+        high_card_exact_count=2,
+        high_card_obs_max=13,
+        bucket_count=3,
+        bucket_obs_max=13,
+        include_hand_count=True,
+    )
+
+    feature_3_2 = HandSummary(
+        env,
+        high_card_exact_count=3,
+        high_card_obs_max=13,
+        bucket_count=2,
+        bucket_obs_max=13,
+        include_hand_count=True,
+    )
+
+    feature_array = np.zeros(100)
+    info = dict()
+
+    # Test when there is one of each card
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 1)
+    hand1.add_cards(cv2, 1)
+    hand1.add_cards(cv3, 1)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 1)
+    hand1.add_cards(cv6, 1)
+    hand1.add_cards(cv7, 1)
+    hand1.add_cards(cv8, 1)
+    hand1.add_cards(cv9, 1)
+    hand1.add_cards(cv10, 1)
+    hand1.add_cards(cv11, 1)
+    hand1.add_cards(cv12, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+    state = rd.RoundState(hands, None)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand1, starting_player=0, state=state
+    )
+
+    i = 0
+
+    feature_2_3.calc(observation, feature_array, i, info)
+    assert feature_2_3.get_high_card(feature_array, i) == 12
+    assert feature_2_3.get_high_card_count(feature_array, i, 0) == 1
+    assert feature_2_3.get_high_card_count(feature_array, i, 1) == 1
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 0) == 4
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 1) == 4
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 2) == 3
+    assert feature_2_3.get_hand_card_count(feature_array, i) == 13
+
+    feature_3_2.calc(observation, feature_array, i, info)
+    assert feature_3_2.get_high_card(feature_array, i) == 12
+    assert feature_3_2.get_high_card_count(feature_array, i, 0) == 1
+    assert feature_3_2.get_high_card_count(feature_array, i, 1) == 1
+    assert feature_3_2.get_high_card_count(feature_array, i, 2) == 1
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 0) == 5
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 1) == 5
+    assert feature_3_2.get_hand_card_count(feature_array, i) == 13
+
+    # Test when there is one of each card except the ace
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 1)
+    hand1.add_cards(cv2, 1)
+    hand1.add_cards(cv3, 1)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 1)
+    hand1.add_cards(cv6, 1)
+    hand1.add_cards(cv7, 1)
+    hand1.add_cards(cv8, 1)
+    hand1.add_cards(cv9, 1)
+    hand1.add_cards(cv10, 1)
+    hand1.add_cards(cv11, 1)
+    hand1.add_cards(cv12, 0)
+
+    hands = [hand1, hand2, hand3, hand4]
+    state = rd.RoundState(hands, None)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand1, starting_player=0, state=state
+    )
+
+    i = 0
+
+    feature_2_3.calc(observation, feature_array, i, info)
+    assert feature_2_3.get_high_card(feature_array, i) == 11
+    assert feature_2_3.get_high_card_count(feature_array, i, 0) == 1
+    assert feature_2_3.get_high_card_count(feature_array, i, 1) == 1
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 0) == 4
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 1) == 3
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 2) == 3
+    assert feature_2_3.get_hand_card_count(feature_array, i) == 12
+
+    feature_3_2.calc(observation, feature_array, i, info)
+    assert feature_3_2.get_high_card(feature_array, i) == 11
+    assert feature_3_2.get_high_card_count(feature_array, i, 0) == 1
+    assert feature_3_2.get_high_card_count(feature_array, i, 1) == 1
+    assert feature_3_2.get_high_card_count(feature_array, i, 2) == 1
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 0) == 5
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 1) == 4
+    assert feature_3_2.get_hand_card_count(feature_array, i) == 12
+
+    # Test when there is one of each card except the ace and king
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 1)
+    hand1.add_cards(cv2, 1)
+    hand1.add_cards(cv3, 1)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 1)
+    hand1.add_cards(cv6, 1)
+    hand1.add_cards(cv7, 1)
+    hand1.add_cards(cv8, 1)
+    hand1.add_cards(cv9, 1)
+    hand1.add_cards(cv10, 1)
+    hand1.add_cards(cv11, 0)
+    hand1.add_cards(cv12, 0)
+
+    hands = [hand1, hand2, hand3, hand4]
+    state = rd.RoundState(hands, None)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand1, starting_player=0, state=state
+    )
+
+    i = 0
+
+    feature_2_3.calc(observation, feature_array, i, info)
+    assert feature_2_3.get_high_card(feature_array, i) == 10
+    assert feature_2_3.get_high_card_count(feature_array, i, 0) == 1
+    assert feature_2_3.get_high_card_count(feature_array, i, 1) == 1
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 0) == 3
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 1) == 3
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 2) == 3
+    assert feature_2_3.get_hand_card_count(feature_array, i) == 11
+
+    feature_3_2.calc(observation, feature_array, i, info)
+    assert feature_3_2.get_high_card(feature_array, i) == 10
+    assert feature_3_2.get_high_card_count(feature_array, i, 0) == 1
+    assert feature_3_2.get_high_card_count(feature_array, i, 1) == 1
+    assert feature_3_2.get_high_card_count(feature_array, i, 2) == 1
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 0) == 4
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 1) == 4
+    assert feature_3_2.get_hand_card_count(feature_array, i) == 11
+
+    # Test when there are different numbers of high cards
+    hand1 = Hand()
+    hand1.add_cards(cv0, 0)
+    hand1.add_cards(cv1, 0)
+    hand1.add_cards(cv2, 0)
+    hand1.add_cards(cv3, 0)
+    hand1.add_cards(cv4, 0)
+    hand1.add_cards(cv5, 0)
+    hand1.add_cards(cv6, 0)
+    hand1.add_cards(cv7, 0)
+    hand1.add_cards(cv8, 0)
+    hand1.add_cards(cv9, 0)
+    hand1.add_cards(cv10, 1)
+    hand1.add_cards(cv11, 2)
+    hand1.add_cards(cv12, 3)
+
+    hands = [hand1, hand2, hand3, hand4]
+    state = rd.RoundState(hands, None)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand1, starting_player=0, state=state
+    )
+
+    feature_2_3.calc(observation, feature_array, i, info)
+    assert feature_2_3.get_high_card(feature_array, i) == 12
+    assert feature_2_3.get_high_card_count(feature_array, i, 0) == 3
+    assert feature_2_3.get_high_card_count(feature_array, i, 1) == 2
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 0) == 0
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 1) == 0
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 2) == 1
+    assert feature_2_3.get_hand_card_count(feature_array, i) == 6
+
+    feature_3_2.calc(observation, feature_array, i, info)
+    assert feature_3_2.get_high_card(feature_array, i) == 12
+    assert feature_3_2.get_high_card_count(feature_array, i, 0) == 3
+    assert feature_3_2.get_high_card_count(feature_array, i, 1) == 2
+    assert feature_3_2.get_high_card_count(feature_array, i, 2) == 1
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 0) == 0
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 1) == 0
+    assert feature_3_2.get_hand_card_count(feature_array, i) == 6
+
+    # Test when there are exactly enough low cards to fill the exact card counts and
+    # the buckets.
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 2)
+    hand1.add_cards(cv2, 3)
+    hand1.add_cards(cv3, 4)
+    hand1.add_cards(cv4, 5)
+    hand1.add_cards(cv5, 0)
+    hand1.add_cards(cv6, 0)
+    hand1.add_cards(cv7, 0)
+    hand1.add_cards(cv8, 0)
+    hand1.add_cards(cv9, 0)
+    hand1.add_cards(cv10, 0)
+    hand1.add_cards(cv11, 0)
+    hand1.add_cards(cv12, 0)
+
+    hands = [hand1, hand2, hand3, hand4]
+    state = rd.RoundState(hands, None)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand1, starting_player=0, state=state
+    )
+
+    feature_2_3.calc(observation, feature_array, i, info)
+    assert feature_2_3.get_high_card(feature_array, i) == 4
+    assert feature_2_3.get_high_card_count(feature_array, i, 0) == 5
+    assert feature_2_3.get_high_card_count(feature_array, i, 1) == 4
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 0) == 1
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 1) == 2
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 2) == 3
+    assert feature_2_3.get_hand_card_count(feature_array, i) == 15
+
+    feature_3_2.calc(observation, feature_array, i, info)
+    assert feature_3_2.get_high_card(feature_array, i) == 4
+    assert feature_3_2.get_high_card_count(feature_array, i, 0) == 5
+    assert feature_3_2.get_high_card_count(feature_array, i, 1) == 4
+    assert feature_3_2.get_high_card_count(feature_array, i, 2) == 3
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 0) == 1
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 1) == 2
+    assert feature_3_2.get_hand_card_count(feature_array, i) == 15
+
+    # Test when there are not enough low cards to fill the exact card counts and
+    # the buckets.
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 2)
+    hand1.add_cards(cv2, 3)
+    hand1.add_cards(cv3, 4)
+    hand1.add_cards(cv4, 0)
+    hand1.add_cards(cv5, 0)
+    hand1.add_cards(cv6, 0)
+    hand1.add_cards(cv7, 0)
+    hand1.add_cards(cv8, 0)
+    hand1.add_cards(cv9, 0)
+    hand1.add_cards(cv10, 0)
+    hand1.add_cards(cv11, 0)
+    hand1.add_cards(cv12, 0)
+
+    hands = [hand1, hand2, hand3, hand4]
+    state = rd.RoundState(hands, None)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand1, starting_player=0, state=state
+    )
+
+    feature_2_3.calc(observation, feature_array, i, info)
+    assert feature_2_3.get_high_card(feature_array, i) == 4
+    assert feature_2_3.get_high_card_count(feature_array, i, 0) == 0
+    assert feature_2_3.get_high_card_count(feature_array, i, 1) == 4
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 0) == 1
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 1) == 2
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 2) == 3
+    assert feature_2_3.get_hand_card_count(feature_array, i) == 10
+
+    feature_3_2.calc(observation, feature_array, i, info)
+    assert feature_3_2.get_high_card(feature_array, i) == 4
+    assert feature_3_2.get_high_card_count(feature_array, i, 0) == 0
+    assert feature_3_2.get_high_card_count(feature_array, i, 1) == 4
+    assert feature_3_2.get_high_card_count(feature_array, i, 2) == 3
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 0) == 1
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 1) == 2
+    assert feature_3_2.get_hand_card_count(feature_array, i) == 10
