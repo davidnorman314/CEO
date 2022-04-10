@@ -32,6 +32,8 @@
 
 `python -m learning.play_qagent --play --agent-file monte_carlo.pickle --episodes 200 > log.txt`
 
+`python -m learning.play_qagent --play --episodes 100000 --agent-file monte_carlo.pickle`
+
 `python -m learning.play_qagent --play-round-file play_hands/hands9.pickle --agent-file monte_carlo.pickle > log.txt`
 
 ## Azure command-line client
