@@ -99,7 +99,7 @@ class LearningBase:
 
         if now - self._last_backup_pickle_time > datetime.timedelta(minutes=30):
             print("Pickling backup")
-            self.pickle(typestr, "searchbackup.pickle")
+            self.pickle("searchbackup.pickle")
 
             self._last_backup_pickle_time = now
 
