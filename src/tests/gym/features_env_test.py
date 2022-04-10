@@ -1698,6 +1698,49 @@ def test_HandSummary():
     assert feature_3_2.get_bucket_card_count(feature_array, i, 1) == 5
     assert feature_3_2.get_hand_card_count(feature_array, i) == 13
 
+    # Test when there pairs and singles
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 2)
+    hand1.add_cards(cv2, 1)
+    hand1.add_cards(cv3, 2)
+    hand1.add_cards(cv4, 1)
+    hand1.add_cards(cv5, 2)
+    hand1.add_cards(cv6, 1)
+    hand1.add_cards(cv7, 2)
+    hand1.add_cards(cv8, 1)
+    hand1.add_cards(cv9, 2)
+    hand1.add_cards(cv10, 1)
+    hand1.add_cards(cv11, 2)
+    hand1.add_cards(cv12, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+    state = rd.RoundState(hands, None)
+
+    observation = observation_factory.create_observation(
+        type="lead", cur_hand=hand1, starting_player=0, state=state
+    )
+
+    i = 0
+
+    feature_2_3.calc(observation, feature_array, i, info)
+    assert feature_2_3.get_high_card(feature_array, i) == 12
+    assert feature_2_3.get_high_card_count(feature_array, i, 0) == 1
+    assert feature_2_3.get_high_card_count(feature_array, i, 1) == 2
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 0) == 6
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 1) == 6
+    assert feature_2_3.get_bucket_card_count(feature_array, i, 2) == 4
+    assert feature_2_3.get_hand_card_count(feature_array, i) == 19
+
+    feature_3_2.calc(observation, feature_array, i, info)
+    assert feature_3_2.get_high_card(feature_array, i) == 12
+    assert feature_3_2.get_high_card_count(feature_array, i, 0) == 1
+    assert feature_3_2.get_high_card_count(feature_array, i, 1) == 2
+    assert feature_3_2.get_high_card_count(feature_array, i, 2) == 1
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 0) == 7
+    assert feature_3_2.get_bucket_card_count(feature_array, i, 1) == 8
+    assert feature_3_2.get_hand_card_count(feature_array, i) == 19
+
     # Test when there is one of each card except the ace
     hand1 = Hand()
     hand1.add_cards(cv0, 1)
