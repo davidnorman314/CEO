@@ -276,14 +276,18 @@ def play_ceo_rounds(agent_args: dict):
         name = "Basic" + str(i + 2)
         players.append(Player(name, BasicBehavior()))
 
-    num_players = 6
+    num_players = len(players)
+    deck = Deck(num_players)
+
     total = 0
     won = 0
     while True:
         console_listener.start_round(players)
 
+        # Gym sets the random seed, so we need to re-seed or we always get the same deal.
+        random.seed()
+
         # Deal the cards
-        deck = Deck(num_players)
         hands = deck.deal()
         hands_copy = deepcopy(hands)
 
@@ -304,6 +308,8 @@ def play_ceo_rounds(agent_args: dict):
         # If we won, have the agent play
         if won_round:
             reward = play_round(hands_copy, True, **agent_args)
+        else:
+            reward = None
 
         print(f"Won {won} of {total} or {won/total}")
 
