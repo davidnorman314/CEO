@@ -1,4 +1,5 @@
 import argparse
+import pickle
 from tkinter import W
 from copy import deepcopy
 
@@ -293,6 +294,7 @@ def play_ceo_rounds(agent_args: dict):
         # Deal the cards
         hands = deck.deal()
         hands_copy = deepcopy(hands)
+        hands_copy2 = deepcopy(hands)
 
         # Pass cards
         passcards = PassCards(players, hands, console_listener)
@@ -319,6 +321,11 @@ def play_ceo_rounds(agent_args: dict):
         if reward is not None:
             print("Human won")
             print("Agent reward", reward)
+
+            if  won_round and reward < 0.0:
+                file = "play_hands/console_hands" + str(total + 1) + ".pickle"
+                with open(file, "wb") as f:
+                    pickle.dump(hands_copy2, f, pickle.HIGHEST_PROTOCOL)
 
 
 def main():
