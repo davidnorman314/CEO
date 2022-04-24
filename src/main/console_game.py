@@ -163,6 +163,9 @@ class ConsoleBehavior(PlayerBehaviorInterface):
             for j in range(count):
                 print(str(i), " ", end="")
 
+            if count > 0:
+                print(" ", end="")
+
         print("")
 
     def _get_card_to_play(self, hand: Hand):
