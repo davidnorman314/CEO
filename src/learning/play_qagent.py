@@ -370,10 +370,7 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
     )
 
 
-def play_round(round_pickle_file: str, do_logging: bool, **kwargs):
-    # Load the hands
-    with open(round_pickle_file, "rb") as f:
-        hands = pickle.load(f)
+def play_round(hands: list[Hand], do_logging: bool, **kwargs):
 
     # Set up the environment
     random.seed(0)
@@ -392,7 +389,7 @@ def play_round(round_pickle_file: str, do_logging: bool, **kwargs):
 
     states, actions, reward = agent.do_episode(hands, do_logging)
 
-    if False:
+    if do_logging:
         for i in range(len(states)):
             print(i, "state", states[i], "action", actions[i])
 
@@ -401,10 +398,13 @@ def play_round(round_pickle_file: str, do_logging: bool, **kwargs):
                     "  action",
                     a,
                     "value",
-                    agent._Q[(*states[i], a)],
+                    # agent._Q[(*states[i], a)],
                     "count",
-                    agent._state_count[(*states[i], a)],
+                    # agent._state_count[(*states[i], a)],
                 )
+        print("Reward", reward)
+
+    return reward
 
 
 def main():
@@ -487,7 +487,11 @@ def main():
         return
 
     if args.play_round_file:
-        play_round(args.play_round_file, args.do_logging, **agent_args)
+        # Load the hands
+        with open(args.play_round_file, "rb") as f:
+            hands = pickle.load(f)
+
+        play_round(hands, args.do_logging, **agent_args)
     elif args.play:
         stats = play(args.episodes, args.do_logging, args.save_failed_hands, **agent_args)
     else:

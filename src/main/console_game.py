@@ -1,11 +1,14 @@
 import argparse
 from tkinter import W
+from copy import deepcopy
 
 import CEO.cards.game as g
 from CEO.cards.game import *
 from CEO.cards.player import *
 from CEO.cards.simplebehavior import *
 from CEO.cards.round import Round, RoundState
+
+from learning.play_qagent import play_round, create_agent
 
 
 class ConsoleListener(EventListenerInterface):
@@ -256,7 +259,7 @@ def play_game():
     game.play(round_count=500, do_shuffle=False)
 
 
-def play_ceo_rounds():
+def play_ceo_rounds(agent_args: dict):
     print("Playing rounds as CEO.")
 
     human_name = "David"
@@ -282,6 +285,7 @@ def play_ceo_rounds():
         # Deal the cards
         deck = Deck(num_players)
         hands = deck.deal()
+        hands_copy = deepcopy(hands)
 
         # Pass cards
         passcards = PassCards(players, hands, console_listener)
@@ -291,12 +295,21 @@ def play_ceo_rounds():
         round.play()
 
         next_round_order = round.get_next_round_order()
+        won_round = next_round_order[0] == 0
 
         total += 1
-        if next_round_order[0] == 0:
+        if won_round:
             won += 1
 
+        # If we won, have the agent play
+        if won_round:
+            reward = play_round(hands_copy, True, **agent_args)
+
         print(f"Won {won} of {total} or {won/total}")
+
+        if reward is not None:
+            print("Human won")
+            print("Agent reward", reward)
 
 
 def main():
@@ -317,12 +330,31 @@ def main():
         default=False,
         help="Play a game.",
     )
+    parser.add_argument(
+        "--agent-file",
+        dest="agent_file",
+        type=str,
+        help="The pickle file containing the agent",
+    )
+    parser.add_argument(
+        "--azure-agent",
+        dest="azure_agent",
+        type=str,
+        help="The name of the Auzre blob containing the pickled agent.",
+    )
 
     args = parser.parse_args()
-    print(args)
+
+    agent_args = dict()
+    if args.agent_file:
+        agent_args["local_file"] = args.agent_file
+    elif args.azure_agent:
+        agent_args["azure_blob_name"] = args.azure_agent
+    else:
+        print("No agent file specified.")
 
     if args.play_ceo:
-        play_ceo_rounds()
+        play_ceo_rounds(agent_args)
     elif args.play_game:
         play_game()
     else:
