@@ -140,11 +140,11 @@ class AfterstateAgent:
         self._obs_factory = FeatureObservationFactory(env, feature_defs)
 
     def _pick_action(self, state: np.ndarray):
-        action, expected_reward = self._valuetable.find_greedy_action(
+        action, expected_reward, visit_count = self._valuetable.find_greedy_action(
             self._env, self._obs_factory, state
         )
 
-        return action
+        return action, expected_reward, visit_count
 
     def do_episode(
         self, hands: list[Hand] = None, log_state: bool = False
@@ -159,34 +159,39 @@ class AfterstateAgent:
 
         # Run until the episode is finished
         while True:
-            selected_action = self._pick_action(state)
+            selected_action, expected_reward, visit_count = self._pick_action(state)
 
             if log_state:
+                print(
+                    "selected action",
+                    selected_action,
+                    "expected reward",
+                    expected_reward,
+                    "visits",
+                    visit_count,
+                )
                 # Needs to be fixed
-                if False:
-                    action_space = self._env.action_space
+                for action in range(self._env.action_space.n):
+                    afterstate_observation = self._env.get_afterstate(state, action)
+                    afterstate_feature_observation = self._obs_factory.make_feature_observation(
+                        afterstate_observation, info
+                    )
 
-                    print("State", state_tuple)
-                    print("Obs info:")
-                    for key, value in info.items():
-                        print(" ", key, "->", value)
+                    # Get the estimated expected reward for the afterstate
+                    afterstate_tuple = tuple(afterstate_feature_observation.astype(int))
 
-                    print("Selected action", selected_action)
-                    print("Action values")
-                    for a in range(self._base_env.max_action_value):
-                        full_action = ActionEnum(a)
-                        name = full_action.name if full_action in action_space.actions else ""
-                        selected = "selected" if full_action == selected_action else ""
+                    reward = self._valuetable.state_value(afterstate_tuple)
+                    reward_numerator, reward_denom = self._valuetable.state_value_frac(
+                        afterstate_tuple
+                    )
+                    visit_count = self._valuetable.state_visit_count(afterstate_tuple)
 
-                        print(
-                            "  action",
-                            a,
-                            "value",
-                            self._qtable.state_action_value((*state_tuple, full_action)),
-                            "count",
-                            self._qtable.state_visit_count((*state_tuple, full_action)),
-                            name,
-                        )
+                    full_action = self._env.action_space.actions[action]
+
+                    print(
+                        "action", action, "reward", reward, "visit count", visit_count, full_action
+                    )
+                    print("  reward", reward_numerator, "/", reward_denom)
 
             # Perform the action
             new_state, reward, done, info = self._env.step(selected_action)

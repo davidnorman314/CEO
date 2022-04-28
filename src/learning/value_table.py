@@ -115,6 +115,9 @@ class ValueTable:
     def state_value(self, state_tuple: tuple):
         return self._V[state_tuple] / self._denom
 
+    def state_value_frac(self, state_tuple: tuple):
+        return self._V[state_tuple], self._denom
+
     def increment_state_visit_count(self, state_tuple: tuple):
         self._state_count[state_tuple] += 1
 
@@ -138,6 +141,7 @@ class ValueTable:
     ) -> tuple[int, float]:
         greedy_action = None
         greedy_reward = -1000000
+        greedy_visit_count = -1
         info = dict()
 
         for action in range(env.action_space.n):
@@ -150,9 +154,11 @@ class ValueTable:
             afterstate_tuple = tuple(afterstate_feature_observation.astype(int))
 
             reward = self.state_value(afterstate_tuple)
+            visit_count = self.state_visit_count(afterstate_tuple)
 
             if reward > greedy_reward:
                 greedy_reward = reward
                 greedy_action = action
+                greedy_visit_count = visit_count
 
-        return (greedy_action, greedy_reward)
+        return greedy_action, greedy_reward, greedy_visit_count
