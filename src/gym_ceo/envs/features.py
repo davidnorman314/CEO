@@ -542,6 +542,26 @@ class HandSummary:
         """Returns the number of cards in the (i+1)th bucket."""
         return int(obs[self._hand_count_index + dest_start_index]) + 1
 
+    def log_features(self, obs: np.array, dest_start_index: int, prefix: str):
+        print(prefix, "High card", self.get_high_card(obs, dest_start_index))
+        for i in range(0, self._high_card_exact_count):
+            print(
+                prefix,
+                "High card count(",
+                i,
+                ")",
+                self.get_high_card_count(obs, dest_start_index, i),
+            )
+        for i in range(0, self._bucket_count):
+            print(
+                prefix,
+                "Bucket card count(",
+                i,
+                ")",
+                self.get_bucket_card_count(obs, dest_start_index, i),
+            )
+        print(prefix, "Hand card count", self.get_hand_card_count(obs, dest_start_index))
+
     def calc(
         self,
         full_obs: Observation,
@@ -941,3 +961,12 @@ class FeatureObservationFactory:
             i = i + calculator.dim
 
         return feature_obs_array
+
+    def log_feature_observation(self, feature_obs_array, prefix: str):
+        i = 0
+        for calculator in self._feature_calculators:
+            log_features = getattr(calculator, "log_features", None)
+            if callable(log_features):
+                log_features(feature_obs_array, i, prefix)
+
+            i = i + calculator.dim

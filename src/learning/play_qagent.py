@@ -5,6 +5,7 @@ import gym
 import random
 import pickle
 import argparse
+import json
 from typing import List, Tuple
 from copy import copy, deepcopy
 import numpy as np
@@ -181,9 +182,6 @@ class AfterstateAgent:
                     afterstate_tuple = tuple(afterstate_feature_observation.astype(int))
 
                     reward = self._valuetable.state_value(afterstate_tuple)
-                    reward_numerator, reward_denom = self._valuetable.state_value_frac(
-                        afterstate_tuple
-                    )
                     visit_count = self._valuetable.state_visit_count(afterstate_tuple)
 
                     full_action = self._env.action_space.actions[action]
@@ -191,7 +189,8 @@ class AfterstateAgent:
                     print(
                         "action", action, "reward", reward, "visit count", visit_count, full_action
                     )
-                    print("  reward", reward_numerator, "/", reward_denom)
+
+                    self._obs_factory.log_feature_observation(afterstate_feature_observation, "  ")
 
             # Perform the action
             new_state, reward, done, info = self._env.step(selected_action)
@@ -254,6 +253,7 @@ def create_agent(
 
         if "FeatureDefs" in info:
             feature_defs = info["FeatureDefs"]
+            print(json.dumps(feature_defs, indent=2, separators=(",", ": ")))
         else:
             feature_defs = None
 
@@ -385,9 +385,6 @@ def play_round(hands: list[Hand], do_logging: bool, **kwargs):
         listener = GameWatchListener("RL")
     else:
         listener = EventListenerInterface()
-
-    base_env = SeatCEOEnv(listener=listener)
-    env = SeatCEOFeaturesEnv(base_env)
 
     # Load the agent
     env, base_env, agent = create_agent(listener, **kwargs)
