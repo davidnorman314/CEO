@@ -146,7 +146,7 @@ class QLearningAfterstates(ValueTableLearningBase):
 
                 if exp_exp_sample > epsilon:
                     # Exploit
-                    action, expected_value = self.find_greedy_action(state)
+                    action, expected_value, new_state_visit_count = self.find_greedy_action(state)
                     action_type = "-------"
 
                     episode_exploit_count += 1
@@ -166,7 +166,9 @@ class QLearningAfterstates(ValueTableLearningBase):
                 if new_state is not None:
                     # The estimated state value of new_state is the maximum expected
                     # value across all actions
-                    max_action, new_state_value = self.find_greedy_action(new_state)
+                    max_action, new_state_value, new_state_visit_count = self.find_greedy_action(
+                        new_state
+                    )
                 else:
                     assert done
                     assert reward != 0
