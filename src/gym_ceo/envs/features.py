@@ -562,6 +562,24 @@ class HandSummary:
             )
         print(prefix, "Hand card count", self.get_hand_card_count(obs, dest_start_index))
 
+    def _get_buckets(self, highest_value: int) -> tuple[int, int]:
+        # Calculate the bucket parameters
+        max_bucket_card_value = highest_value - self._high_card_exact_count
+        base_bucket_width = (max_bucket_card_value + 1) // self._bucket_count
+        extra_values = (max_bucket_card_value + 1) - base_bucket_width * self._bucket_count
+
+        bucket_start = 0
+        for i in range(self._bucket_count):
+            bucket_end = bucket_start + base_bucket_width
+            if i < extra_values:
+                bucket_end += 1
+
+            yield bucket_start, bucket_end
+
+            bucket_start = bucket_end
+
+        assert bucket_start - 1 == highest_value - self._high_card_exact_count
+
     def calc(
         self,
         full_obs: Observation,
@@ -590,18 +608,9 @@ class HandSummary:
             feature_value = min(card_count, self._high_card_obs_max)
             dest_obs[self._high_card_index_start + i + dest_start_index] = feature_value
 
-        # Calculate the bucket parameters
-        max_bucket_card_value = highest_value - self._high_card_exact_count
-        base_bucket_width = (max_bucket_card_value + 1) // self._bucket_count
-        extra_values = (max_bucket_card_value + 1) - base_bucket_width * self._bucket_count
-
         # Save the counts of cards in each bucket
-        bucket_start = 0
-        for i in range(self._bucket_count):
-            bucket_end = bucket_start + base_bucket_width
-            if i < extra_values:
-                bucket_end += 1
-
+        i = 0
+        for bucket_start, bucket_end in self._get_buckets(highest_value):
             card_count = 0
             for card_value in range(bucket_start, bucket_end):
                 card_count += full_obs.get_card_count(card_value)
@@ -609,8 +618,7 @@ class HandSummary:
             feature_value = min(card_count, self._bucket_obs_max)
             dest_obs[self._bucket_index_start + i + dest_start_index] = feature_value
 
-            bucket_start = bucket_end
-        assert bucket_start - 1 == highest_value - self._high_card_exact_count
+            i += 1
 
         # Save the number of cards in the hand. Note that the hand must have at least
         # one card.
