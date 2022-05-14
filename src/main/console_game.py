@@ -169,7 +169,7 @@ class ConsoleBehavior(PlayerBehaviorInterface):
 
         print("")
 
-    def _get_card_to_play(self, hand: Hand):
+    def _get_card_to_pass(self, hand: Hand):
         while True:
             valStr = input()
 
@@ -189,6 +189,41 @@ class ConsoleBehavior(PlayerBehaviorInterface):
 
             return ret
 
+    def _get_card_to_play(self, hand: Hand, *, lead: bool, trick_value=None, trick_count=None):
+        while True:
+            valStr = input()
+
+            if valStr == "pass":
+                if lead:
+                    print("You must lead")
+                    continue
+
+                return None
+
+            try:
+                int_val = int(valStr)
+                ret = CardValue(int_val)
+            except ValueError:
+                print("Not an integer or invalid integer:", valStr)
+                continue
+
+            if hand.count(ret) == 0:
+                print("You don't have any of", ret, "in your hand")
+                continue
+
+            if not lead:
+                hand_card_count = hand.count(ret)
+
+                if hand_card_count < trick_count:
+                    print("You don't enough", ret, "in your hand")
+                    continue
+
+                if ret.value <= trick_value.value:
+                    print("The card", ret, "is too small")
+                    continue
+
+            return ret
+
     def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
 
         pass_automatically = True
@@ -203,7 +238,7 @@ class ConsoleBehavior(PlayerBehaviorInterface):
 
             ret = []
             while len(ret) < count:
-                ret.append(self._get_card_to_play(hand))
+                ret.append(self._get_card_to_pass(hand))
 
         return ret
 
@@ -214,7 +249,7 @@ class ConsoleBehavior(PlayerBehaviorInterface):
         print("Lead:")
         self._print_hand(hand)
 
-        return self._get_card_to_play(hand)
+        return self._get_card_to_play(hand, lead=True)
 
     def play_on_trick(
         self,
@@ -232,7 +267,9 @@ class ConsoleBehavior(PlayerBehaviorInterface):
         self._print_hand(hand)
 
         while True:
-            ret = self._get_card_to_play(hand)
+            ret = self._get_card_to_play(
+                hand, lead=False, trick_value=cur_trick_value, trick_count=cur_trick_count
+            )
 
             if ret == None:
                 return ret
