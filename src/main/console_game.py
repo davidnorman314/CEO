@@ -304,28 +304,35 @@ def play_ceo_rounds(agent_args: dict):
         round.play()
 
         next_round_order = round.get_next_round_order()
-        won_round = next_round_order[0] == 0
+        player_won_round = next_round_order[0] == 0
 
         total += 1
-        if won_round:
+        if player_won_round:
             won += 1
 
-        # If we won, have the agent play
-        if won_round:
-            reward = play_round(hands_copy, True, **agent_args)
-        else:
-            reward = None
+        # Have the agent play
+        agent_reward = play_round(hands_copy, True, **agent_args)
+        agent_won_round = agent_reward > 0.0
 
         print(f"Won {won} of {total} or {won/total}")
 
-        if reward is not None:
-            print("Human won")
-            print("Agent reward", reward)
+        # Log if there was a different result
+        if player_won_round != agent_won_round:
+            print("Human", "won" if player_won_round else "lost")
+            print("Agent", "won" if agent_won_round else "lost")
 
-            if  won_round and reward < 0.0:
-                file = "play_hands/console_hands" + str(total + 1) + ".pickle"
-                with open(file, "wb") as f:
-                    pickle.dump(hands_copy2, f, pickle.HIGHEST_PROTOCOL)
+            suffix = (
+                "human_"
+                + ("won" if player_won_round else "lost")
+                + "_agent_"
+                + ("won" if agent_won_round else "lost")
+            )
+
+            file = "play_hands/console_hands_" + suffix + "_" + str(total + 1) + ".pickle"
+            with open(file, "wb") as f:
+                pickle.dump(hands_copy2, f, pickle.HIGHEST_PROTOCOL)
+        else:
+            print("Same result for player and agent.")
 
 
 def main():
