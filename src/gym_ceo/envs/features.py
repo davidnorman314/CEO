@@ -543,24 +543,38 @@ class HandSummary:
         return int(obs[self._hand_count_index + dest_start_index]) + 1
 
     def log_features(self, obs: np.array, dest_start_index: int, prefix: str):
-        print(prefix, "High card", self.get_high_card(obs, dest_start_index))
+        highest_value = self.get_high_card(obs, dest_start_index)
+        print(prefix, "High card ", highest_value, sep="")
         for i in range(0, self._high_card_exact_count):
             print(
                 prefix,
-                "High card count(",
+                "High card count (",
                 i,
-                ")",
+                ") = ",
                 self.get_high_card_count(obs, dest_start_index, i),
+                sep="",
             )
-        for i in range(0, self._bucket_count):
+
+        i = 0
+        for bucket_start, bucket_end in self._get_buckets(highest_value):
             print(
                 prefix,
-                "Bucket card count(",
+                "Bucket card count ",
                 i,
-                ")",
+                " [",
+                bucket_start,
+                ",",
+                bucket_end,
+                ") = ",
                 self.get_bucket_card_count(obs, dest_start_index, i),
+                sep="",
             )
-        print(prefix, "Hand card count", self.get_hand_card_count(obs, dest_start_index))
+
+            i += 1
+
+        assert i == self._bucket_count
+
+        print(prefix, "Hand card count ", self.get_hand_card_count(obs, dest_start_index), sep="")
 
     def _get_buckets(self, highest_value: int) -> tuple[int, int]:
         # Calculate the bucket parameters
