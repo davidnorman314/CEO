@@ -10,6 +10,9 @@
 
 `python -m main.many_games --print --count 1`
 
+`python -m main.console_game --play-ceo --agent-file training.pkl`
+
+
 ## Train agents
 
 `python -m learning.qlearning --episodes 1000000`
@@ -34,7 +37,7 @@
 
 `python -m learning.play_qagent --play --episodes 100000 --agent-file monte_carlo.pickle`
 
-`python -m learning.play_qagent --play-round-file play_hands/hands9.pickle --agent-file monte_carlo.pickle > log.txt`
+`python -m learning.play_qagent --play-round-file play_hands/hands9.pickle --agent-file monte_carlo.pickle --do-logging > log.txt`
 
 ## Azure command-line client
 
