@@ -1,5 +1,6 @@
 import argparse
 import pickle
+import json
 from tkinter import W
 from copy import deepcopy
 from pathlib import Path
@@ -304,6 +305,8 @@ def play_game():
 def play_ceo_rounds(agent_args: dict):
     print("Playing rounds as CEO.")
 
+    history = GameHistory()
+
     human_name = "David"
     console_listener = ConsoleListener(human_name)
 
@@ -321,8 +324,6 @@ def play_ceo_rounds(agent_args: dict):
     num_players = len(players)
     deck = Deck(num_players)
 
-    total = 0
-    won = 0
     while True:
         console_listener.start_round(players)
 
@@ -344,15 +345,17 @@ def play_ceo_rounds(agent_args: dict):
         next_round_order = round.get_next_round_order()
         player_won_round = next_round_order[0] == 0
 
-        total += 1
+        # Save the result to the history file
         if player_won_round:
-            won += 1
+            history.save_win()
+        else:
+            history.save_loss()
 
         # Have the agent play
         agent_reward = play_round(hands_copy, True, **agent_args)
         agent_won_round = agent_reward > 0.0
 
-        print(f"Won {won} of {total} or {won/total}")
+        print(f"Won {history.total_won} of {history.total_hands} or {history.total_won/history.total_hands}")
 
         # Log if there was a different result
         if player_won_round != agent_won_round:
@@ -367,7 +370,7 @@ def play_ceo_rounds(agent_args: dict):
                     + ("won" if agent_won_round else "lost")
                 )
 
-                file = "play_hands/console_hands_" + suffix + "_" + str(total + 1 + inc) + ".pickle"
+                file = "play_hands/console_hands_" + suffix + "_" + str(history.total_hands + 1 + inc) + ".pickle"
 
                 if Path(file).exists():
                     continue
@@ -378,6 +381,70 @@ def play_ceo_rounds(agent_args: dict):
                 break
         else:
             print("Same result for player and agent.")
+
+
+class GameHistory:
+    history_file = "../data/history/ceo_console_game_history.ndjson"
+
+    total_hands: int
+    total_won: int
+
+    def __init__(self):
+        self.total_hands = 0
+        self.total_won = 0
+
+        # Load the current history
+        lines = 0
+        with open(self.history_file, "r") as f:
+            for line in f:
+                lines += 1
+                info = json.loads(line)
+
+                if "TotalHands" in info:
+                    self.total_hands += info["TotalHands"]
+                    self.total_won += info["TotalWon"]
+                elif "Won" in info:
+                    self.total_hands += 1
+                    self.total_won += 1
+                elif "Loss" in info:
+                    self.total_hands += 1
+                    self.total_won += 0
+                else:
+                    raise Exception("Unknown line in history_file")
+
+        # See if we should compress
+        if lines > 10:
+            print("Compressing history file")
+
+            info = dict()
+            info["TotalHands"] = self.total_hands
+            info["TotalWon"] = self.total_won
+
+            with open(self.history_file, "w") as f:
+                f.write(json.dumps(info))
+                f.write("\n")
+
+    def save_win(self):
+        self.total_hands += 1
+        self.total_won += 1
+
+        info = dict()
+        info["Won"] = True
+
+        self._append(info)
+
+    def save_loss(self):
+        self.total_hands += 1
+
+        info = dict()
+        info["Loss"] = True
+
+        self._append(info)
+
+    def _append(self, info):
+        with open(self.history_file, "a") as f:
+            f.write(json.dumps(info))
+            f.write("\n")
 
 
 def main():
