@@ -2,6 +2,7 @@ import argparse
 import pickle
 from tkinter import W
 from copy import deepcopy
+from pathlib import Path
 
 import CEO.cards.game as g
 from CEO.cards.game import *
@@ -358,16 +359,23 @@ def play_ceo_rounds(agent_args: dict):
             print("Human", "won" if player_won_round else "lost")
             print("Agent", "won" if agent_won_round else "lost")
 
-            suffix = (
-                "human_"
-                + ("won" if player_won_round else "lost")
-                + "_agent_"
-                + ("won" if agent_won_round else "lost")
-            )
+            for inc in range(0, 1000):
+                suffix = (
+                    "human_"
+                    + ("won" if player_won_round else "lost")
+                    + "_agent_"
+                    + ("won" if agent_won_round else "lost")
+                )
 
-            file = "play_hands/console_hands_" + suffix + "_" + str(total + 1) + ".pickle"
-            with open(file, "wb") as f:
-                pickle.dump(hands_copy2, f, pickle.HIGHEST_PROTOCOL)
+                file = "play_hands/console_hands_" + suffix + "_" + str(total + 1 + inc) + ".pickle"
+
+                if Path(file).exists():
+                    continue
+
+                with open(file, "wb") as f:
+                    pickle.dump(hands_copy2, f, pickle.HIGHEST_PROTOCOL)
+
+                break
         else:
             print("Same result for player and agent.")
 
