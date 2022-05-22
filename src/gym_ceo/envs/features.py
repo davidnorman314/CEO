@@ -893,6 +893,14 @@ class WillWinTrick_AfterState:
         dest_obs[dest_start_index] = 0
         info["WillWinTrick"] = "May not win"
 
+    def log_features(self, obs: np.array, dest_start_index: int, prefix: str):
+        value = obs[dest_start_index]
+        print(
+            prefix,
+            "WillWin" if value > 0 else "MayNotWin",
+            sep="",
+        )
+
 
 class FeatureObservationFactory:
     """Class that calculates a feature observation from raw observation."""
