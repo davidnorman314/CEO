@@ -6,3 +6,6 @@
 
 - When the bucket feature is card counts, if the only remaining cards are in buckets, 
   then the maximum bucket count can give quadruples, triples, and pairs the same observation.
+
+- With buckets, playing lowest and second lowest can result in the same afterstate. Currently
+  the ordering leads to second lowest being played in this case.
