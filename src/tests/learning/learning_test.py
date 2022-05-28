@@ -9,10 +9,26 @@ from gym_ceo.envs.observation_hand import ObservationHand
 from learning.learning import do_learning
 
 
+def get_data_dir(pytestconfig):
+    # Find the CEO/data dir whether pytest is run in CEO or CEO/src
+    rootpath = pytestconfig.rootpath
+    datadir = rootpath / "data"
+
+    if datadir.is_dir():
+        return datadir
+
+    datadir = rootpath / ".." / "data"
+    if datadir.is_dir():
+        return datadir
+
+    msg = "Can't find data dir from rootpath " + str(rootpath)
+    assert msg == ""
+
+
 def test_qlearning(pytestconfig):
     """Test qlearning"""
 
-    configfile = pytestconfig.rootpath / "data" / "qlearning.json"
+    configfile = get_data_dir(pytestconfig) / "qlearning.json"
     do_azure = False
     do_logging = False
     random_seed = 0
@@ -31,7 +47,7 @@ def test_qlearning(pytestconfig):
 def test_qlearning_traces(pytestconfig):
     """Test qlearning_traces"""
 
-    configfile = pytestconfig.rootpath / "data" / "qlearning_traces.json"
+    configfile = get_data_dir(pytestconfig) / "qlearning_traces.json"
     do_azure = False
     do_logging = False
     random_seed = 0
@@ -50,7 +66,7 @@ def test_qlearning_traces(pytestconfig):
 def test_qlearning_afterstates(pytestconfig):
     """Test qlearning_afterstates"""
 
-    configfile = pytestconfig.rootpath / "data" / "qlearning_afterstates.json"
+    configfile = get_data_dir(pytestconfig) / "qlearning_afterstates.json"
     do_azure = False
     do_logging = False
     random_seed = 0
@@ -69,7 +85,7 @@ def test_qlearning_afterstates(pytestconfig):
 def test_qlearning_afterstates_handsummary(pytestconfig):
     """Test qlearning_afterstates with the HandSummary feature"""
 
-    configfile = pytestconfig.rootpath / "data" / "qlearning_afterstates_handsummary.json"
+    configfile = get_data_dir(pytestconfig) / "qlearning_afterstates_handsummary.json"
     do_azure = False
     do_logging = False
     random_seed = 0
