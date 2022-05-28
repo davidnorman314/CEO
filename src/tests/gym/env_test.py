@@ -1020,7 +1020,8 @@ def test_SeatCEOEnv_get_afterstate():
 
     # Test afterstate after lead highest
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
-    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate_array, played_card = env.get_afterstate(observation_array, action)
+    assert played_card == cv3
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 1
@@ -1032,7 +1033,8 @@ def test_SeatCEOEnv_get_afterstate():
 
     # Test afterstate after lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate_array, played_card = env.get_afterstate(observation_array, action)
+    assert played_card == cv0
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 0
@@ -1057,7 +1059,7 @@ def test_SeatCEOEnv_get_afterstate():
 
     # Test afterstate after play highest
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
-    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate_array, played_card = env.get_afterstate(observation_array, action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 0
@@ -1069,7 +1071,8 @@ def test_SeatCEOEnv_get_afterstate():
 
     # Test afterstate after pass
     action = env.action_space.find_full_action(ActionEnum.PASS_ON_TRICK_NUM)
-    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate_array, played_card = env.get_afterstate(observation_array, action)
+    assert played_card is None
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 0
@@ -1542,7 +1545,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
 
     # Test afterstate after lead highest
     action = env.action_space.n - 1
-    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate_array, played_card = env.get_afterstate(observation_array, action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 1
@@ -1557,7 +1560,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
 
     # Test afterstate after lead lowest
     action = 0
-    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate_array, played_card = env.get_afterstate(observation_array, action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 0
@@ -1587,7 +1590,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
 
     # Test afterstate after play highest
     action = env.action_space.n - 2
-    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate_array, played_card = env.get_afterstate(observation_array, action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 0
@@ -1602,7 +1605,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate():
 
     # Test afterstate after pass
     action = env.action_space.n - 1
-    afterstate_array = env.get_afterstate(observation_array, action)
+    afterstate_array, played_card = env.get_afterstate(observation_array, action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 0
@@ -1691,7 +1694,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
 
     # Test afterstate after lead highest
     action = hand_card_count - 1
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 1
@@ -1705,7 +1708,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
 
     # Test afterstate after lead lowest
     action = 0
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 0
@@ -1749,7 +1752,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
 
     # Test afterstate after play highest
     action = hand_card_count - 2
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 4
@@ -1764,7 +1767,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
 
     # Test afterstate after play lowest
     action = 0
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 4
@@ -1779,7 +1782,7 @@ def test_SeatCEOEnv_CardActionSpace_get_afterstate_TrickState():
 
     # Test afterstate after pass
     action = hand_card_count - 1
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     assert afterstate.get_card_count(0) == 4

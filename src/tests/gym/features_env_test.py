@@ -1213,7 +1213,7 @@ def test_AfterState_WillWinTrick_AfterState():
 
     # Test when the agent leads an ace
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature.calc(afterstate, feature_array, 0, info)
@@ -1221,7 +1221,7 @@ def test_AfterState_WillWinTrick_AfterState():
 
     # Test when the agent leads a low card
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature.calc(afterstate, feature_array, 0, info)
@@ -1244,7 +1244,7 @@ def test_AfterState_WillWinTrick_AfterState():
 
     # Test when the agent plays
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature.calc(afterstate, feature_array, 0, info)
@@ -1252,7 +1252,7 @@ def test_AfterState_WillWinTrick_AfterState():
 
     # Test when the agent passes
     action = env.action_space.find_full_action(ActionEnum.PASS_ON_TRICK_NUM)
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature.calc(afterstate, feature_array, 0, info)
@@ -1330,7 +1330,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
     )
 
     # Test when the agent leads one card.
-    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), 1)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)
@@ -1358,7 +1358,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
         state=state,
     )
 
-    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), 1)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)
@@ -1386,7 +1386,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
         state=state,
     )
 
-    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), 1)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)
@@ -1414,7 +1414,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
         state=state,
     )
 
-    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), 1)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)
@@ -1442,7 +1442,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
         state=state,
     )
 
-    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), 1)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)
@@ -1470,7 +1470,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
         state=state,
     )
 
-    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), 1)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)
@@ -1498,7 +1498,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
         state=state,
     )
 
-    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), 1)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)
@@ -1526,7 +1526,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
         state=state,
     )
 
-    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), 1)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)
@@ -1554,7 +1554,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
         state=state,
     )
 
-    afterstate_array = env.get_afterstate(observation.get_array(), 1)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), 1)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)
@@ -1583,7 +1583,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
     )
 
     action = env.action_space.n - 1
-    afterstate_array = env.get_afterstate(observation.get_array(), action)
+    afterstate_array, played_card = env.get_afterstate(observation.get_array(), action)
     afterstate = observation_factory.create_observation(array=afterstate_array)
 
     feature_no_downstream.calc(afterstate, feature_array, 0, info)

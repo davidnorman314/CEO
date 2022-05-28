@@ -315,7 +315,7 @@ class QLearningAfterstates(ValueTableLearningBase):
     def get_afterstate(self, state: np.ndarray, action: int):
         """Returns the feature afterstate from the given action."""
         # Calculate the afterstate if this action is taken.
-        afterstate_full_observation = self._env.get_afterstate(state, action)
+        afterstate_full_observation, played_card = self._env.get_afterstate(state, action)
 
         # Calcualate features for the afterstate
         info = dict()

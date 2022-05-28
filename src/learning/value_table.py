@@ -142,10 +142,11 @@ class ValueTable:
         greedy_action = None
         greedy_reward = -1000000
         greedy_visit_count = -1
+        greedy_played_card = None
         info = dict()
 
         for action in range(env.action_space.n):
-            afterstate_observation = env.get_afterstate(state, action)
+            afterstate_observation, played_card = env.get_afterstate(state, action)
             afterstate_feature_observation = obs_factory.make_feature_observation(
                 afterstate_observation, info
             )
@@ -156,9 +157,18 @@ class ValueTable:
             reward = self.state_value(afterstate_tuple)
             visit_count = self.state_visit_count(afterstate_tuple)
 
-            if reward > greedy_reward:
+            played_card_is_lower_than_greedy_played_card = (
+                played_card is not None
+                and greedy_played_card is not None
+                and played_card.value < greedy_played_card.value
+            )
+
+            if reward > greedy_reward or (
+                reward == greedy_reward and played_card_is_lower_than_greedy_played_card
+            ):
                 greedy_reward = reward
                 greedy_action = action
                 greedy_visit_count = visit_count
+                greedy_played_card = played_card
 
         return greedy_action, greedy_reward, greedy_visit_count

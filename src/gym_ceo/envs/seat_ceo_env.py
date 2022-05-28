@@ -298,7 +298,7 @@ class SeatCEOEnv(gym.Env):
             state=state,
         )
 
-    def get_afterstate(self, observation_array: np.ndarray, action) -> np.ndarray:
+    def get_afterstate(self, observation_array: np.ndarray, action) -> tuple[np.ndarray, CardValue]:
         """Creates the afterstate from taking the given action from the state
         given by the observation."""
 
@@ -319,7 +319,7 @@ class SeatCEOEnv(gym.Env):
 
         # See if we pass
         if played_value is None:
-            return observation_array.copy()
+            return observation_array.copy(), None
 
         # Perform the action on the hand
         if cur_trick_count == 0:
@@ -337,4 +337,4 @@ class SeatCEOEnv(gym.Env):
             update_last_player=0,
         )
 
-        return afterstate.get_array()
+        return afterstate.get_array(), played_value
