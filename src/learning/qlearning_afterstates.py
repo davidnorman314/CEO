@@ -68,6 +68,14 @@ class QLearningAfterstates(ValueTableLearningBase):
         if decay is None:
             raise ValueError("The parameter decay is missing")
 
+        max_initial_visit_count = params["max_initial_visit_count"]
+        if max_initial_visit_count is None:
+            raise ValueError("The parameter max_initial_visit_count is missing")
+
+        max_initial_skips = params["max_initial_skips"]
+        if max_initial_skips is None:
+            raise ValueError("The parameter max_initial_skips is missing")
+
         alpha_type_str = params["alpha_type"]
         if alpha_type_str is None:
             raise ValueError("The parameter alpha_type_str is missing")
@@ -106,6 +114,7 @@ class QLearningAfterstates(ValueTableLearningBase):
             params["min_epsilon"] = min_epsilon
             params["decay"] = decay
             params["alpha_type"] = alpha_type_str
+            params["max_initial_visit_count"] = max_initial_visit_count
             if alpha_exponent is not None:
                 params["alpha_exponent"] = alpha_exponent
             if alpha_constant is not None:
@@ -125,8 +134,11 @@ class QLearningAfterstates(ValueTableLearningBase):
         recent_episode_rewards = deque()
         recent_explore_counts = deque()
         recent_exploit_counts = deque()
+        recent_skip_counts = deque()
         max_recent_episode_rewards = 10000
         states_visited = 0
+        cur_skip_count = 0
+        skip_episode = False
         for episode in range(1, self._train_episodes + 1):
             # Reseting the environment to start the new episode.
             state = self._env.reset()
@@ -140,13 +152,14 @@ class QLearningAfterstates(ValueTableLearningBase):
             episode_infos: list[EpisodeInfo] = []
 
             # Run until the episode is finished
+            start_episode = True
             while True:
                 # Choose if we will explore or exploit
                 exp_exp_sample = random.uniform(0, 1)
 
                 if exp_exp_sample > epsilon:
                     # Exploit
-                    action, expected_value, new_state_visit_count = self.find_greedy_action(state)
+                    action, expected_value, afterstate_visit_count = self.find_greedy_action(state)
                     action_type = "-------"
 
                     episode_exploit_count += 1
@@ -159,6 +172,19 @@ class QLearningAfterstates(ValueTableLearningBase):
 
                 afterstate = self.get_afterstate(state, action)
                 afterstate_tuple = tuple(afterstate.astype(int))
+                afterstate_visit_count = self._valuetable.state_visit_count(afterstate_tuple)
+
+                # Skip this episode if we have visited its initial state too many times and we haven't
+                # already skipped too many times without doing an episode.
+                if (
+                    start_episode
+                    and afterstate_visit_count > max_initial_visit_count
+                    and cur_skip_count < max_initial_skips
+                ):
+                    skip_episode = True
+                    break
+
+                start_episode = False
 
                 # Perform the action
                 new_state, reward, done, info = self._env.step(action)
@@ -221,6 +247,16 @@ class QLearningAfterstates(ValueTableLearningBase):
                 if done == True:
                     break
 
+            if skip_episode:
+                cur_skip_count += 1
+
+                if cur_skip_count > 0 and cur_skip_count % 2000 == 0:
+                    print("Skipped", cur_skip_count, "max skip", max_initial_skips)
+
+                skip_episode = False
+
+                continue
+
             # Cutting down on exploration by reducing the epsilon
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
 
@@ -229,6 +265,8 @@ class QLearningAfterstates(ValueTableLearningBase):
             recent_episode_rewards.append(episode_reward)
             recent_exploit_counts.append(episode_exploit_count)
             recent_explore_counts.append(episode_explore_count)
+            recent_skip_counts.append(cur_skip_count)
+            cur_skip_count = 0
             if len(recent_episode_rewards) > max_recent_episode_rewards:
                 recent_episode_rewards.popleft()
                 recent_explore_counts.popleft()
@@ -240,14 +278,16 @@ class QLearningAfterstates(ValueTableLearningBase):
                 recent_explore_rate = sum(recent_explore_counts) / (
                     sum(recent_exploit_counts) + sum(recent_explore_counts)
                 )
+                skipped_episodes = sum(recent_skip_counts)
 
                 print(
-                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} Explore rate {:.3f} States visited {}".format(
+                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} Explore rate {:.3f} States visited {} Skipped episodes {}".format(
                         episode,
                         ave_training_rewards,
                         recent_rewards,
                         recent_explore_rate,
                         states_visited,
+                        skipped_episodes,
                     )
                 )
 
@@ -258,6 +298,8 @@ class QLearningAfterstates(ValueTableLearningBase):
                     recent_rewards,
                     recent_explore_rate,
                     states_visited,
+                    self.feature_defs,
+                    skipped_episodes,
                 )
 
             if (

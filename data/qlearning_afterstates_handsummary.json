@@ -8,6 +8,8 @@
         "max_epsilon": 0.5,
         "min_epsilon": 0.01,
         "decay": 0.0000001,
+        "max_initial_visit_count": 10000,
+        "max_initial_skips": 5000,
         "alpha_type": "state_visit_count",
         "alpha_exponent": 0.6
     },

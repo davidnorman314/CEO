@@ -2,6 +2,8 @@ import gym
 import numpy as np
 import pickle
 import datetime
+
+from regex import W
 from azure_rl.azure_client import AzureClient
 
 from learning.qtable import QTable
@@ -84,6 +86,8 @@ class LearningBase:
         recent_reward: float,
         explore_rate: float,
         states_visited: int,
+        feature_defs=None,
+        skipped_episodes: int = 0,
     ):
         now = datetime.datetime.now()
 
@@ -93,13 +97,14 @@ class LearningBase:
         stats["recent_reward"] = recent_reward
         stats["explore_rate"] = explore_rate
         stats["states_visited"] = states_visited
+        stats["skipped_episodes"] = skipped_episodes
         stats["duration"] = now - self._start_time
 
         self._search_statistics.append(stats)
 
         if now - self._last_backup_pickle_time > datetime.timedelta(minutes=30):
             print("Pickling backup")
-            self.pickle("searchbackup.pickle")
+            self.pickle("searchbackup.pickle", feature_defs=feature_defs)
 
             self._last_backup_pickle_time = now
 
