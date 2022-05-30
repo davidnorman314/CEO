@@ -10,6 +10,15 @@
 - Current actions do not allow breaking up four kings into two pair if there is an ace
   in the hand.
 
-- Some states aren't getting visited enough, even with 30 million training episodes.
-
 - Keep track of variance of estimates and use it to terminate search if the estimates are tight enough.
+
+- Add an action to break up a quadruple and triple
+
+- Action to play second highest
+
+# Completed Items
+
+- Some states aren't getting visited enough, even with 30 million training episodes.
+  - Add max_initial_visit_count
+
+
