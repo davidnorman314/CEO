@@ -173,7 +173,7 @@ class AfterstateAgent:
                 )
                 # Needs to be fixed
                 for action in range(self._env.action_space.n):
-                    afterstate_observation = self._env.get_afterstate(state, action)
+                    afterstate_observation, played_card = self._env.get_afterstate(state, action)
                     afterstate_feature_observation = self._obs_factory.make_feature_observation(
                         afterstate_observation, info
                     )
