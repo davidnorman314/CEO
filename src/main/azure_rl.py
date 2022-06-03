@@ -113,6 +113,21 @@ def extract_trainings(client: AzureClient, *, earliest_start: datetime.datetime 
     return all_trainings
 
 
+def find_feature_def(feature_defs: list, feature_type: str):
+    for feature_def in feature_defs:
+        type = feature_def[0]
+        feature_params = feature_def[1]
+
+        print(type, feature_params)
+
+        if type == feature_type:
+            return feature_params
+
+    print("Can't find feature ", feature_type, " from ", feature_defs)
+
+    return None
+
+
 def get_training_progress(
     client: AzureClient, pickle_file: str, *, earliest_start: datetime.datetime = None
 ):
@@ -128,6 +143,7 @@ def get_training_progress(
 
         start_training = training_dict["start_training"]
 
+        # Add general information about the training
         cols = dict()
         cols["training_id"] = training_id
         cols["learning_type"] = start_training["learning_type"]
@@ -137,12 +153,21 @@ def get_training_progress(
             cols["action_space_type"] = ""
         cols["start"] = pd.to_datetime(start_training["start_time"])
         cols["lambda"] = start_training["params"]["decay"]
+        cols["max_initial_visit_count"] = start_training["params"]["max_initial_visit_count"]
         cols["discount"] = start_training["params"]["discount_factor"]
         if "alpha_exponent" in start_training["params"]:
             cols["alpha_exponent"] = start_training["params"]["alpha_exponent"]
         else:
             cols["alpha_exponent"] = 0.85
 
+        # Add information about the features used by the agent
+        hand_summary = find_feature_def(start_training["feature_defs"], "HandSummary")
+        if hand_summary is not None:
+            cols["hs_high_card_obs_max"] = hand_summary["high_card_obs_max"]
+        else:
+            cols["hs_high_card_obs_max"] = None
+
+        # Add end-of-training information
         if "end_training" in training_dict:
             end_training = training_dict["end_training"]
             cols["end"] = pd.to_datetime(end_training["stop_time"])
