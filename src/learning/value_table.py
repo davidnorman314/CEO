@@ -172,3 +172,20 @@ class ValueTable:
                 greedy_played_card = played_card
 
         return greedy_action, greedy_reward, greedy_visit_count
+
+    def afterstate_visit_count(
+        self, env: gym.Env, obs_factory: FeatureObservationFactory, state: np.ndarray
+    ) -> int:
+        visit_count = 0
+        info = dict()
+
+        for action in range(env.action_space.n):
+            afterstate_observation, played_card = env.get_afterstate(state, action)
+            afterstate_feature_observation = obs_factory.make_feature_observation(
+                afterstate_observation, info
+            )
+            afterstate_tuple = tuple(afterstate_feature_observation.astype(int))
+
+            visit_count += self.state_visit_count(afterstate_tuple)
+
+        return visit_count

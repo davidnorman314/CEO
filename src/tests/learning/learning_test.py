@@ -97,5 +97,6 @@ def test_qlearning_afterstates_handsummary(pytestconfig):
     )
 
     assert search_statistics["episode"] == 1000
-    assert search_statistics["avg_reward"] < 0.0
+    assert search_statistics["avg_reward"] != 0
+    assert search_statistics["avg_reward"] < 0.1
     assert search_statistics["states_visited"] > 1000

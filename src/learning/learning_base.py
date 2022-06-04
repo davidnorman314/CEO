@@ -86,6 +86,8 @@ class LearningBase:
         recent_reward: float,
         explore_rate: float,
         states_visited: int,
+        min_epsilon: int,
+        max_epsilon: int,
         feature_defs=None,
         skipped_episodes: int = 0,
     ):
@@ -98,6 +100,8 @@ class LearningBase:
         stats["explore_rate"] = explore_rate
         stats["states_visited"] = states_visited
         stats["skipped_episodes"] = skipped_episodes
+        stats["min_epsilon"] = min_epsilon
+        stats["max_epsilon"] = max_epsilon
         stats["duration"] = now - self._start_time
 
         self._search_statistics.append(stats)

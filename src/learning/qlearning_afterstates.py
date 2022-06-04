@@ -32,7 +32,8 @@ class QLearningAfterstates(ValueTableLearningBase):
         CONSTANT = 3
 
     class EpsilonType(Enum):
-        EPISODE_COUNT = 1
+        STATE_VISIT_COUNT = 1
+        EPISODE_COUNT = 2
 
     _train_episodes: int
 
@@ -98,6 +99,8 @@ class QLearningAfterstates(ValueTableLearningBase):
 
         if epsilon_type_str == "episode_count":
             epsilon_type = self.EpsilonType.EPISODE_COUNT
+        elif epsilon_type_str == "state_visit_count":
+            epsilon_type = self.EpsilonType.STATE_VISIT_COUNT
         else:
             raise ValueError("Invalid episode_type: " + epsilon_type_str)
 
@@ -148,6 +151,7 @@ class QLearningAfterstates(ValueTableLearningBase):
         recent_explore_counts = deque()
         recent_exploit_counts = deque()
         recent_skip_counts = deque()
+        recent_epsilon = deque()
         max_recent_episode_rewards = 10000
         states_visited = 0
         cur_skip_count = 0
@@ -168,6 +172,11 @@ class QLearningAfterstates(ValueTableLearningBase):
             # Cutting down on exploration by reducing the epsilon
             if epsilon_type == self.EpsilonType.EPISODE_COUNT:
                 epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * (episode + 1))
+            elif epsilon_type == self.EpsilonType.STATE_VISIT_COUNT:
+                state_visit_count = self.afterstate_visit_count(state)
+                epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(
+                    -decay * state_visit_count
+                )
             else:
                 raise ValueError("Invalid epsilon type" + str(epsilon_type))
 
@@ -286,6 +295,7 @@ class QLearningAfterstates(ValueTableLearningBase):
             recent_exploit_counts.append(episode_exploit_count)
             recent_explore_counts.append(episode_explore_count)
             recent_skip_counts.append(cur_skip_count)
+            recent_epsilon.append(epsilon)
             cur_skip_count = 0
             if len(recent_episode_rewards) > max_recent_episode_rewards:
                 recent_episode_rewards.popleft()
@@ -299,15 +309,19 @@ class QLearningAfterstates(ValueTableLearningBase):
                     sum(recent_exploit_counts) + sum(recent_explore_counts)
                 )
                 skipped_episodes = sum(recent_skip_counts)
+                min_epsilon = min(recent_epsilon)
+                max_epsilon = max(recent_epsilon)
 
                 print(
-                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} Explore rate {:.3f} States visited {} Skipped episodes {}".format(
+                    "Episode {} Ave rwd {:.3f} Recent rwd {:.3f} Explore rate {:.3f} Visited {} Skipped {} Epsilon {:.3f},{:.3f}".format(
                         episode,
                         ave_training_rewards,
                         recent_rewards,
                         recent_explore_rate,
                         states_visited,
                         skipped_episodes,
+                        min_epsilon,
+                        max_epsilon,
                     )
                 )
 
@@ -320,6 +334,8 @@ class QLearningAfterstates(ValueTableLearningBase):
                     states_visited,
                     self.feature_defs,
                     skipped_episodes,
+                    min_epsilon,
+                    max_epsilon,
                 )
 
             if (
@@ -391,6 +407,11 @@ class QLearningAfterstates(ValueTableLearningBase):
         """Checks all possible actions to find the greedy one."""
 
         return self._valuetable.find_greedy_action(self._env, self._obs_factory, state)
+
+    def afterstate_visit_count(self, state: np.ndarray) -> int:
+        """Counts the number of visits for all possible afterstates."""
+
+        return self._valuetable.afterstate_visit_count(self._env, self._obs_factory, state)
 
     def get_default_features(self, env: SeatCEOEnv):
         print("Using default parameters.")
