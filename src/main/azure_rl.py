@@ -153,7 +153,10 @@ def get_training_progress(
             cols["action_space_type"] = ""
         cols["start"] = pd.to_datetime(start_training["start_time"])
         cols["lambda"] = start_training["params"]["decay"]
-        cols["max_initial_visit_count"] = start_training["params"]["max_initial_visit_count"]
+        if "max_initial_visit_count" in start_training["params"]:
+            cols["max_initial_visit_count"] = start_training["params"]["max_initial_visit_count"]
+        else:
+            cols["max_initial_visit_count"] = None
         cols["discount"] = start_training["params"]["discount_factor"]
         if "alpha_exponent" in start_training["params"]:
             cols["alpha_exponent"] = start_training["params"]["alpha_exponent"]
@@ -201,6 +204,11 @@ def get_training_progress(
             progress_row["states_visited"] = line_json["states_visited"]
             progress_row["explore_rate"] = line_json["explore_rate"]
             progress_row["pct_win"] = None
+            if "skipped_episodes" in line_json:
+                progress_row["skipped_episodes"] = line_json["skipped_episodes"]
+            else:
+                progress_row["skipped_episodes"] = None
+            progress_row["recent_rewards"] = line_json["recent_reward"]
 
             progress_rows_list.append(progress_row)
 
