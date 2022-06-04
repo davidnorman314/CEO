@@ -31,6 +31,9 @@ class QLearningAfterstates(ValueTableLearningBase):
         EPISODE_COUNT = 2
         CONSTANT = 3
 
+    class EpsilonType(Enum):
+        EPISODE_COUNT = 1
+
     _train_episodes: int
 
     def __init__(self, env: gym.Env, train_episodes=100000, feature_defs=None, **kwargs):
@@ -89,6 +92,15 @@ class QLearningAfterstates(ValueTableLearningBase):
         else:
             raise ValueError("Invalid alpha_type: " + alpha_type_str)
 
+        epsilon_type_str = params["epsilon_type"]
+        if epsilon_type_str is None:
+            raise ValueError("The parameter epsilon_type_str is missing")
+
+        if epsilon_type_str == "episode_count":
+            epsilon_type = self.EpsilonType.EPISODE_COUNT
+        else:
+            raise ValueError("Invalid episode_type: " + epsilon_type_str)
+
         alpha_exponent = None
         alpha_constant = None
         if (
@@ -114,6 +126,7 @@ class QLearningAfterstates(ValueTableLearningBase):
             params["min_epsilon"] = min_epsilon
             params["decay"] = decay
             params["alpha_type"] = alpha_type_str
+            params["epsilon_type"] = epsilon_type_str
             params["max_initial_visit_count"] = max_initial_visit_count
             if alpha_exponent is not None:
                 params["alpha_exponent"] = alpha_exponent
@@ -151,6 +164,12 @@ class QLearningAfterstates(ValueTableLearningBase):
 
             # Information about the episode
             episode_infos: list[EpisodeInfo] = []
+
+            # Cutting down on exploration by reducing the epsilon
+            if epsilon_type == self.EpsilonType.EPISODE_COUNT:
+                epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * (episode + 1))
+            else:
+                raise ValueError("Invalid epsilon type" + str(epsilon_type))
 
             # Run until the episode is finished
             start_episode = True
@@ -260,9 +279,6 @@ class QLearningAfterstates(ValueTableLearningBase):
 
             # Increment the episode counter. This must be after the skip check above
             episode += 1
-
-            # Cutting down on exploration by reducing the epsilon
-            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
 
             # Save the reward
             total_training_reward += episode_reward

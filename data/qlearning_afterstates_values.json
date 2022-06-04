@@ -11,6 +11,7 @@
         "max_initial_visit_count": 10000,
         "max_initial_skips": 5000,
         "alpha_type": "state_visit_count",
+        "epsilon_type": "episode_count",
         "alpha_exponent": 0.6
     },
     "features": [
