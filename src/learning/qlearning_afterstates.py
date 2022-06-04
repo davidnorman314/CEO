@@ -139,7 +139,8 @@ class QLearningAfterstates(ValueTableLearningBase):
         states_visited = 0
         cur_skip_count = 0
         skip_episode = False
-        for episode in range(1, self._train_episodes + 1):
+        episode = 0
+        while episode < self._train_episodes:
             # Reseting the environment to start the new episode.
             state = self._env.reset()
 
@@ -256,6 +257,9 @@ class QLearningAfterstates(ValueTableLearningBase):
                 skip_episode = False
 
                 continue
+
+            # Increment the episode counter. This must be after the skip check above
+            episode += 1
 
             # Cutting down on exploration by reducing the epsilon
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
