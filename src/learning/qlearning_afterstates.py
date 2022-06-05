@@ -301,6 +301,8 @@ class QLearningAfterstates(ValueTableLearningBase):
                 recent_episode_rewards.popleft()
                 recent_explore_counts.popleft()
                 recent_exploit_counts.popleft()
+                recent_skip_counts.popleft()
+                recent_epsilon.popleft()
 
             if (episode > 0 and episode % 2000 == 0) or (episode == self._train_episodes):
                 ave_training_rewards = total_training_reward / episode
