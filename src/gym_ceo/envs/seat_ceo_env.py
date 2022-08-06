@@ -57,12 +57,6 @@ class SeatCEOEnv(gym.Env):
 
     metadata = {"render.modes": ["human"]}
 
-    observation_space = Box(
-        low=np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-        high=np.array([13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13]),
-        dtype=np.int32,
-    )
-
     action_space: CEOActionSpace
     _action_space_factory: ActionSpaceFactory
 
@@ -128,7 +122,7 @@ class SeatCEOEnv(gym.Env):
         self.observation_space = Box(
             low=np.array([0] * self._observation_dimension),
             high=np.array([13] * self._observation_dimension),
-            dtype=np.int32,
+            dtype=np.float64,
         )
 
         self.action_space_type = action_space_type
@@ -172,7 +166,15 @@ class SeatCEOEnv(gym.Env):
         gen_tuple = next(self._gen)
         assert gen_tuple[0] == "lead"
 
-        return self._make_observation(gen_tuple)
+        obs = self._make_observation(gen_tuple)
+
+        if not self.observation_space.contains(obs):
+            print("Obs", obs)
+            print("len(obs)", len(obs))
+            print("Obs space", self.observation_space)
+            assert self.observation_space.contains(obs)
+
+        return obs
 
     def step_full_action(self, full_action):
         self.step(self.action_space.find_full_action(full_action))

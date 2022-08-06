@@ -107,7 +107,15 @@ class SeatCEOFeaturesEnv(gym.Env):
         self.action_space = self.full_env.action_space
 
         info = dict()
-        return self.make_feature_observation(full_obs, info)
+        obs = self.make_feature_observation(full_obs, info)
+
+        if not self.observation_space.contains(obs):
+            print("Obs", obs)
+            print("len(obs)", len(obs))
+            print("Obs space", self.observation_space)
+            assert self.observation_space.contains(obs)
+
+        return obs
 
     def step(self, action):
         full_obs, reward, done, info = self.full_env.step(action)

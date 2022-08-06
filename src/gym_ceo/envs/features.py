@@ -970,7 +970,7 @@ class FeatureObservationFactory:
         self.observation_space = Box(
             low=np.array(obs_space_low),
             high=np.array(obs_space_high),
-            dtype=np.int32,
+            dtype=np.float64,
         )
 
         self.observation_dimension = len(obs_space_high)

@@ -44,7 +44,7 @@ class QTable:
         # Calculate the shape of the arrays
         q_dims = ()
         for dim in obs_space.high:
-            q_dims = q_dims + (dim + 1,)
+            q_dims = q_dims + (int(dim) + 1,)
         q_dims = q_dims + (env.max_action_value,)
         q_size = int(np.prod(q_dims))
 
