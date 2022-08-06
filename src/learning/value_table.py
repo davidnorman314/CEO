@@ -42,7 +42,7 @@ class ValueTable:
         # Calculate the shape of the arrays
         v_dims = ()
         for dim in observation_space.high:
-            v_dims = v_dims + (dim + 1,)
+            v_dims = v_dims + (int(dim) + 1,)
         v_size = int(np.prod(v_dims))
 
         v_type = np.int16

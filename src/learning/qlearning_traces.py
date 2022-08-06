@@ -364,6 +364,8 @@ class QLearningTraces(QTableLearningBase):
                     recent_rewards,
                     recent_explore_rate,
                     states_visited,
+                    min_epsilon,
+                    max_epsilon,
                 )
 
             if (
