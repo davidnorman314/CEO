@@ -120,8 +120,8 @@ class SeatCEOEnv(gym.Env):
         self._observation_dimension = self.observation_factory.observation_dimension
 
         self.observation_space = Box(
-            low=np.array([0] * self._observation_dimension),
-            high=np.array([13] * self._observation_dimension),
+            low=np.array([0.0] * self._observation_dimension),
+            high=np.array([13.0] * self._observation_dimension),
             dtype=np.float64,
         )
 

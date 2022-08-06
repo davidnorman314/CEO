@@ -940,8 +940,8 @@ class FeatureObservationFactory:
             max_value = calculator.max_value
             if isinstance(max_value, int):
                 assert calculator.dim == 1
-                obs_space_low.append(0)
-                obs_space_high.append(max_value)
+                obs_space_low.append(0.0)
+                obs_space_high.append(np.float64(max_value))
 
                 self.obs_space_possible_values = self.obs_space_possible_values * (max_value + 1)
             elif isinstance(max_value, list):
