@@ -3,7 +3,12 @@ import CEO.cards.deck as deck
 from CEO.cards.hand import *
 import CEO.cards.round as rd
 import CEO.cards.player as player
-from gym_ceo.envs.actions import Actions, ActionSpaceFactory, CEOActionSpace
+from gym_ceo.envs.actions import (
+    Actions,
+    ActionSpaceFactory,
+    AllCardActionSpaceFactory,
+    CEOActionSpace,
+)
 
 
 def test_play_lowest():
@@ -448,3 +453,208 @@ def test_ActionSpaceFactory_TrickWithSingleLed():
 
     action_space = factory.create_play(hand, cv8, 1)
     assert action_space == ActionSpaceFactory.action_space_one_legal_play
+
+
+def test_AllCardActionSpace_Lead():
+    """Test AllCardActionSpace when the agent is leading."""
+
+    factory = AllCardActionSpaceFactory()
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(9)
+    cv11 = CardValue(9)
+    cv12 = CardValue(9)
+
+    # Test where there are four cards.
+    hand = Hand()
+    hand.add_cards(cv1, 1)
+    hand.add_cards(cv5, 2)
+    hand.add_cards(cv6, 2)
+    hand.add_cards(cv7, 1)
+
+    cur_trick_value = None
+    cur_trick_count = None
+    action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == cv1
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == cv7
+
+    # Test five cards
+    hand = Hand()
+    hand.add_cards(cv1, 1)
+    hand.add_cards(cv5, 2)
+    hand.add_cards(cv6, 2)
+    hand.add_cards(cv7, 1)
+    hand.add_cards(cv9, 1)
+
+    cur_trick_value = None
+    cur_trick_count = None
+    action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == cv1
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == cv9
+
+    # Test when there is an ace in the hand
+    hand = Hand()
+    hand.add_cards(cv1, 1)
+    hand.add_cards(cv5, 2)
+    hand.add_cards(cv6, 2)
+    hand.add_cards(cv7, 1)
+    hand.add_cards(cv9, 1)
+    hand.add_cards(cv12, 1)
+
+    cur_trick_value = None
+    cur_trick_count = None
+    action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == cv12
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == cv1
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == cv12
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == cv12
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == cv12
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == cv12
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == cv9
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == cv12
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == cv12
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == cv12
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == cv12
+
+
+def test_AllCardActionSpace_Play():
+    """Test AllCardActionSpace when the agent is playing on a trick."""
+
+    factory = AllCardActionSpaceFactory()
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+
+    # Test where there are four cards and the player should play on an
+    # existing single-card trick.
+    hand = Hand()
+    hand.add_cards(cv1, 1)
+    hand.add_cards(cv5, 2)
+    hand.add_cards(cv6, 2)
+    hand.add_cards(cv7, 1)
+
+    cur_trick_value = cv0
+    cur_trick_count = 1
+    action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == cv1
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == None
+
+    cur_trick_value = cv5
+    cur_trick_count = 1
+    action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == None
+
+    # Test where there are four cards and the player should play on an
+    # ex== double-card trick.
+    hand = Hand()
+    hand.add_cards(cv1, 1)
+    hand.add_cards(cv5, 2)
+    hand.add_cards(cv6, 2)
+    hand.add_cards(cv7, 1)
+
+    cur_trick_value = cv0
+    cur_trick_count = 2
+    action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == None
+
+    cur_trick_value = cv5
+    cur_trick_count = 2
+    action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == None
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == None

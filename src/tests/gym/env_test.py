@@ -77,6 +77,30 @@ def test_SeatCEOEnv_check_env():
     check_env(env, True, True)
 
 
+def test_SeatCEOEnv_AllCardActionSpace_check_env():
+    """
+    Test using the Gym check_env were the environment uses the AllCardActionSpace.
+    """
+
+    listener = EventListenerInterface()
+    listener = PrintAllEventListener()
+
+    print("Checking SeatCEOEnv all_card. Seed 0")
+    random.seed(0)
+    env = SeatCEOEnv(listener=listener, action_space_type="all_card")
+    check_env(env, True, True)
+
+    print("Checking SeatCEOEnv all_card. Seed 1")
+    random.seed(1)
+    env = SeatCEOEnv(listener=listener)
+    check_env(env, True, True)
+
+    print("Checking SeatCEOEnv all_card. Seed 2")
+    random.seed(2)
+    env = SeatCEOEnv(listener=listener)
+    check_env(env, True, True)
+
+
 def test_SeatCEOEnv_Passing():
     """
     Test the environment that models a player in the the CEO seat. Here we test that passing

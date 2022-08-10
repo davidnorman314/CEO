@@ -7,6 +7,7 @@ from gym.utils import seeding
 
 from gym_ceo.envs.actions import (
     ActionSpaceFactory,
+    AllCardActionSpaceFactory,
     CEOActionSpace,
     CardActionSpaceFactory,
     ActionEnum,
@@ -136,6 +137,12 @@ class SeatCEOEnv(gym.Env):
             self._action_space_factory = CardActionSpaceFactory()
             self.max_action_value = 13
             print("Using card action space")
+        elif action_space_type == "all_card":
+            # Use the action space with constant size where all cards can be played and
+            # invalid actions are clipped.
+            self._action_space_factory = AllCardActionSpaceFactory()
+            self.max_action_value = 14
+            print("Using all card action space")
         else:
             raise ArgumentError("Invalid action_space_type: ", action_space_type)
 

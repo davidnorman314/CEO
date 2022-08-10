@@ -344,3 +344,90 @@ class CardActionSpaceFactory(SimpleBehaviorBase):
         playable_cards = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
 
         return self._spaces[len(playable_cards) + 1]
+
+
+class AllCardActionSpace(Discrete):
+    """Action space that always has 14 actions: one for each card and one for pass.
+    If an action is not valid, e.g., the card isn't in the hand, the it is clipped
+    to a valid action."""
+
+    _pass_action = 13
+
+    def __init__(self):
+        super(AllCardActionSpace, self).__init__(14)
+
+    def _find_largest_card(self, hand: HandInterface):
+        for cv in reversed(range(13)):
+            if hand.count(CardValue(cv)) > 0:
+                return CardValue(cv)
+
+        assert "Should not get here" == ""
+
+    def card_to_play(
+        self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int, action: int
+    ) -> CardValue:
+        if cur_trick_value is None:
+            # The action is to lead
+
+            if action == self._pass_action:
+                # The action is to pass, which isn't valid.
+                # Clip it to playing the largest card in the hand.
+                return self._find_largest_card(hand)
+
+            cv = CardValue(action)
+            hand_card_count = hand.count(cv)
+
+            if hand_card_count == 0:
+                # We don't have this card in our hand, so this is an invalid action.
+                # Clip it to playing the largest card in the hand.
+                return self._find_largest_card(hand)
+
+            return cv
+
+        else:
+            # The action is to play on a trick
+
+            # See if we should pass
+            if action == self._pass_action:
+                return None
+
+            cv = CardValue(action)
+            hand_card_count = hand.count(cv)
+
+            if cv.value <= cur_trick_value.value:
+                # The card is too small, so this is an invalid action.
+                # Clip it to the pass action
+                return None
+
+            if hand_card_count < cur_trick_count:
+                # We don't have enough cards to play, so this is an invalid action.
+                # Clip it to the pass action
+                return None
+
+            return cv
+
+    def __eq__(self, other):
+        if not super(AllCardActionSpace, self).__eq__(other):
+            return False
+
+        return self.n == other.n
+
+
+class AllCardActionSpaceFactory(SimpleBehaviorBase):
+    """Action space factory for the AllCardActionSpace. It always returns the same space."""
+
+    _space: AllCardActionSpace
+
+    def __init__(self):
+        self._space = AllCardActionSpace()
+
+    def default_lead(self):
+        return self._space
+
+    def create_lead(self, hand: HandInterface):
+        """Create the action space where the player will lead"""
+        return self._space
+
+    def create_play(self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int):
+        """Create the action space where the player will play on the given trick"""
+        return self._space
