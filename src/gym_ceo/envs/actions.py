@@ -371,16 +371,16 @@ class AllCardActionSpace(Discrete):
 
             if action == self._pass_action:
                 # The action is to pass, which isn't valid.
-                # Clip it to playing the largest card in the hand.
-                return self._find_largest_card(hand)
+                # Clip it to playing the largest card in the hand and add a negative reward.
+                return (self._find_largest_card(hand), -10.0)
 
             cv = CardValue(action)
             hand_card_count = hand.count(cv)
 
             if hand_card_count == 0:
                 # We don't have this card in our hand, so this is an invalid action.
-                # Clip it to playing the largest card in the hand.
-                return self._find_largest_card(hand)
+                # Clip it to playing the largest card in the hand and add a negative reward.
+                return (self._find_largest_card(hand), -10.0)
 
             return cv
 
@@ -396,13 +396,13 @@ class AllCardActionSpace(Discrete):
 
             if cv.value <= cur_trick_value.value:
                 # The card is too small, so this is an invalid action.
-                # Clip it to the pass action
-                return None
+                # Clip it to the pass action and add a negative reward.
+                return (None, -10.0)
 
             if hand_card_count < cur_trick_count:
                 # We don't have enough cards to play, so this is an invalid action.
                 # Clip it to the pass action
-                return None
+                return (None, -10.0)
 
             return cv
 

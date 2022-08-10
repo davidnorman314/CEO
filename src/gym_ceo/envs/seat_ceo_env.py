@@ -193,9 +193,20 @@ class SeatCEOEnv(gym.Env):
 
         assert action < self.action_space.n
 
-        cv = self.action_space.card_to_play(
+        ret = self.action_space.card_to_play(
             self._cur_hand, self._cur_trick_value, self._cur_trick_count, action
         )
+
+        action_reward = 0.0
+        if ret is None:
+            cv = None
+        elif isinstance(ret, CardValue):
+            cv = ret
+        elif isinstance(ret, tuple):
+            cv = ret[0]
+            action_reward = ret[1]
+        else:
+            assert ("Unknown action type: " + type(ret)) == ""
 
         if cv is None and self._cur_trick_value is None:
             print(
@@ -206,7 +217,7 @@ class SeatCEOEnv(gym.Env):
             )
             assert cv is not None
 
-        reward = 0
+        reward = action_reward
         done = False
         try:
             while True:
@@ -227,9 +238,9 @@ class SeatCEOEnv(gym.Env):
             next_round_order = self._round.get_next_round_order()
 
             if next_round_order[0] == 0:
-                reward = 1.0
+                reward += 1.0
             else:
-                reward = -1.0
+                reward += -1.0
 
             self._hands = None
 
