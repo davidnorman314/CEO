@@ -89,6 +89,25 @@ def test_HandCardCount():
     assert theHand.count(cv3) == 5
 
 
+def test_MaxCardValue():
+    theHand = hand.Hand()
+
+    cv0 = hand.CardValue(0)
+    cv3 = hand.CardValue(3)
+    cv11 = hand.CardValue(11)
+    cv12 = hand.CardValue(12)
+
+    theHand.add_cards(cv0, 3)
+    theHand.add_cards(cv3, 5)
+    assert theHand.max_card_value() == cv3
+
+    theHand.add_cards(cv11, 2)
+    assert theHand.max_card_value() == cv11
+
+    theHand.add_cards(cv12, 2)
+    assert theHand.max_card_value() == cv12
+
+
 def test_Hand_cards_equal():
     theHand = hand.Hand()
     theHand.add_cards(hand.CardValue(0), 3)
