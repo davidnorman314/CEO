@@ -16,6 +16,8 @@
 
 - Action to play second highest
 
+- Add feature to HandSummary giving the number of singles in the buckets.
+
 # Completed Items
 
 - Some states aren't getting visited enough, even with 30 million training episodes.
