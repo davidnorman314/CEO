@@ -139,7 +139,7 @@ class SeatCEOEnv(gym.Env):
             print("Using card action space")
         elif action_space_type == "all_card":
             # Use the action space with constant size where all cards can be played and
-            # invalid actions are clipped.
+            # invalid actions are clipped or cause the episode to end.
             self._action_space_factory = AllCardActionSpaceFactory()
             self.max_action_value = 14
             print("Using all card action space")
@@ -208,6 +208,15 @@ class SeatCEOEnv(gym.Env):
         else:
             assert ("Unknown action type: " + type(ret)) == ""
 
+        # If the reward is negative, then the action isn't valid. End the episode.
+        if action_reward != 0:
+            self._hands = None
+
+            # The gym environment checker wants to have an np array for the observation here.
+            obs = np.zeros(self._observation_dimension)
+
+            return obs, action_reward, True, self._info
+
         if cv is None and self._cur_trick_value is None:
             print(
                 "Action",
@@ -217,7 +226,7 @@ class SeatCEOEnv(gym.Env):
             )
             assert cv is not None
 
-        reward = action_reward
+        reward = 0.0
         done = False
         try:
             while True:

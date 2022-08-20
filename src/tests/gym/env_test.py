@@ -101,9 +101,11 @@ def test_SeatCEOEnv_AllCardActionSpace_check_env():
     check_env(env, True, True)
 
 
-def test_SeatCEOEnv_AllCardActionSpace_NegativeReward():
+def test_SeatCEOEnv_AllCardActionSpace_NegativeReward_Lead():
     """
-    Test when the action space returns a negative reward for invalid actions.
+    Test when the action space returns a negative reward and ends the episode
+    for invalid actions. Here the invalid action is passing when the agent
+    needs to lead.
     """
 
     # Create CardValue objects for ease of use later
@@ -145,7 +147,94 @@ def test_SeatCEOEnv_AllCardActionSpace_NegativeReward():
     behavior3 = MockPlayerBehavior()
     behavior4 = MockPlayerBehavior()
 
-    # action: Pass, which gets clipped to leading the highest
+    # action: Pass, which isn't valid.
+    behavior2.value_to_play.append(None)
+    behavior3.value_to_play.append(None)
+    behavior4.value_to_play.append(None)
+
+    # action: Lead lowest
+    behavior2.value_to_play.append(cv1)
+    behavior3.value_to_play.append(cv2)
+    behavior4.value_to_play.append(cv3)
+
+    behavior4.value_to_play.append(cv2)
+    # action: Play invalid card, which gets clipped to passing.
+    behavior2.value_to_play.append(cv4)
+    behavior3.value_to_play.append(cv5)
+
+    behavior3.value_to_play.append(cv0)
+    behavior4.value_to_play.append(cv1)
+    behavior2.value_to_play.append(cv2)
+
+    behavior2.value_to_play.append(cv6)
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+    )
+
+    observation = env.reset()
+
+    # Do the pass action when we should lead.
+    action = 13
+    observation, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == -10.0
+
+
+def test_SeatCEOEnv_AllCardActionSpace_NegativeReward_InvalidCard():
+    """
+    Test when the action space returns a negative reward and ends the episode
+    for invalid actions. Here the agent's action is to lead an invalid card.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+
+    # Make the hands. Note that we disable passing below
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv3, 2)
+    hand1.add_cards(cv7, 2)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv4, 2)
+    hand2.add_cards(cv2, 1)
+    hand2.add_cards(cv6, 2)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv5, 2)
+    hand3.add_cards(cv0, 1)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+    hand4.add_cards(cv2, 2)
+    hand4.add_cards(cv1, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    # action: Lead highest
     # No other players can play.
     behavior2.value_to_play.append(None)
     behavior3.value_to_play.append(None)
@@ -180,12 +269,12 @@ def test_SeatCEOEnv_AllCardActionSpace_NegativeReward():
 
     observation = env.reset()
 
-    # Do the pass action when we should lead. This gets clipped with a negative reward.
-    action = 13
+    # Lead highest
+    action = 7
     observation, reward, done, info = env.step(action)
 
     assert not done
-    assert reward == -10.0
+    assert reward == 0.0
 
     # Lead lowest
     action = 0
@@ -194,11 +283,11 @@ def test_SeatCEOEnv_AllCardActionSpace_NegativeReward():
     assert not done
     assert reward == 0
 
-    # Lead a card that isn't in the hand, which gets mapped to pass
+    # Lead a card that isn't in the hand.
     action = 12
     observation, reward, done, info = env.step(action)
 
-    assert reward == -11.0
+    assert reward == -10.0
     assert done
 
 
