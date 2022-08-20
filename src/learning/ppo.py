@@ -102,15 +102,19 @@ class PPOLearning:
                     self._env.feature_defs,
                 )
 
-        n_steps = 20
-        batch_size = 20
+        n_steps = 32
+        batch_size = 32
+        learning_rate = 3e-4
+        learning_rate = 3e-2  # Very bad
+        learning_rate = 3e-3  # Bad
+        learning_rate = 3e-5  # Better than 3e-4
         tensorboard_log = "tensorboard_log"
         verbose = 1
         verbose = 0
         total_steps = 10 * self._train_episodes
 
         policy_kwargs = dict()
-        policy_kwargs["net_arch"] = [dict(pi=[64, 64], vf=[64, 64])]
+        policy_kwargs["net_arch"] = [dict(pi=[128, 128], vf=[128, 128])]
 
         # Train the agent
         self._ppo = PPO(
@@ -118,6 +122,7 @@ class PPOLearning:
             self._env,
             n_steps=n_steps,
             batch_size=batch_size,
+            learning_rate=learning_rate,
             tensorboard_log=tensorboard_log,
             policy_kwargs=policy_kwargs,
             verbose=verbose,
