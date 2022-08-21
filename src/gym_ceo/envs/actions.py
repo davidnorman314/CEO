@@ -2,7 +2,7 @@ from CEO.cards.player import *
 from CEO.cards.hand import HandInterface
 from CEO.cards.simplebehavior import SimpleBehaviorBase
 
-from gym.spaces import Box, Discrete
+from gym.spaces import Discrete
 
 from enum import Enum
 

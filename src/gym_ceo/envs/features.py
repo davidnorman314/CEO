@@ -1,6 +1,6 @@
 import numpy as np
 
-from gym.spaces import Box, Discrete
+from gym.spaces import Box
 
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.observation import Observation

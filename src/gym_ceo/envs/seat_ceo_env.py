@@ -1,9 +1,7 @@
 from argparse import ArgumentError
 import gym
 import numpy as np
-from gym import error, spaces, utils
-from gym.spaces import Box, Discrete
-from gym.utils import seeding
+from gym.spaces import Box
 
 from gym_ceo.envs.actions import (
     ActionSpaceFactory,
