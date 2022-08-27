@@ -8,6 +8,10 @@ import random
 import math
 
 import stable_baselines3
+from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.logger import HParam
+
 from azure_rl.azure_client import AzureClient
 
 import cProfile
@@ -18,21 +22,50 @@ from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
 from gym_ceo.envs.actions import ActionEnum
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
-from stable_baselines3 import PPO
+from typing import Any, Dict, List, Optional, Sequence, TextIO, Tuple, Union
+
+
+class PPOCallback(BaseCallback):
+    _hyperparameters: dict
+
+    def __init__(self, hyperparameters: dict[str, Union[bool, str, float, int, None]], verbose=0):
+        super(PPOCallback, self).__init__(verbose)
+
+        self._hyperparameters = hyperparameters
+
+        pass
+
+    def _on_training_start(self) -> None:
+        # define the metrics that will appear in the `HPARAMS` Tensorboard tab by referencing their tag
+        # Tensorbaord will find & display metrics from the `SCALARS` tab
+        metric_dict = {
+            "rollout/ep_len_mean": 0,
+            "rollout/ep_rew_mean": 0,
+            "train/value_loss": 1,
+        }
+        self.logger.record(
+            "hparams",
+            HParam(self._hyperparameters, metric_dict),
+            exclude=("stdout", "log", "json", "csv"),
+        )
+        print("in on training start", self._hyperparameters, metric_dict)
+
+    def _on_step(self):
+        return True
 
 
 class PPOLearning:
     """
-    Class that wraps PPO to do learning.
+    Class that wraps PPO to do learning for CEO.
     """
 
-    _train_episodes: int
+    _total_steps: int
     _ppo: stable_baselines3.PPO
     _env: gym.Env
 
-    def __init__(self, env: gym.Env, train_episodes=100000, **kwargs):
+    def __init__(self, env: gym.Env, total_steps=100000, **kwargs):
         self._env = env
-        self._train_episodes = train_episodes
+        self._total_steps = total_steps
 
         if "azure_client" in kwargs:
             self._azure_client = kwargs["azure_client"]
@@ -41,86 +74,72 @@ class PPOLearning:
             self._azure_client = None
 
     def train(self, params: dict, do_log: bool):
-        # Validate the parameters
-        if False:
-            discount_factor = params["discount_factor"]
-            if discount_factor is None:
-                raise ValueError("The parameter discount_factor is missing")
+        print("train params", params)
+        # Load the parameters
+        learning_rate = params["learning_rate"] if "learning_rate" in params else None
+        if learning_rate is None:
+            learning_rate = 3e-4
+            learning_rate = 3e-2  # Very bad
+            learning_rate = 3e-3  # Bad
+            learning_rate = 3e-5  # Better than 3e-4
+            params["learning_rate"] = learning_rate
+            print("Using default learning_rate of", learning_rate)
 
-            epsilon = params["epsilon"]
-            if epsilon is None:
-                raise ValueError("The parameter epsilon is missing")
+        n_steps_per_update = (
+            params["n_steps_per_update"] if "n_steps_per_update" in params else None
+        )
+        if n_steps_per_update is None:
+            n_steps_per_update = 256
+            params["n_steps_per_update"] = n_steps_per_update
+            print("Using default n_steps_per_update of", n_steps_per_update)
 
-            max_epsilon = params["max_epsilon"]
-            if max_epsilon is None:
-                raise ValueError("The parameter max_epsilon is missing")
+        batch_size = params["batch_size"] if "batch_size" in params else None
+        if batch_size is None:
+            batch_size = 256
+            params["batch_size"] = batch_size
+            print("Using default batch_size of", batch_size)
 
-            min_epsilon = params["min_epsilon"]
-            if min_epsilon is None:
-                raise ValueError("The parameter min_epsilon is missing")
+        pi_net_arch = params["pi_net_arch"] if "pi_net_arch" in params else None
+        if pi_net_arch is None:
+            pi_net_arch = "256 256"
+            params["pi_net_arch"] = pi_net_arch
+            print("Using default pi_net_arch of", pi_net_arch)
 
-            decay = params["decay"]
-            if decay is None:
-                raise ValueError("The parameter decay is missing")
+        vf_net_arch = params["vf_net_arch"] if "vf_net_arch" in params else None
+        if vf_net_arch is None:
+            vf_net_arch = "256 256"
+            params["vf_net_arch"] = vf_net_arch
+            print("Using default vf_net_arch of", vf_net_arch)
 
-            alpha_type_str = params["alpha_type"]
-            if alpha_type_str is None:
-                raise ValueError("The parameter alpha_type_str is missing")
-
-            if alpha_type_str == "state_visit_count":
-                alpha_type = self.AlphaType.STATE_VISIT_COUNT
-            elif alpha_type_str == "constant":
-                alpha_type = self.AlphaType.CONSTANT
-            elif alpha_type_str == "episode_count":
-                alpha_type = self.AlphaType.EPISODE_COUNT
-            else:
-                raise ValueError("Invalid alpha_type: " + alpha_type_str)
-
-        print("Training with", self._train_episodes, "episodes")
+        print("Training with", self._total_steps, "total steps")
 
         # Log the start of training to Azure, if necessary.
         if self._azure_client:
-            if False:
-                params = dict()
-                params["discount_factor"] = discount_factor
-                params["epsilon"] = epsilon
-                params["max_epsilon"] = max_epsilon
-                params["min_epsilon"] = min_epsilon
-                params["decay"] = decay
-                params["alpha_type"] = alpha_type_str
-                if alpha_exponent is not None:
-                    params["alpha_exponent"] = alpha_exponent
-                if alpha_constant is not None:
-                    params["alpha_constant"] = alpha_constant
+            self._azure_client.start_training(
+                "ppo",
+                self._base_env.action_space_type,
+                self._env.full_env.num_players,
+                self._env.full_env.seat_number,
+                params,
+                self._env.feature_defs,
+            )
 
-                self._azure_client.start_training(
-                    "qlearning",
-                    self._base_env.action_space_type,
-                    self._env.full_env.num_players,
-                    self._env.full_env.seat_number,
-                    params,
-                    self._env.feature_defs,
-                )
-
-        n_steps = 32
-        batch_size = 32
-        learning_rate = 3e-4
-        learning_rate = 3e-2  # Very bad
-        learning_rate = 3e-3  # Bad
-        learning_rate = 3e-5  # Better than 3e-4
         tensorboard_log = "tensorboard_log"
         verbose = 1
         verbose = 0
-        total_steps = 10 * self._train_episodes
 
         policy_kwargs = dict()
-        policy_kwargs["net_arch"] = [dict(pi=[128, 128], vf=[128, 128])]
+        policy_kwargs["net_arch"] = [
+            dict(pi=self.str_to_net_arch(pi_net_arch), vf=self.str_to_net_arch(vf_net_arch))
+        ]
+
+        print("net_arch", policy_kwargs["net_arch"])
 
         # Train the agent
         self._ppo = PPO(
             "MlpPolicy",
             self._env,
-            n_steps=n_steps,
+            n_steps=n_steps_per_update,
             batch_size=batch_size,
             learning_rate=learning_rate,
             tensorboard_log=tensorboard_log,
@@ -128,7 +147,9 @@ class PPOLearning:
             verbose=verbose,
         )
 
-        self._ppo.learn(total_steps, eval_freq=1000, n_eval_episodes=1000)
+        callback = PPOCallback(params)
+
+        self._ppo.learn(self._total_steps, eval_freq=1000, n_eval_episodes=1000, callback=callback)
 
         if self._azure_client:
             self._azure_client.end_training()
@@ -137,6 +158,10 @@ class PPOLearning:
 
     def save(self, file: str):
         self._ppo.save(file)
+
+    def str_to_net_arch(self, net_arch_str):
+        toks = net_arch_str.split(" ")
+        return list([int(tok) for tok in toks])
 
 
 # Main function
@@ -159,11 +184,46 @@ def main():
         help="Do logging.",
     )
     parser.add_argument(
-        "--episodes",
-        dest="train_episodes",
+        "--total-steps",
+        dest="total_steps",
         type=int,
-        default=100000,
-        help="The number of rounds to play",
+        default=None,
+        help="The steps to use in training",
+    )
+    parser.add_argument(
+        "--n-steps-per-update",
+        dest="n_steps_per_update",
+        type=int,
+        default=None,
+        help="The number of steps per neural network update",
+    )
+    parser.add_argument(
+        "--learning-rate",
+        dest="learning_rate",
+        type=float,
+        default=None,
+        help="The learning rate",
+    )
+    parser.add_argument(
+        "--batch-size",
+        dest="batch_size",
+        type=int,
+        default=None,
+        help="The batch size",
+    )
+    parser.add_argument(
+        "--pi-net-arch",
+        dest="pi_net_arch",
+        type=str,
+        default=None,
+        help="The policy network architecture",
+    )
+    parser.add_argument(
+        "--vf-net-arch",
+        dest="vf_net_arch",
+        type=str,
+        default=None,
+        help="The value function network architecture",
     )
     parser.add_argument(
         "--azure",
@@ -178,13 +238,11 @@ def main():
     print(args)
 
     kwargs = dict()
-    if args.train_episodes:
-        kwargs["train_episodes"] = args.train_episodes
 
+    if args.total_steps:
+        kwargs["total_steps"] = args.total_steps
     if args.azure:
         kwargs["azure_client"] = AzureClient()
-
-    kwargs["disable_agent_testing"] = True
 
     do_log = False
     if args.log:
@@ -198,6 +256,16 @@ def main():
     learning = PPOLearning(env, **kwargs)
 
     params = dict()
+    if args.n_steps_per_update:
+        params["n_steps_per_update"] = args.n_steps_per_update
+    if args.batch_size:
+        params["batch_size"] = args.batch_size
+    if args.learning_rate:
+        params["learning_rate"] = args.learning_rate
+    if args.pi_net_arch:
+        params["pi_net_arch"] = args.pi_net_arch
+    if args.vf_net_arch:
+        params["vf_net_arch"] = args.vf_net_arch
 
     if args.profile:
         print("Running with profiling")
