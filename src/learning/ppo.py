@@ -48,7 +48,6 @@ class PPOCallback(BaseCallback):
             HParam(self._hyperparameters, metric_dict),
             exclude=("stdout", "log", "json", "csv"),
         )
-        print("in on training start", self._hyperparameters, metric_dict)
 
     def _on_step(self):
         return True
@@ -74,7 +73,6 @@ class PPOLearning:
             self._azure_client = None
 
     def train(self, params: dict, do_log: bool):
-        print("train params", params)
         # Load the parameters
         learning_rate = params["learning_rate"] if "learning_rate" in params else None
         if learning_rate is None:
@@ -235,7 +233,6 @@ def main():
     )
 
     args = parser.parse_args()
-    print(args)
 
     kwargs = dict()
 
