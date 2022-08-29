@@ -109,6 +109,8 @@ class PPOLearning:
             params["vf_net_arch"] = vf_net_arch
             print("Using default vf_net_arch of", vf_net_arch)
 
+        device = params["device"] if "device" in params else "cuda"
+
         print("Training with", self._total_steps, "total steps")
 
         # Log the start of training to Azure, if necessary.
@@ -143,6 +145,7 @@ class PPOLearning:
             tensorboard_log=tensorboard_log,
             policy_kwargs=policy_kwargs,
             verbose=verbose,
+            device=device,
         )
 
         callback = PPOCallback(params)
@@ -224,6 +227,13 @@ def main():
         help="The value function network architecture",
     )
     parser.add_argument(
+        "--device",
+        dest="device",
+        type=str,
+        default=None,
+        help="The CUDA device to use, e.g., cuda or cuda:0",
+    )
+    parser.add_argument(
         "--azure",
         dest="azure",
         action="store_const",
@@ -263,6 +273,8 @@ def main():
         params["pi_net_arch"] = args.pi_net_arch
     if args.vf_net_arch:
         params["vf_net_arch"] = args.vf_net_arch
+    if args.device:
+        params["device"] = args.device
 
     if args.profile:
         print("Running with profiling")
