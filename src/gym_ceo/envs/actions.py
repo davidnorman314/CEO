@@ -348,8 +348,8 @@ class CardActionSpaceFactory(SimpleBehaviorBase):
 
 class AllCardActionSpace(Discrete):
     """Action space that always has 14 actions: one for each card and one for pass.
-    If an action is not valid, e.g., the card isn't in the hand, the it is clipped
-    to a valid action."""
+    If an action is not valid, e.g., the card isn't in the hand, then a negative reward
+    is returned."""
 
     _pass_action = 13
 
@@ -363,6 +363,9 @@ class AllCardActionSpace(Discrete):
 
         assert "Should not get here" == ""
 
+    def _get_invalid_action_penalty(self, hand: HandInterface):
+        return -(2.0 + 8 * (hand.card_count() / 13.0))
+
     def card_to_play(
         self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int, action: int
     ) -> CardValue:
@@ -371,16 +374,14 @@ class AllCardActionSpace(Discrete):
 
             if action == self._pass_action:
                 # The action is to pass, which isn't valid.
-                # Clip it to playing the largest card in the hand and add a negative reward.
-                return (self._find_largest_card(hand), -10.0)
+                return (None, self._get_invalid_action_penalty(hand))
 
             cv = CardValue(action)
             hand_card_count = hand.count(cv)
 
             if hand_card_count == 0:
                 # We don't have this card in our hand, so this is an invalid action.
-                # Clip it to playing the largest card in the hand and add a negative reward.
-                return (self._find_largest_card(hand), -10.0)
+                return (None, self._get_invalid_action_penalty(hand))
 
             return cv
 
@@ -396,13 +397,11 @@ class AllCardActionSpace(Discrete):
 
             if cv.value <= cur_trick_value.value:
                 # The card is too small, so this is an invalid action.
-                # Clip it to the pass action and add a negative reward.
-                return (None, -10.0)
+                return (None, self._get_invalid_action_penalty(hand))
 
             if hand_card_count < cur_trick_count:
                 # We don't have enough cards to play, so this is an invalid action.
-                # Clip it to the pass action
-                return (None, -10.0)
+                return (None, self._get_invalid_action_penalty(hand))
 
             return cv
 

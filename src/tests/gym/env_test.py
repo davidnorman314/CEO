@@ -186,7 +186,8 @@ def test_SeatCEOEnv_AllCardActionSpace_NegativeReward_Lead():
     observation, reward, done, info = env.step(action)
 
     assert done
-    assert reward == -10.0
+    remaining_cards = 5.0
+    assert reward == pytest.approx(-(2.0 + 8.0 * remaining_cards / 13.0))
 
 
 def test_SeatCEOEnv_AllCardActionSpace_NegativeReward_InvalidCard():
@@ -287,7 +288,8 @@ def test_SeatCEOEnv_AllCardActionSpace_NegativeReward_InvalidCard():
     action = 12
     observation, reward, done, info = env.step(action)
 
-    assert reward == -10.0
+    remaining_cards = 2.0
+    assert reward == pytest.approx(-(2.0 + 8.0 * remaining_cards / 13.0))
     assert done
 
 

@@ -484,21 +484,23 @@ def test_AllCardActionSpace_Lead():
 
     cur_trick_value = None
     cur_trick_count = None
+    remaining_cards = 6.0
+    neg_reward = pytest.approx((None, -(2.0 + 8.0 * remaining_cards / 13.0)))
     action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == (cv7, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == cv1
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == (cv7, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == (cv7, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == (cv7, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == (cv7, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == (cv7, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == (cv7, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == (cv7, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == (cv7, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == (cv7, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == neg_reward
 
     # Test five cards
     hand = Hand()
@@ -510,21 +512,23 @@ def test_AllCardActionSpace_Lead():
 
     cur_trick_value = None
     cur_trick_count = None
+    remaining_cards = 7.0
+    neg_reward = pytest.approx((None, -(2.0 + 8.0 * remaining_cards / 13.0)))
     action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == (cv9, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == cv1
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == (cv9, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == (cv9, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == (cv9, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == (cv9, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == cv9
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == (cv9, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == (cv9, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == (cv9, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == (cv9, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == neg_reward
 
     # Test when there is an ace in the hand
     hand = Hand()
@@ -537,21 +541,23 @@ def test_AllCardActionSpace_Lead():
 
     cur_trick_value = None
     cur_trick_count = None
+    remaining_cards = 8.0
+    neg_reward = pytest.approx((None, -(2.0 + 8.0 * remaining_cards / 13.0)))
     action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == (cv12, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == cv1
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == (cv12, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == (cv12, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == (cv12, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == (cv12, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == cv9
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == (cv12, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == (cv12, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == cv12
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == (cv12, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == neg_reward
 
 
 def test_AllCardActionSpace_Play():
@@ -581,38 +587,42 @@ def test_AllCardActionSpace_Play():
 
     cur_trick_value = cv0
     cur_trick_count = 1
+    remaining_cards = 6.0
+    neg_reward = pytest.approx((None, -(2.0 + 8.0 * remaining_cards / 13.0)))
     action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == (None, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == cv1
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == (None, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == (None, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == None
 
     cur_trick_value = cv5
     cur_trick_count = 1
+    remaining_cards = 6.0
+    neg_reward = pytest.approx((None, -(2.0 + 8.0 * remaining_cards / 13.0)))
     action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == (None, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == cv7
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == (None, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == None
 
     # Test where there are four cards and the player should play on an
@@ -625,36 +635,40 @@ def test_AllCardActionSpace_Play():
 
     cur_trick_value = cv0
     cur_trick_count = 2
+    remaining_cards = 6.0
+    neg_reward = pytest.approx((None, -(2.0 + 8.0 * remaining_cards / 13.0)))
     action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == (None, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == cv5
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == (None, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == None
 
     cur_trick_value = cv5
     cur_trick_count = 2
+    remaining_cards = 6.0
+    neg_reward = pytest.approx((None, -(2.0 + 8.0 * remaining_cards / 13.0)))
     action_space = factory.create_play(hand, cur_trick_value, cur_trick_count)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == (None, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 0) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 1) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 2) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 3) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 4) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 5) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 6) == cv6
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == (None, -10.0)
-    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == (None, -10.0)
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 7) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 8) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 9) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 10) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 11) == neg_reward
+    assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 12) == neg_reward
     assert action_space.card_to_play(hand, cur_trick_value, cur_trick_count, 13) == None
