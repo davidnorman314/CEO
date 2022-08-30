@@ -5,3 +5,4 @@ __pycache__
 play_hands
 set_connection_string_var.sh
 tensorboard_log
+*~
