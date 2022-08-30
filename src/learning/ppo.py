@@ -62,7 +62,7 @@ class PPOLearning:
     _ppo: stable_baselines3.PPO
     _env: gym.Env
 
-    def __init__(self, env: gym.Env, total_steps=100000, **kwargs):
+    def __init__(self, env: gym.Env, total_steps=1000000000, **kwargs):
         self._env = env
         self._total_steps = total_steps
 
