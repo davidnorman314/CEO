@@ -15,13 +15,16 @@ class ObservationFactory:
     _obs_index_start_player: int
     _obs_index_last_player: int
 
+    _obs_index_pass_valid: int
+    _obs_index_play_value_0_valid: int
+
     _obs_value_trick_not_started: int
 
     _num_players: int
 
     observation_dimension: int
 
-    def __init__(self, num_players: int):
+    def __init__(self, num_players: int, include_valid_actions=False):
         # Thirteen dimensions for the cards in the hand.
         # (num_players - 1) dimensions for the number of cards in the other player's hands
         # One dimension for the current value of the trick
@@ -35,11 +38,20 @@ class ObservationFactory:
         self._obs_index_start_player = self._obs_index_cur_trick_count + 1
         self._obs_index_last_player = self._obs_index_start_player + 1
 
+        if include_valid_actions:
+            self._obs_index_pass_valid = self._obs_index_last_player + 1
+            self._obs_index_play_value_0_valid = self._obs_index_pass_valid + 1
+
+            self.observation_dimension = self._obs_index_play_value_0_valid + 13
+        else:
+            self._obs_index_pass_valid = None
+            self._obs_index_play_value_0_valid = None
+
+            self.observation_dimension = self._obs_index_last_player + 1
+
         self._obs_value_trick_not_started = num_players
 
         self._num_players = num_players
-
-        self.observation_dimension = self._obs_index_last_player + 1
 
     def create_observation(self, **kwargs):
         """Creates an observation. See Observation constructor for a description of
@@ -195,6 +207,26 @@ class Observation:
             return None
 
         return value
+
+    def get_pass_action_valid(self):
+        if self._factory._obs_index_pass_valid is None:
+            raise Exception("Can't call get_pass_action_valid")
+
+        return self.get_last_player() is not None
+
+    def get_play_card_action_valid(self, card_value: int):
+        if self._factory._obs_index_pass_valid is None:
+            raise Exception("Can't call get_pass_action_valid")
+
+        if self.get_last_player() is None:
+            # The agent leads
+            cur_trick_count = 1
+            cur_trick_value = -1
+        else:
+            cur_trick_count = self.get_cur_trick_count()
+            cur_trick_value = self.get_cur_trick_value()
+
+        return card_value > cur_trick_value and self.get_card_count(card_value) >= cur_trick_count
 
     def get_array(self):
         return self._obs

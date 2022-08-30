@@ -93,6 +93,7 @@ class SeatCEOEnv(gym.Env):
         skip_passing=False,
         *,
         action_space_type="ceo",
+        obs_kwargs=None
     ):
         self.num_players = num_players
         self.seat_number = 0
@@ -115,7 +116,10 @@ class SeatCEOEnv(gym.Env):
             else:
                 self._players.append(Player(name, behaviors[i]))
 
-        self.observation_factory = ObservationFactory(num_players)
+        if obs_kwargs is None:
+            obs_kwargs = dict()
+
+        self.observation_factory = ObservationFactory(num_players, **obs_kwargs)
         self._observation_dimension = self.observation_factory.observation_dimension
 
         self.observation_space = Box(
