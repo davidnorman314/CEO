@@ -243,6 +243,7 @@ def test_SimpleRound():
 
     # Check the next round odder
     assert round.get_next_round_order() == [0, 2, 3, 1]
+    assert round.get_final_ceo_card_count() == 0
 
     # Check cards_remaining
     cards_remaining = behavior1.cards_remaining
@@ -359,6 +360,7 @@ def test_Passing():
 
     # Check the next round order
     assert round.get_next_round_order() == [0, 1, 2, 3]
+    assert round.get_final_ceo_card_count() == 0
 
 
 def test_SkipEmptyHand():
@@ -502,6 +504,7 @@ def test_LeadAfterPlayerGoesOut_NotCEO():
 
     # Check the next round order
     assert round.get_next_round_order() == [2, 1, 3, 0]
+    assert round.get_final_ceo_card_count() == 2
 
 
 def test_LeadAfterPlayerGoesOut_CEO():
@@ -580,6 +583,7 @@ def test_LeadAfterPlayerGoesOut_CEO():
 
     # Check the next round order
     assert round.get_next_round_order() == [0, 1, 2, 3]
+    assert round.get_final_ceo_card_count() == 0
 
 
 def test_LeadAfterPlayerGoesOut2():
@@ -657,6 +661,7 @@ def test_LeadAfterPlayerGoesOut2():
 
     # Check the next round order
     assert round.get_next_round_order() == [0, 2, 1, 3]
+    assert round.get_final_ceo_card_count() == 0
 
 
 def test_NoOnePlaysOnTrick():
@@ -736,6 +741,7 @@ def test_NoOnePlaysOnTrick():
 
     # Check the next round order
     assert round.get_next_round_order() == [0, 1, 2, 3]
+    assert round.get_final_ceo_card_count() == 0
 
 
 def test_CEODoesNotGoOutFirst_Middle():
@@ -814,6 +820,7 @@ def test_CEODoesNotGoOutFirst_Middle():
 
     # Check the next round order
     assert round.get_next_round_order() == [1, 3, 2, 0]
+    assert round.get_final_ceo_card_count() == 1
 
 
 def test_CEODoesNotGoOutFirst_Lead():
@@ -904,6 +911,7 @@ def test_CEODoesNotGoOutFirst_Lead():
 
     # Check the next round order
     assert round.get_next_round_order() == [3, 2, 1, 0]
+    assert round.get_final_ceo_card_count() == 1
 
 
 def test_AsyncRound():

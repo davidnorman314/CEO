@@ -82,6 +82,8 @@ class SeatCEOEnv(gym.Env):
 
     _simple_behavior_base: SimpleBehaviorBase
 
+    _reward_includes_cards_left: bool
+
     observation_factory: ObservationFactory
 
     def __init__(
@@ -93,11 +95,13 @@ class SeatCEOEnv(gym.Env):
         skip_passing=False,
         *,
         action_space_type="ceo",
-        obs_kwargs=None
+        reward_includes_cards_left=False,
+        obs_kwargs=None,
     ):
         self.num_players = num_players
         self.seat_number = 0
         self._skip_passing = skip_passing
+        self._reward_includes_cards_left = reward_includes_cards_left
 
         if listener is None:
             self._listener = EventListenerInterface()
@@ -252,6 +256,9 @@ class SeatCEOEnv(gym.Env):
                 reward += 1.0
             else:
                 reward += -1.0
+
+                if self._reward_includes_cards_left:
+                    reward -= self._round.get_final_ceo_card_count() / 13.0
 
             self._hands = None
 

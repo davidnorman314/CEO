@@ -261,7 +261,12 @@ def main():
 
     obs_kwargs = {"include_valid_actions": True}
 
-    env = SeatCEOEnv(listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs)
+    env = SeatCEOEnv(
+        listener=listener,
+        action_space_type="all_card",
+        reward_includes_cards_left=True,
+        obs_kwargs=obs_kwargs,
+    )
 
     learning = PPOLearning(env, **kwargs)
 

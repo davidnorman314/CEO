@@ -856,6 +856,77 @@ def test_SeatCEOEnv_observation_valid_plays():
     assert observation.get_play_card_action_valid(cv10.value) == False
 
 
+def test_SeatCEOEnv_reward_cards_left():
+    """
+    Test the reward from losing when the environment is configured to
+    include the cards left in the hand.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+
+    # Make the hands
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv1, 1)
+    hand1.add_cards(cv2, 1)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    # action: Lead lowest = cv0
+    behavior2.value_to_play.append(cv1)
+    behavior3.value_to_play.append(cv2)
+    behavior4.value_to_play.append(cv3)
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    env = SeatCEOEnv(
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        reward_includes_cards_left=True,
+    )
+
+    observation_factory = env.observation_factory
+
+    observation_array = env.reset()
+
+    # Lead lowest
+    action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+
+    cards_left = 2.0
+    assert reward == pytest.approx(-1.0 - cards_left / 13.0)
+
+
 def test_SeatCEOEnv_ActionSpace_Play_SingleCard():
     """
     Test that the action space changes based on the cards available to play.

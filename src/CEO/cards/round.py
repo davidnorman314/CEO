@@ -15,6 +15,7 @@ class Round:
         self._next_round_order = []
         self._listener = listener
         self._ceo_to_bottom = False
+        self._ceo_final_cards = None
 
         assert len(self._players) == len(self._hands)
 
@@ -177,6 +178,7 @@ class Round:
 
         # CEO isn't out, so they lost and don't have to play anymore
         self._ceo_to_bottom = True
+        self._ceo_final_cards = 0
 
         ceo_hand = self._hands[0]
         for i in range(13):
@@ -185,17 +187,30 @@ class Round:
 
             if count > 0:
                 self._hands[0].remove_cards(cv, count)
+                self._ceo_final_cards += count
 
     def get_next_round_order(self) -> list[int]:
         if len(self._next_round_order) == len(self._players):
+
+            if self._next_round_order[0] == 0:
+                self._ceo_final_cards = 0
+
             return self._next_round_order
 
         # Construct the next round order
         if self._ceo_to_bottom:
             self._next_round_order.append(0)
             self._ceo_to_bottom = False
+        else:
+            self._ceo_final_cards = 0
 
         return self._next_round_order
+
+    def get_final_ceo_card_count(self) -> int:
+        """Returns the number of cards in CEO's hand at the end of the round.
+        This will be positive if CEO loses.
+        """
+        return self._ceo_final_cards
 
     def _play_cards(self, player_index: int, card_value: CardValue, count: int):
         theHand = self._hands[player_index]
