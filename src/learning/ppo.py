@@ -50,6 +50,8 @@ class PPOCallback(BaseCallback):
         )
 
     def _on_step(self):
+        if self.num_timesteps % 10000 == 0:
+            print("Timestep ", self.num_timesteps)
         return True
 
 
@@ -58,12 +60,18 @@ class PPOLearning:
     Class that wraps PPO to do learning for CEO.
     """
 
+    _name: str
     _total_steps: int
     _ppo: stable_baselines3.PPO
     _env: gym.Env
+    _eval_env: gym.Env
 
-    def __init__(self, env: gym.Env, total_steps=1000000000, **kwargs):
+    def __init__(
+        self, name: str, env: gym.Env, eval_env: gym.Env, total_steps=1000000000, **kwargs
+    ):
+        self._name = name
         self._env = env
+        self._eval_env = eval_env
         self._total_steps = total_steps
 
         if "azure_client" in kwargs:
@@ -150,7 +158,15 @@ class PPOLearning:
 
         callback = PPOCallback(params)
 
-        self._ppo.learn(self._total_steps, eval_freq=1000, n_eval_episodes=1000, callback=callback)
+        self._ppo.learn(
+            self._total_steps,
+            eval_env=self._eval_env,
+            eval_freq=200000,
+            n_eval_episodes=5000,
+            eval_log_path="eval_log/" + self._name,
+            tb_log_name=self._name,
+            callback=callback,
+        )
 
         if self._azure_client:
             self._azure_client.end_training()
@@ -183,6 +199,13 @@ def main():
         const=True,
         default=False,
         help="Do logging.",
+    )
+    parser.add_argument(
+        "--name",
+        dest="name",
+        type=str,
+        required=True,
+        help="The name of the run. Used for eval and tensorboard logging.",
     )
     parser.add_argument(
         "--total-steps",
@@ -268,7 +291,14 @@ def main():
         obs_kwargs=obs_kwargs,
     )
 
-    learning = PPOLearning(env, **kwargs)
+    eval_env = SeatCEOEnv(
+        listener=listener,
+        action_space_type="all_card",
+        reward_includes_cards_left=True,
+        obs_kwargs=obs_kwargs,
+    )
+
+    learning = PPOLearning(args.name, env, eval_env, **kwargs)
 
     params = dict()
     if args.n_steps_per_update:
