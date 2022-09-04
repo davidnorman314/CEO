@@ -39,9 +39,10 @@ class PPOCallback(BaseCallback):
         # define the metrics that will appear in the `HPARAMS` Tensorboard tab by referencing their tag
         # Tensorbaord will find & display metrics from the `SCALARS` tab
         metric_dict = {
-            "rollout/ep_len_mean": 0,
-            "rollout/ep_rew_mean": 0,
-            "train/value_loss": 1,
+            "eval/mean_reward": 1,
+            "rollout/ep_rew_mean": 1,
+            "rollout/ep_rew_mean": 1,
+            # "train/value_loss": 1,
         }
         self.logger.record(
             "hparams",
@@ -161,7 +162,7 @@ class PPOLearning:
         self._ppo.learn(
             self._total_steps,
             eval_env=self._eval_env,
-            eval_freq=200000,
+            eval_freq=50000,
             n_eval_episodes=5000,
             eval_log_path="eval_log/" + self._name,
             tb_log_name=self._name,
@@ -291,6 +292,7 @@ def main():
         obs_kwargs=obs_kwargs,
     )
 
+    # Use the usual reward for eval_env
     eval_env = SeatCEOEnv(
         listener=listener,
         action_space_type="all_card",
