@@ -163,7 +163,7 @@ class PPOLearning:
             self._total_steps,
             eval_env=self._eval_env,
             eval_freq=50000,
-            n_eval_episodes=5000,
+            n_eval_episodes=10000,
             eval_log_path="eval_log/" + self._name,
             tb_log_name=self._name,
             callback=callback,
