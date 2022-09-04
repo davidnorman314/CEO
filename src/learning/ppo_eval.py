@@ -34,6 +34,10 @@ def load_eval(eval_dir: str):
     print("   Wins", win_count)
     print(" Losses", loss_count)
     print("Invalid", invalid_action_count)
+    print(" ")
+    print("   Pct win (overall)", win_count / (win_count + loss_count + invalid_action_count))
+    print("Pct win (only valid)", win_count / (win_count + loss_count))
+    print(" ")
 
     ep_sum_lengths = 0.0
     count = 0.0
