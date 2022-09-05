@@ -293,6 +293,143 @@ def test_SeatCEOEnv_AllCardActionSpace_NegativeReward_InvalidCard():
     assert done
 
 
+def test_SeatCEOEnv_AllCardActionSpace_ActionOrderMatchesObservationOrder():
+    """
+    Test that the order of actions in the AllCardActionSpace match the order of
+    actions in the observation when the observation includes which actions are valid.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+
+    # Make the hands. Note that we disable passing below
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv3, 2)
+    hand1.add_cards(cv7, 2)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv4, 2)
+    hand2.add_cards(cv2, 1)
+    hand2.add_cards(cv6, 2)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv5, 2)
+    hand3.add_cards(cv0, 1)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+    hand4.add_cards(cv2, 2)
+    hand4.add_cards(cv1, 1)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    # action: Lead highest
+    # No other players can play.
+    behavior2.value_to_play.append(None)
+    behavior3.value_to_play.append(None)
+    behavior4.value_to_play.append(None)
+
+    # action: Lead lowest
+    behavior2.value_to_play.append(cv1)
+    behavior3.value_to_play.append(cv2)
+    behavior4.value_to_play.append(cv3)
+
+    behavior4.value_to_play.append(cv2)
+    # action: Play invalid card, which gets clipped to passing.
+    behavior2.value_to_play.append(cv4)
+    behavior3.value_to_play.append(cv5)
+
+    behavior3.value_to_play.append(cv0)
+    behavior4.value_to_play.append(cv1)
+    behavior2.value_to_play.append(cv2)
+
+    behavior2.value_to_play.append(cv6)
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    obs_kwargs = {"include_valid_actions": True}
+
+    env = SeatCEOEnv(
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
+    )
+
+    action_space = env.action_space
+
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    valid_play_array = observation.get_valid_action_array()
+
+    assert valid_play_array[action_space._pass_action] == 0.0
+    assert valid_play_array[0] == 1.0
+    assert valid_play_array[1] == 0.0
+    assert valid_play_array[2] == 0.0
+    assert valid_play_array[3] == 1.0
+    assert valid_play_array[4] == 0.0
+    assert valid_play_array[7] == 1.0
+
+    # Lead highest
+    action = 7
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    valid_play_array = observation.get_valid_action_array()
+
+    assert valid_play_array[action_space._pass_action] == 0.0
+    assert valid_play_array[0] == 1.0
+    assert valid_play_array[1] == 0.0
+    assert valid_play_array[2] == 0.0
+    assert valid_play_array[3] == 1.0
+    assert valid_play_array[4] == 0.0
+    assert valid_play_array[7] == 0.0
+
+    # Lead lowest
+    action = 0
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+
+    assert observation.get_cur_trick_value() == 2
+    assert observation.get_cur_trick_value() == 2
+    assert observation.get_last_player() == 3
+
+    valid_play_array = observation.get_valid_action_array()
+
+    assert valid_play_array[action_space._pass_action] == 1.0
+    assert valid_play_array[0] == 0.0
+    assert valid_play_array[1] == 0.0
+    assert valid_play_array[2] == 0.0
+    assert valid_play_array[3] == 1.0
+    assert valid_play_array[4] == 0.0
+    assert valid_play_array[7] == 0.0
+
+
 def test_SeatCEOEnv_Passing():
     """
     Test the environment that models a player in the the CEO seat. Here we test that passing

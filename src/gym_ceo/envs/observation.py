@@ -270,5 +270,11 @@ class Observation:
     def get_array(self):
         return self._obs
 
+    def get_valid_action_array(self):
+        return self._obs[
+            self._factory._obs_index_play_value_0_valid : self._factory._obs_index_play_value_0_valid
+            + 14
+        ]
+
     def copy(self):
         return Observation(self._factory, array=self._obs.copy())
