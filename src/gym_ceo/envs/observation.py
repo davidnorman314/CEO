@@ -1,7 +1,7 @@
 import numpy as np
 import torch as th
 
-from CEO.cards.hand import Hand, CardValue, PlayedCards
+from CEO.cards.hand import Hand, CardValue, HandInterface, PlayedCards
 
 
 class ObservationFactory:
@@ -43,7 +43,7 @@ class ObservationFactory:
             self._obs_index_play_value_0_valid = self._obs_index_last_player + 1
             self._obs_index_pass_valid = self._obs_index_play_value_0_valid + 13
 
-            self.observation_dimension = self._obs_index_play_value_0_valid + 1
+            self.observation_dimension = self._obs_index_pass_valid + 1
         else:
             self._obs_index_pass_valid = None
             self._obs_index_play_value_0_valid = None
@@ -134,6 +134,10 @@ class Observation:
             self._obs[obs_index_start_player] = 0
             self._obs[obs_index_last_player] = obs_value_trick_not_started
 
+            # Add in valid actions, if necessary
+            if self._factory._obs_index_pass_valid is not None:
+                self._add_valid_actions_to_observation_lead(cur_hand)
+
         elif "type" in kwargs and kwargs["type"] == "play":
             cur_hand = kwargs["cur_hand"]
             starting_player = kwargs["starting_player"]
@@ -157,6 +161,12 @@ class Observation:
             self._obs[obs_index_cur_trick_count] = cur_card_count
             self._obs[obs_index_start_player] = starting_player
             self._obs[obs_index_last_player] = state.last_player_to_play_index
+
+            # Add in valid actions, if necessary
+            if self._factory._obs_index_pass_valid is not None:
+                self._add_valid_actions_to_observation_play(
+                    cur_hand, cur_card_count, cur_card_value
+                )
 
         elif "update_hand" in kwargs and "update_played_cards" in kwargs:
             update_hand = kwargs["update_hand"]
@@ -185,6 +195,31 @@ class Observation:
 
         else:
             raise Exception("Illegal arguments: " + str(kwargs))
+
+    def _add_valid_actions_to_observation_lead(self, hand: HandInterface):
+        self._obs[self._factory._obs_index_pass_valid] = 0.0
+
+        for card_value in range(13):
+            count = self._obs[self._factory._obs_index_hand_cards + card_value]
+            self._obs[self._factory._obs_index_play_value_0_valid + card_value] = (
+                1.0 if count > 0 else 0.0
+            )
+
+    def _add_valid_actions_to_observation_play(
+        self, hand: HandInterface, cur_trick_count: int, cur_trick_value: CardValue
+    ):
+        self._obs[self._factory._obs_index_pass_valid] = 1.0
+
+        for card_value in range(13):
+            if card_value <= cur_trick_value.value:
+                self._obs[self._factory._obs_index_play_value_0_valid + card_value] = 0.0
+                continue
+
+            count = self._obs[self._factory._obs_index_hand_cards + card_value]
+
+            self._obs[self._factory._obs_index_play_value_0_valid + card_value] = (
+                1.0 if count >= cur_trick_count else 0.0
+            )
 
     def get_card_count(self, card_value: int):
         return self._obs[self._factory._obs_index_hand_cards + card_value]
@@ -224,21 +259,13 @@ class Observation:
         if self._factory._obs_index_pass_valid is None:
             raise Exception("Can't call get_pass_action_valid")
 
-        return self.get_last_player() is not None
+        return self._obs[self._factory._obs_index_pass_valid]
 
     def get_play_card_action_valid(self, card_value: int):
         if self._factory._obs_index_pass_valid is None:
             raise Exception("Can't call get_pass_action_valid")
 
-        if self.get_last_player() is None:
-            # The agent leads
-            cur_trick_count = 1
-            cur_trick_value = -1
-        else:
-            cur_trick_count = self.get_cur_trick_count()
-            cur_trick_value = self.get_cur_trick_value()
-
-        return card_value > cur_trick_value and self.get_card_count(card_value) >= cur_trick_count
+        return self._obs[self._factory._obs_index_play_value_0_valid + card_value]
 
     def get_array(self):
         return self._obs
