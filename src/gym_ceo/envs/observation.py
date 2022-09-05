@@ -40,10 +40,10 @@ class ObservationFactory:
         self._obs_index_last_player = self._obs_index_start_player + 1
 
         if include_valid_actions:
-            self._obs_index_pass_valid = self._obs_index_last_player + 1
-            self._obs_index_play_value_0_valid = self._obs_index_pass_valid + 1
+            self._obs_index_play_value_0_valid = self._obs_index_last_player + 1
+            self._obs_index_pass_valid = self._obs_index_play_value_0_valid + 13
 
-            self.observation_dimension = self._obs_index_play_value_0_valid + 13
+            self.observation_dimension = self._obs_index_play_value_0_valid + 1
         else:
             self._obs_index_pass_valid = None
             self._obs_index_play_value_0_valid = None
