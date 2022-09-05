@@ -75,13 +75,7 @@ class GetValidActions:
 
         obs = Observation(factory=self._observation_factory, tensor=obs_tensor)
 
-        ret = list()
-        for card_value in range(0, 13):
-            ret.append(obs.get_play_card_action_valid(card_value))
-
-        ret.append(obs.get_pass_action_valid())
-
-        return ret
+        return obs.get_valid_action_array()
 
 
 class PPOLearning:
@@ -124,13 +118,13 @@ class PPOLearning:
             params["n_steps_per_update"] if "n_steps_per_update" in params else None
         )
         if n_steps_per_update is None:
-            n_steps_per_update = 256
+            n_steps_per_update = 32
             params["n_steps_per_update"] = n_steps_per_update
             print("Using default n_steps_per_update of", n_steps_per_update)
 
         batch_size = params["batch_size"] if "batch_size" in params else None
         if batch_size is None:
-            batch_size = 256
+            batch_size = 32
             params["batch_size"] = batch_size
             print("Using default batch_size of", batch_size)
 
