@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import random
-import math
+
+import torch as th
 
 import stable_baselines3
 from stable_baselines3 import PPO
@@ -17,6 +18,7 @@ from azure_rl.azure_client import AzureClient
 import cProfile
 from pstats import SortKey
 from enum import Enum
+from gym_ceo.envs.observation import ObservationFactory, Observation
 
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
 from gym_ceo.envs.actions import ActionEnum
@@ -44,7 +46,7 @@ class PPOCallback(BaseCallback):
 
     def _on_training_start(self) -> None:
         # define the metrics that will appear in the `HPARAMS` Tensorboard tab by referencing their tag
-        # Tensorbaord will find & display metrics from the `SCALARS` tab
+        # Tensorboard will find & display metrics from the `SCALARS` tab
         metric_dict = {
             "eval/mean_reward": 1,
             "rollout/ep_rew_mean": 1,
@@ -61,6 +63,25 @@ class PPOCallback(BaseCallback):
         if self._do_log and self.num_timesteps % 10000 == 0:
             print("Timestep ", self.num_timesteps)
         return True
+
+
+class GetValidActions:
+    _observation_factory: ObservationFactory
+
+    def __init__(self, observation_factory: ObservationFactory):
+        self._observation_factory = observation_factory
+
+    def __call__(self, obs_tensor: th.Tensor):
+
+        obs = Observation(factory=self._observation_factory, tensor=obs_tensor)
+
+        ret = list()
+        for card_value in range(0, 13):
+            ret.append(obs.get_play_card_action_valid(card_value))
+
+        ret.append(obs.get_pass_action_valid())
+
+        return ret
 
 
 class PPOLearning:
@@ -148,6 +169,9 @@ class PPOLearning:
         policy_kwargs["net_arch"] = [
             dict(pi=self.str_to_net_arch(pi_net_arch), vf=self.str_to_net_arch(vf_net_arch))
         ]
+        policy_kwargs["dist_kwargs"] = {
+            "get_valid_actions": GetValidActions(self._env.observation_factory)
+        }
 
         print("net_arch", policy_kwargs["net_arch"])
 

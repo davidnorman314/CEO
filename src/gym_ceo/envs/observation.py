@@ -1,4 +1,5 @@
 import numpy as np
+import torch as th
 
 from CEO.cards.hand import Hand, CardValue, PlayedCards
 
@@ -93,6 +94,9 @@ class Observation:
 
         To create an observation from an ndarray:
         array: ndarray for the observation.
+
+        To create an observation from a pytorch Tensor:
+        tensor: th.Tensor for the observation.
         """
 
         self._factory = factory
@@ -175,6 +179,10 @@ class Observation:
             assert isinstance(kwargs["array"], np.ndarray)
             self._obs = kwargs["array"]
 
+        elif "tensor" in kwargs:
+            assert isinstance(kwargs["tensor"], th.Tensor)
+            self._obs = kwargs["tensor"]
+
         else:
             raise Exception("Illegal arguments: " + str(kwargs))
 
@@ -201,6 +209,10 @@ class Observation:
         """Returns the index of the last player to play on the trick. None is returned
         if the trick hasn't started."""
 
+        if False:
+            print(self._obs)
+            print("len", len(self._obs))
+            print("index", self._factory._obs_index_last_player)
         value = self._obs[self._factory._obs_index_last_player]
 
         if value == self._factory._obs_value_trick_not_started:
