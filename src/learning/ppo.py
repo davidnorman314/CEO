@@ -27,11 +27,18 @@ from typing import Any, Dict, List, Optional, Sequence, TextIO, Tuple, Union
 
 class PPOCallback(BaseCallback):
     _hyperparameters: dict
+    _do_log: bool
 
-    def __init__(self, hyperparameters: dict[str, Union[bool, str, float, int, None]], verbose=0):
+    def __init__(
+        self,
+        hyperparameters: dict[str, Union[bool, str, float, int, None]],
+        do_log: bool,
+        verbose=0,
+    ):
         super(PPOCallback, self).__init__(verbose)
 
         self._hyperparameters = hyperparameters
+        self._do_log = do_log
 
         pass
 
@@ -51,7 +58,7 @@ class PPOCallback(BaseCallback):
         )
 
     def _on_step(self):
-        if self.num_timesteps % 10000 == 0:
+        if self._do_log and self.num_timesteps % 10000 == 0:
             print("Timestep ", self.num_timesteps)
         return True
 
@@ -157,7 +164,7 @@ class PPOLearning:
             device=device,
         )
 
-        callback = PPOCallback(params)
+        callback = PPOCallback(params, do_log)
 
         self._ppo.learn(
             self._total_steps,
