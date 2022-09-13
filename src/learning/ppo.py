@@ -73,6 +73,9 @@ class GetValidActions:
 
     def __call__(self, obs_tensor: th.Tensor):
 
+        if isinstance(obs_tensor, th.Tensor):
+            obs_tensor = th.tensor(obs_tensor, requires_grad=True)
+
         obs = Observation(factory=self._observation_factory, tensor=obs_tensor)
 
         return obs.get_valid_action_array()
