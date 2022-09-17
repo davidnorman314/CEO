@@ -120,6 +120,18 @@ class GetInvalidActionsLayer:
     def __call__(self):
         return self._invalid_actions_layer
 
+    def get_valid_actions(self, obs_tensor_list: th.Tensor):
+
+        ret = []
+        for i in range(obs_tensor_list.size()[0]):
+            obs_tensor = obs_tensor_list[i]
+
+            obs = Observation(factory=self._observation_factory, tensor=obs_tensor)
+
+            ret.append(obs.get_valid_action_array())
+
+        return ret
+
 
 class PPOLearning:
     """
