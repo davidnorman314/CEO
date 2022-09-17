@@ -111,10 +111,10 @@ class GetInvalidActionsLayer:
 
         self._invalid_actions_layer = th.nn.Linear(feature_size, action_size, device=device)
         self._invalid_actions_layer.weight = th.nn.parameter.Parameter(
-            data=th.Tensor(weights, device=device).float(), requires_grad=False
+            data=th.tensor(weights, dtype=th.float, device=device).float(), requires_grad=False
         )
         self._invalid_actions_layer.bias = th.nn.parameter.Parameter(
-            data=th.Tensor(bias, device=device).float(), requires_grad=False
+            data=th.tensor(bias, dtype=th.float, device=device).float(), requires_grad=False
         )
 
     def __call__(self):
