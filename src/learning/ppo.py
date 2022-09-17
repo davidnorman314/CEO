@@ -81,6 +81,46 @@ class GetValidActions:
         return obs.get_valid_action_array()
 
 
+class GetInvalidActionsLayer:
+    """
+    Returns a layer that, when applied to an observation, returns a tensor
+    that is zero for valid actions and one for invalid actions.
+    """
+
+    _observation_factory: ObservationFactory
+    _invalid_actions_layer: th.nn.Linear
+
+    def __init__(self, observation_factory: ObservationFactory, device: str):
+        self._observation_factory = observation_factory
+
+        (begin, end) = self._observation_factory.get_valid_action_range()
+        feature_size = self._observation_factory.observation_dimension
+        action_size = end - begin
+
+        weights = []
+        bias = []
+        for a in range(action_size):
+            weights.append([])
+
+            for f in range(feature_size):
+                val = -1.0 if a == f - begin else 0.0
+                weights[a].append(val)
+
+        for a in range(action_size):
+            bias.append(1.0)
+
+        self._invalid_actions_layer = th.nn.Linear(feature_size, action_size, device=device)
+        self._invalid_actions_layer.weight = th.nn.parameter.Parameter(
+            data=th.Tensor(weights, device=device).float(), requires_grad=False
+        )
+        self._invalid_actions_layer.bias = th.nn.parameter.Parameter(
+            data=th.Tensor(bias, device=device).float(), requires_grad=False
+        )
+
+    def __call__(self):
+        return self._invalid_actions_layer
+
+
 class PPOLearning:
     """
     Class that wraps PPO to do learning for CEO.
@@ -166,8 +206,15 @@ class PPOLearning:
         policy_kwargs["net_arch"] = [
             dict(pi=self.str_to_net_arch(pi_net_arch), vf=self.str_to_net_arch(vf_net_arch))
         ]
+        if False:
+            policy_kwargs["dist_kwargs"] = {
+                "get_valid_actions": GetValidActions(self._env.observation_factory)
+            }
+
         policy_kwargs["dist_kwargs"] = {
-            "get_valid_actions": GetValidActions(self._env.observation_factory)
+            "get_invalid_actions_layer": GetInvalidActionsLayer(
+                self._env.observation_factory, device
+            )
         }
 
         print("net_arch", policy_kwargs["net_arch"])

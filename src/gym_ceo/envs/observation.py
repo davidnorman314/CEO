@@ -60,6 +60,12 @@ class ObservationFactory:
         """
         return Observation(self, **kwargs)
 
+    def get_valid_action_range(self):
+        return (
+            self._obs_index_play_value_0_valid,
+            self._obs_index_play_value_0_valid + 14,
+        )
+
 
 class Observation:
     """Class implementing a full observation of the CEO state.
