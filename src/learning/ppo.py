@@ -375,7 +375,7 @@ def main():
     env = SeatCEOEnv(
         listener=listener,
         action_space_type="all_card",
-        reward_includes_cards_left=True,
+        reward_includes_cards_left=False,
         obs_kwargs=obs_kwargs,
     )
 
