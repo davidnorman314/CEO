@@ -273,6 +273,14 @@ class Observation:
 
         return self._obs[self._factory._obs_index_play_value_0_valid + card_value]
 
+    def has_playable_card_action(self):
+        assert self._factory._obs_index_play_value_0_valid is not None
+        for i in range(13):
+            if self._obs[self._factory._obs_index_play_value_0_valid + i] > 0.0:
+                return True
+
+        return False
+
     def get_array(self):
         return self._obs
 

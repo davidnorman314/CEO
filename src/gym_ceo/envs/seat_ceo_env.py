@@ -240,6 +240,12 @@ class SeatCEOEnv(gym.Env):
 
                 obs = self._make_observation(gen_tuple)
 
+                # Check if pass is the only possible play.
+                obsObj = self.observation_factory.create_observation(array=obs)
+                if not obsObj.has_playable_card_action():
+                    cv = None
+                    continue
+
                 if obs is not None:
                     break
                 else:

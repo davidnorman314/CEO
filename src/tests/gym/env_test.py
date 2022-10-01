@@ -101,6 +101,125 @@ def test_SeatCEOEnv_AllCardActionSpace_check_env():
     check_env(env, True, True)
 
 
+def test_SeatCEOEnv_OnlyPlayPass():
+    """
+    Test when the the agent's only valid play is to pass. The agent should
+    not need to perform the action.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+
+    # Make the hands. Note that we disable passing below
+    hand1 = Hand()
+    hand1.add_cards(cv0, 1)
+    hand1.add_cards(cv3, 2)
+    hand1.add_cards(cv2, 1)
+
+    hand2 = Hand()
+    hand2.add_cards(cv1, 1)
+    hand2.add_cards(cv4, 2)
+    hand2.add_cards(cv3, 1)
+    hand2.add_cards(cv3, 3)
+
+    hand3 = Hand()
+    hand3.add_cards(cv2, 1)
+    hand3.add_cards(cv5, 2)
+    hand3.add_cards(cv0, 1)
+    hand3.add_cards(cv4, 3)
+
+    hand4 = Hand()
+    hand4.add_cards(cv3, 1)
+    hand4.add_cards(cv6, 5)
+    hand4.add_cards(cv2, 2)
+    hand4.add_cards(cv1, 1)
+    hand4.add_cards(cv5, 3)
+
+    hands = [hand1, hand2, hand3, hand4]
+
+    # Make the players
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+    behavior4 = MockPlayerBehavior()
+
+    # action: Play cv0
+    behavior2.value_to_play.append(cv1)
+    behavior3.value_to_play.append(cv2)
+    behavior4.value_to_play.append(cv3)
+
+    behavior4.value_to_play.append(cv6)
+    behavior2.value_to_play.append(None)
+    behavior3.value_to_play.append(None)
+
+    behavior4.value_to_play.append(cv2)
+    # action: Play cv3
+    behavior2.value_to_play.append(cv4)
+    behavior3.value_to_play.append(cv5)
+
+    behavior3.value_to_play.append(cv0)
+    behavior4.value_to_play.append(cv1)
+    # action: Play cv2
+    behavior2.value_to_play.append(cv3)
+
+    behavior2.value_to_play.append(cv3)
+    behavior3.value_to_play.append(cv4)
+    behavior4.value_to_play.append(cv5)
+
+    behaviors = [behavior2, behavior3, behavior4]
+
+    obs_kwargs = {"include_valid_actions": True}
+
+    env = SeatCEOEnv(
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
+    )
+
+    action_space = env.action_space
+
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+
+    # Lead
+    action = 0
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 2
+
+    # Play cv3
+    action = 3
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 1
+
+    # Play cv2
+    action = 2
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == 1.0
+
+
 def test_SeatCEOEnv_AllCardActionSpace_NegativeReward_Lead():
     """
     Test when the action space returns a negative reward and ends the episode
