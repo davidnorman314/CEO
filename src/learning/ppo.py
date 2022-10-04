@@ -12,6 +12,7 @@ import stable_baselines3
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import HParam
+from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 
 from azure_rl.azure_client import AzureClient
 
@@ -158,7 +159,7 @@ class PPOLearning:
         else:
             self._azure_client = None
 
-    def train(self, params: dict, do_log: bool):
+    def train(self, observation_factory, params: dict, do_log: bool):
         # Load the parameters
         learning_rate = params["learning_rate"] if "learning_rate" in params else None
         if learning_rate is None:
@@ -224,9 +225,7 @@ class PPOLearning:
             }
 
         policy_kwargs["dist_kwargs"] = {
-            "get_invalid_actions_layer": GetInvalidActionsLayer(
-                self._env.observation_factory, device
-            )
+            "get_invalid_actions_layer": GetInvalidActionsLayer(observation_factory, device)
         }
 
         print("net_arch", policy_kwargs["net_arch"])
@@ -269,8 +268,20 @@ class PPOLearning:
         return list([int(tok) for tok in toks])
 
 
+def make_env(env_number, env_args: dict):
+    def _init():
+        random.seed(env_number)
+        env = SeatCEOEnv(**env_args)
+
+        return env
+
+    return _init
+
+
 # Main function
 def main():
+    print("In main")
+
     parser = argparse.ArgumentParser(description="Do learning")
     parser.add_argument(
         "--profile",
@@ -294,6 +305,13 @@ def main():
         type=str,
         required=True,
         help="The name of the run. Used for eval and tensorboard logging.",
+    )
+    parser.add_argument(
+        "--parallel-env-count",
+        dest="parallel_env_count",
+        type=int,
+        default=None,
+        help="The number of parallel environments to run in parallel.",
     )
     parser.add_argument(
         "--total-steps",
@@ -372,12 +390,17 @@ def main():
 
     obs_kwargs = {"include_valid_actions": True}
 
-    env = SeatCEOEnv(
-        listener=listener,
-        action_space_type="all_card",
-        reward_includes_cards_left=False,
-        obs_kwargs=obs_kwargs,
-    )
+    env_args = {
+        "listener": listener,
+        "action_space_type": "all_card",
+        "reward_includes_cards_left": False,
+        "obs_kwargs": obs_kwargs,
+    }
+
+    if args.parallel_env_count is None:
+        env = SeatCEOEnv(**env_args)
+    else:
+        env = SubprocVecEnv([make_env(i, env_args) for i in range(args.parallel_env_count)])
 
     # Use the usual reward for eval_env
     eval_env = SeatCEOEnv(
@@ -386,6 +409,8 @@ def main():
         reward_includes_cards_left=False,
         obs_kwargs=obs_kwargs,
     )
+
+    observation_factory = eval_env.observation_factory
 
     learning = PPOLearning(args.name, env, eval_env, **kwargs)
 
@@ -405,9 +430,9 @@ def main():
 
     if args.profile:
         print("Running with profiling")
-        cProfile.run("learning.train(params, do_log)", sort=SortKey.CUMULATIVE)
+        cProfile.run("learning.train(observation_factory, params, do_log)", sort=SortKey.CUMULATIVE)
     else:
-        learning.train(params, do_log)
+        learning.train(observation_factory, params, do_log)
 
     # Save the agent in a pickle file.
     learning.save("seatceo_ppo")
