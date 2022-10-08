@@ -1,4 +1,17 @@
-# TODO Items
+# TODO Items: PPO
+- Convert StableBaselines changes to a custom policy, see [here](https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html).
+
+- Learning rate.
+  - Tune learning rate.
+  - Variable learning rate
+
+- Tune gaelambda parameter.
+
+- Support loading a saved agent and playing games with it.
+
+- Load a trained model and train it further
+
+# TODO Items: Q learning
 
 - Features need to contain information that if the agent played a triple,
   then other players are less likely to play, especially if it is a high
