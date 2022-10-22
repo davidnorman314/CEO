@@ -1,26 +1,31 @@
 """Program that trains an agent using PPO."""
 
-import gym
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import random
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import torch as th
+from torch import nn
 
 import stable_baselines3
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import HParam
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
+from stable_baselines3.common.policies import ActorCriticPolicy
+from stable_baselines3.common.torch_layers import MlpExtractor
 
 from azure_rl.azure_client import AzureClient
 
 import cProfile
 from pstats import SortKey
 from enum import Enum
-from gym_ceo.envs.observation import ObservationFactory, Observation
 
+import gym
+
+from gym_ceo.envs.observation import ObservationFactory, Observation
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
 from gym_ceo.envs.actions import ActionEnum
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
@@ -134,6 +139,174 @@ class GetInvalidActionsLayer:
         return ret
 
 
+class CustomNetwork(nn.Module):
+    """
+    Custom network for policy and value function.
+    It receives as input the features extracted by the feature extractor.
+
+    :param feature_dim: dimension of the features extracted with the features_extractor (e.g. features from a CNN)
+    :param last_layer_dim_pi: (int) number of units for the last layer of the policy network
+    :param last_layer_dim_vf: (int) number of units for the last layer of the value network
+    """
+
+    _mlp_extractor: MlpExtractor
+
+    _invalid_actions_layer: th.nn.Linear
+
+    def __init__(
+        self,
+        feature_dim: int,
+        observation_factory: ObservationFactory,
+        net_arch: List[Union[int, Dict[str, List[int]]]],
+        activation_fn: Type[nn.Module],
+        device: Union[th.device, str],
+    ):
+        super(CustomNetwork, self).__init__()
+
+        self._mlp_extractor = MlpExtractor(feature_dim, net_arch, activation_fn)
+
+        self.create_invalid_actions_layer(observation_factory, device)
+
+        # Policy network
+        # self.policy_net = th.Sequential(th.Linear(feature_dim, last_layer_dim_pi), th.ReLU())
+        # Value network
+        # self.value_net = th.Sequential(th.Linear(feature_dim, last_layer_dim_vf), th.ReLU())
+
+        # IMPORTANT:
+        # Save output dimensions, used to create the distributions
+        self.latent_dim_pi = self._mlp_extractor.latent_dim_pi
+        self.latent_dim_vf = self._mlp_extractor.latent_dim_vf
+
+    def forward(self, features: th.Tensor) -> Tuple[th.Tensor, th.Tensor]:
+        return self._mlp_extractor.forward(features)
+
+    def forward_actor(self, features: th.Tensor) -> th.Tensor:
+        return self._mlp_extractor.forward_actor(features)
+
+    def forward_critic(self, features: th.Tensor) -> th.Tensor:
+        return self._mlp_extractor.forward_critic(features)
+
+    def _adjust_action_logits(self, features: th.Tensor, raw_action_logits: th.Tensor):
+        """Adjust the outputs of the policy network based on which actions are invalid."""
+
+        invalid_actions_float = self._get_invalid_actions_layer(features)
+        invalid_actions = invalid_actions_float > 0.0
+
+        # self._raw_action_logits = raw_action_logits
+        # self._invalid_actions = invalid_actions
+        if False:
+            self._valid_actions = self._get_invalid_actions_obj.get_valid_actions(obs)
+
+        # TODO: Figure out how to set the invalid action minimum on a per-action basis.
+        if False:
+            print("")
+            print("----------------------------")
+            print("")
+            print("action_logits", action_logits)
+            print("action_logits len", len(action_logits))
+            mint = action_logits.min(1, keepdim=True)
+            print("mint true", mint)
+            print("mint true len", len(mint.values))
+            # mint = action_logits.min(1, keepdim=False)
+            # print("mint false", mint)
+
+            print("invalid", invalid_actions)
+            test_new_action_logits = action_logits.clone()
+            test_new_action_logits[invalid_actions] = mint.values
+            print(test_new_action_logits)
+
+        # Adjust the logits so that the invalid actions have small probabilities.
+        invalid_logit_value = raw_action_logits.min() - 10.0
+        if invalid_logit_value >= -10.0:
+            invalid_logit_value = -10.0
+
+        new_action_logits = raw_action_logits.clone()
+        new_action_logits[invalid_actions] = invalid_logit_value
+
+        # self._invalid_logit_value = invalid_logit_value
+        # self._new_action_logits = new_action_logits
+
+        if False:
+            print("")
+            print("----------------------------")
+            print("")
+            print("action_logits", action_logits)
+            print("new_action_logits", new_action_logits)
+            print("invalid_actions", invalid_actions)
+            print("obs", obs)
+            print("invalid_logit_value", invalid_logit_value)
+            # traceback.print_stack(file=sys.stdout)
+
+        return new_action_logits
+
+    def create_invalid_actions_layer(self, observation_factory: ObservationFactory, device: str):
+        self._observation_factory = observation_factory
+
+        (begin, end) = self._observation_factory.get_valid_action_range()
+        feature_size = self._observation_factory.observation_dimension
+        action_size = end - begin
+
+        weights = []
+        bias = []
+        for a in range(action_size):
+            weights.append([])
+
+            for f in range(feature_size):
+                val = -1.0 if a == f - begin else 0.0
+                weights[a].append(val)
+
+        for a in range(action_size):
+            bias.append(1.0)
+
+        self._invalid_actions_layer = th.nn.Linear(feature_size, action_size, device=device)
+        self._invalid_actions_layer.weight = th.nn.parameter.Parameter(
+            data=th.tensor(weights, dtype=th.float, device=device).float(), requires_grad=False
+        )
+        self._invalid_actions_layer.bias = th.nn.parameter.Parameter(
+            data=th.tensor(bias, dtype=th.float, device=device).float(), requires_grad=False
+        )
+
+
+class CustomActorCriticPolicy(ActorCriticPolicy):
+    def __init__(
+        self,
+        observation_space: gym.spaces.Space,
+        action_space: gym.spaces.Space,
+        lr_schedule: Callable[[float], float],
+        net_arch: Optional[List[Union[int, Dict[str, List[int]]]]] = None,
+        activation_fn: Type[nn.Module] = nn.Tanh,
+        observation_factory: ObservationFactory = None,
+        *args,
+        **kwargs,
+    ):
+        assert observation_factory is not None
+
+        self.net_arch = net_arch
+        self.observation_factory = observation_factory
+
+        super(CustomActorCriticPolicy, self).__init__(
+            observation_space,
+            action_space,
+            lr_schedule,
+            net_arch,
+            activation_fn,
+            # Pass remaining arguments to base class
+            *args,
+            **kwargs,
+        )
+        # Disable orthogonal initialization
+        self.ortho_init = False
+
+    def _build_mlp_extractor(self) -> None:
+        self.mlp_extractor = CustomNetwork(
+            self.features_dim,
+            self.observation_factory,
+            self.net_arch,
+            self.activation_fn,
+            self.device,
+        )
+
+
 class PPOLearning:
     """
     Class that wraps PPO to do learning for CEO.
@@ -219,20 +392,22 @@ class PPOLearning:
         policy_kwargs["net_arch"] = [
             dict(pi=self.str_to_net_arch(pi_net_arch), vf=self.str_to_net_arch(vf_net_arch))
         ]
+        policy_kwargs["observation_factory"] = observation_factory
         if False:
             policy_kwargs["dist_kwargs"] = {
                 "get_valid_actions": GetValidActions(self._env.observation_factory)
             }
 
-        policy_kwargs["dist_kwargs"] = {
-            "get_invalid_actions_layer": GetInvalidActionsLayer(observation_factory, device)
-        }
+        if False:
+            policy_kwargs["dist_kwargs"] = {
+                "get_invalid_actions_layer": GetInvalidActionsLayer(observation_factory, device)
+            }
 
         print("net_arch", policy_kwargs["net_arch"])
 
         # Train the agent
         self._ppo = PPO(
-            "MlpPolicy",
+            CustomActorCriticPolicy,
             self._env,
             n_steps=n_steps_per_update,
             batch_size=batch_size,
