@@ -11,6 +11,8 @@
 
 - Load a trained model and train it further
 
+- Test different activation functions
+
 # TODO Items: Q learning
 
 - Features need to contain information that if the agent played a triple,

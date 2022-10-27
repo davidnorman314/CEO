@@ -31,6 +31,8 @@
 
 `python -m learning.learning --pickle-file training.pkl --disable-agent-testing ../data/qlearning_traces_features.json`
 
+`python -m learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu`
+
 ## Use trained agents to play
 
 `python -m learning.play_qagent --play --agent-file monte_carlo.pickle --episodes 200 > log.txt`
