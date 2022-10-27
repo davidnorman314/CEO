@@ -27,6 +27,11 @@ from CEO.cards.hand import Hand, CardValue
 from learning.qtable import QTable
 from learning.value_table import ValueTable
 
+from stable_baselines3 import PPO
+
+import torch as th
+import cloudpickle
+
 
 class QAgent:
     _base_env: gym.Env
@@ -216,10 +221,66 @@ class AfterstateAgent:
         return episode_states, episode_actions, episode_reward
 
 
+class PPOAgent:
+    _env: gym.Env
+
+    _ppo: PPO
+
+    def __init__(self, ppo: PPO):
+        self._env = ppo.env
+        self._ppo = ppo
+
+    def do_episode(
+        self, hands: list[Hand] = None, log_state: bool = False
+    ) -> Tuple[List[tuple], List[int], float]:
+        """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
+        # Reseting the environment each time as per requirement
+        obs = self._env.reset(hands)
+        info = dict()
+
+        episode_observations = []
+        episode_actions = []
+        episode_reward = 0
+
+        # Run until the episode is finished
+        while True:
+            selected_action = self._ppo.predict(obs, deterministic=True)
+
+            if log_state:
+                action_space = self._env.action_space
+
+                print("Obs", obs)
+                print("Obs info:")
+                for key, value in info.items():
+                    print(" ", key, "->", value)
+                print("Selected action", selected_action)
+
+                print("Predicted value", self._ppo.predict_values(obs))
+                print("Action distribution", self._ppo.get_distribution(obs))
+
+            # Perform the action
+            new_obs, reward, done, info = self._env.step(selected_action)
+
+            episode_observations.append(new_obs)
+            episode_actions.append(selected_action)
+
+            # Increasing our total reward and updating the state
+            episode_reward += reward
+            obs = new_obs
+
+            # See if the episode is finished
+            if done == True:
+                # print("Reward", reward)
+                break
+
+        return episode_observations, episode_actions, episode_reward
+
+
 def create_agent(
     listener: EventListenerInterface,
     *,
     local_file=None,
+    ppo_file=None,
     azure_blob_name=None,
     env=None,
     base_env=None,
@@ -229,7 +290,16 @@ def create_agent(
     feature_defs=None,
 ):
 
-    if local_file or azure_blob_name:
+    if ppo_file:
+        print("Creating ppo agent")
+
+        ppo = PPO.load(ppo_file, print_system_info=True)
+        env = ppo.env
+        assert env is not None
+
+        return env, env, PPOAgent(ppo)
+
+    elif local_file or azure_blob_name:
         assert not base_env
         assert not env
         assert not q_table
@@ -436,6 +506,13 @@ def main():
     )
 
     parser.add_argument(
+        "--ppo-file",
+        dest="ppo_file",
+        type=str,
+        help="The zip file containing the PPO agent",
+    )
+
+    parser.add_argument(
         "--azure-agent",
         dest="azure_agent",
         type=str,
@@ -482,6 +559,8 @@ def main():
     agent_args = dict()
     if args.agent_file:
         agent_args["local_file"] = args.agent_file
+    elif args.ppo_file:
+        agent_args["ppo_file"] = args.ppo_file
     elif args.azure_agent:
         agent_args["azure_blob_name"] = args.azure_agent
     else:
