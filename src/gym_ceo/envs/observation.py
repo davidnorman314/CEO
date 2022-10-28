@@ -274,7 +274,10 @@ class Observation:
         return self._obs[self._factory._obs_index_play_value_0_valid + card_value]
 
     def has_playable_card_action(self):
-        assert self._factory._obs_index_play_value_0_valid is not None
+        if self._factory._obs_index_play_value_0_valid is None:
+            # We aren't configured to include valid actions in the observation.
+            return True
+
         for i in range(13):
             if self._obs[self._factory._obs_index_play_value_0_valid + i] > 0.0:
                 return True
