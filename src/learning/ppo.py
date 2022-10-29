@@ -1,6 +1,5 @@
 """Program that trains an agent using PPO."""
 
-import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import random
