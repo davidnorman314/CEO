@@ -226,8 +226,8 @@ class PPOAgent:
 
     _ppo: PPO
 
-    def __init__(self, ppo: PPO):
-        self._env = ppo.env
+    def __init__(self, env: gym.Env, ppo: PPO):
+        self._env = env
         self._ppo = ppo
 
     def do_episode(
@@ -244,7 +244,8 @@ class PPOAgent:
 
         # Run until the episode is finished
         while True:
-            selected_action = self._ppo.predict(obs, deterministic=True)
+            selected_action_array, _ = self._ppo.predict(obs, deterministic=True)
+            selected_action = int(selected_action_array)
 
             if log_state:
                 action_space = self._env.action_space
@@ -294,10 +295,16 @@ def create_agent(
         print("Creating ppo agent")
 
         ppo = PPO.load(ppo_file, print_system_info=True)
-        env = ppo.env
-        assert env is not None
 
-        return env, env, PPOAgent(ppo)
+        obs_kwargs = {"include_valid_actions": True}
+        env = SeatCEOEnv(
+            listener=listener,
+            action_space_type="all_card",
+            reward_includes_cards_left=False,
+            obs_kwargs=obs_kwargs,
+        )
+
+        return env, env, PPOAgent(env, ppo)
 
     elif local_file or azure_blob_name:
         assert not base_env
@@ -386,8 +393,6 @@ class PlayStats(NamedTuple):
 
 def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> PlayStats:
     # Set up the environment
-    random.seed(0)
-
     if do_logging:
         listener = PrintAllEventListener()
         listener = GameWatchListener("RL")
@@ -400,9 +405,12 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
     # Play the episodes
     total_wins = 0
     total_losses = 0
+    total_illegal_play = 0
     for count in range(episodes):
         if do_logging:
             print("Playing episode", count + 1)
+        elif count != 0 and count % 5000 == 0:
+            print(f"Episode {count}")
 
         deck = Deck(base_env.num_players)
         hands = deck.deal()
@@ -412,8 +420,10 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
 
         if reward > 0.0:
             total_wins += 1
-        else:
+        elif reward == -1.0:
             total_losses += 1
+        else:
+            total_illegal_play += 1
 
         if reward < 0:
             if save_failed_hands:
@@ -425,7 +435,7 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
                 for i in range(len(states)):
                     print(i, "state", states[i], "action", actions[i])
 
-    pct_win = total_wins / (total_wins + total_losses)
+    pct_win = total_wins / episodes
     print(
         "Test episodes",
         episodes,
@@ -433,6 +443,8 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
         total_wins,
         "Total losses",
         total_losses,
+        "Total illegal",
+        total_illegal_play,
         "Percent wins",
         pct_win,
     )
@@ -448,8 +460,6 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
 def play_round(hands: list[Hand], do_logging: bool, **kwargs):
 
     # Set up the environment
-    random.seed(0)
-
     if do_logging:
         listener = PrintAllEventListener()
         listener = GameWatchListener("RL")
@@ -553,6 +563,14 @@ def main():
         help="Save pickle files for hands where the agent got a negative reward.",
     )
 
+    parser.add_argument(
+        "--seed",
+        dest="seed",
+        type=int,
+        default=None,
+        help="Set the random seed.",
+    )
+
     args = parser.parse_args()
     # print(args)
 
@@ -566,6 +584,11 @@ def main():
     else:
         print("No agent file specified.")
         return
+
+    if args.seed is not None:
+        random.seed(args.seed)
+    else:
+        random.seed()
 
     if args.play_round_file:
         # Load the hands
