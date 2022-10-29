@@ -13,6 +13,35 @@
                 "debug-test"
             ],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Run PPO learning",
+            "type": "python",
+            "request": "launch",
+            // "program": "${file}",
+            "module": "learning.ppo",
+            "purpose": [
+                "debug-test"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/src",
+            "justMyCode": false,
+            "args": [
+                "--name",
+                "PPOTest",
+                "--n-steps-per-update",
+                "64",
+                "--batch-size",
+                "64",
+                "--learning-rate",
+                "3e-5",
+                "--pi-net-arch",
+                "\"64 64\"",
+                "--vf-net-arch",
+                "\"64 64\"",
+                "--device",
+                "cpu"
+            ]
         }
     ]
 }
