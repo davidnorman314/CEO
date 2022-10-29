@@ -3,7 +3,6 @@ import numpy as np
 import pickle
 import datetime
 
-from regex import W
 from azure_rl.azure_client import AzureClient
 
 from learning.qtable import QTable
