@@ -1,4 +1,7 @@
 # TODO Items: PPO
+- Save environment or environment args in eval_log
+  - Currently play_qagent.py creates the enviornment from scratch, so it might not match.
+
 - Convert StableBaselines changes to a custom policy, see [here](https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html).
 
 - Learning rate.

@@ -1,5 +1,8 @@
 # Reinforcement learning for the card game CEO
 
+## Setup
+`pip3 install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu117`
+
 ## Run a specific test
 `pytest -s -k game`
 
@@ -35,9 +38,13 @@
 
 ## Use trained agents to play
 
+`python -m learning.play_qagent --play --episodes 100 --ppo-file eval_log/PPOM01/best_model.zip`
+
 `python -m learning.play_qagent --play --agent-file monte_carlo.pickle --episodes 200 > log.txt`
 
 `python -m learning.play_qagent --play --episodes 100000 --agent-file monte_carlo.pickle`
+
+`python -m learning.play_qagent --play --ppo-file eval_log/PPOM01/best_model.zip --episodes 200 > log.txt`
 
 `python -m learning.play_qagent --play-round-file play_hands/hands9.pickle --agent-file monte_carlo.pickle --do-logging > log.txt`
 
