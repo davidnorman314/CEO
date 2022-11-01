@@ -309,6 +309,12 @@ class PPOLearning:
             params["learning_rate"] = learning_rate
             print("Using default learning_rate of", learning_rate)
 
+        gae_lambda = params["gae_lambda"] if "gae_lambda" in params else None
+        if gae_lambda is None:
+            gae_lambda = 0.95
+            params["gae_lambda"] = gae_lambda
+            print("Using default gae_lambda of", gae_lambda)
+
         n_steps_per_update = (
             params["n_steps_per_update"] if "n_steps_per_update" in params else None
         )
@@ -369,6 +375,7 @@ class PPOLearning:
             n_steps=n_steps_per_update,
             batch_size=batch_size,
             learning_rate=learning_rate,
+            gae_lambda=gae_lambda,
             tensorboard_log=tensorboard_log,
             policy_kwargs=policy_kwargs,
             verbose=verbose,
@@ -467,6 +474,13 @@ def main():
         help="The learning rate",
     )
     parser.add_argument(
+        "--gae-lambda",
+        dest="gae_lambda",
+        type=float,
+        default=None,
+        help="The gae lambda value",
+    )
+    parser.add_argument(
         "--batch-size",
         dest="batch_size",
         type=int,
@@ -553,6 +567,8 @@ def main():
         params["batch_size"] = args.batch_size
     if args.learning_rate:
         params["learning_rate"] = args.learning_rate
+    if args.gae_lambda:
+        params["gae_lambda"] = args.gae_lambda
     if args.pi_net_arch:
         params["pi_net_arch"] = args.pi_net_arch
     if args.vf_net_arch:
