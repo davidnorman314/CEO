@@ -1,5 +1,7 @@
 gym == 0.21
-torch >= 1.13.0
+torch >= 1.13.0+cu117
+torchaudio >= 0.13.0+cu117
+torchvision >= 0.14.0+cu117
 stable_baselines3 >= 1.6.2
 azure-storage-blob >= 12.9.0
 pytest >= 7.2.0
