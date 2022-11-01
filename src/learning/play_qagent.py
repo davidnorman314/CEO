@@ -289,12 +289,16 @@ def create_agent(
     value_table=None,
     state_count=None,
     feature_defs=None,
+    device=None,
 ):
 
     if ppo_file:
+        if device is None:
+            print("No device specified.")
+
         print("Creating ppo agent")
 
-        ppo = PPO.load(ppo_file, print_system_info=True)
+        ppo = PPO.load(ppo_file, device=device, print_system_info=True)
 
         obs_kwargs = {"include_valid_actions": True}
         env = SeatCEOEnv(
@@ -546,6 +550,14 @@ def main():
     )
 
     parser.add_argument(
+        "--device",
+        dest="device",
+        type=str,
+        default=None,
+        help="The name of the CUDA device to use.",
+    )
+
+    parser.add_argument(
         "--do-logging",
         dest="do_logging",
         action="store_const",
@@ -572,7 +584,6 @@ def main():
     )
 
     args = parser.parse_args()
-    # print(args)
 
     agent_args = dict()
     if args.agent_file:
@@ -584,6 +595,9 @@ def main():
     else:
         print("No agent file specified.")
         return
+
+    if args.device:
+        agent_args["device"] = args.device
 
     if args.seed is not None:
         random.seed(args.seed)
