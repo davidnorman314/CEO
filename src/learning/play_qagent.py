@@ -9,6 +9,7 @@ import json
 from typing import List, Tuple
 from copy import copy, deepcopy
 import numpy as np
+from statsmodels.stats.proportion import proportion_confint
 from collections import deque
 from typing import NamedTuple
 
@@ -452,6 +453,25 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
         "Percent wins",
         pct_win,
     )
+
+    if True:
+        count = episodes
+        nobs = total_wins
+
+        count = np.asarray(count)
+        nobs = np.asarray(nobs)
+
+        q_ = count * 1.0 / nobs
+
+        print(f"q {q_}")
+
+    alpha = 0.05
+    l, r = proportion_confint(count=total_wins, nobs=episodes, alpha=alpha, method="normal")
+    print(f"{1-alpha} confidence interval ({l}, {r})")
+
+    alpha = 0.01
+    l, r = proportion_confint(count=total_wins, nobs=episodes, alpha=alpha, method="normal")
+    print(f"{1-alpha} confidence interval ({l}, {r})")
 
     return PlayStats(
         episodes=episodes,
