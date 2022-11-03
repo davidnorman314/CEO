@@ -355,7 +355,9 @@ def play_ceo_rounds(agent_args: dict):
         agent_reward = play_round(hands_copy, True, **agent_args)
         agent_won_round = agent_reward > 0.0
 
-        print(f"Won {history.total_won} of {history.total_hands} or {history.total_won/history.total_hands}")
+        print(
+            f"Won {history.total_won} of {history.total_hands} or {history.total_won/history.total_hands}"
+        )
 
         # Log if there was a different result
         if player_won_round != agent_won_round:
@@ -370,7 +372,13 @@ def play_ceo_rounds(agent_args: dict):
                     + ("won" if agent_won_round else "lost")
                 )
 
-                file = "play_hands/console_hands_" + suffix + "_" + str(history.total_hands + 1 + inc) + ".pickle"
+                file = (
+                    "play_hands/console_hands_"
+                    + suffix
+                    + "_"
+                    + str(history.total_hands + 1 + inc)
+                    + ".pickle"
+                )
 
                 if Path(file).exists():
                     continue
@@ -472,10 +480,23 @@ def main():
         help="The pickle file containing the agent",
     )
     parser.add_argument(
+        "--ppo-file",
+        dest="ppo_file",
+        type=str,
+        help="The zip file containing the PPO agent",
+    )
+    parser.add_argument(
         "--azure-agent",
         dest="azure_agent",
         type=str,
         help="The name of the Auzre blob containing the pickled agent.",
+    )
+    parser.add_argument(
+        "--device",
+        dest="device",
+        type=str,
+        default=None,
+        help="The name of the CUDA device to use.",
     )
 
     args = parser.parse_args()
@@ -483,10 +504,15 @@ def main():
     agent_args = dict()
     if args.agent_file:
         agent_args["local_file"] = args.agent_file
+    elif args.ppo_file:
+        agent_args["ppo_file"] = args.ppo_file
     elif args.azure_agent:
         agent_args["azure_blob_name"] = args.azure_agent
     else:
         print("No agent file specified.")
+
+    if args.device:
+        agent_args["device"] = args.device
 
     if args.play_ceo:
         play_ceo_rounds(agent_args)

@@ -239,7 +239,7 @@ class PPOAgent:
         obs = self._env.reset(hands)
         info = dict()
 
-        episode_observations = []
+        episode_states = []
         episode_actions = []
         episode_reward = 0
 
@@ -248,23 +248,26 @@ class PPOAgent:
             selected_action_array, _ = self._ppo.predict(obs, deterministic=True)
             selected_action = int(selected_action_array)
 
-            if log_state:
-                action_space = self._env.action_space
+            obs_tensor_array = th.Tensor([obs])
 
+            predicted_value = self._ppo.policy.predict_values(obs_tensor_array)[0][0]
+            distribution = self._ppo.policy.get_distribution(obs_tensor_array).distribution.probs[0]
+
+            if log_state:
                 print("Obs", obs)
                 print("Obs info:")
                 for key, value in info.items():
                     print(" ", key, "->", value)
                 print("Selected action", selected_action)
 
-                print("Predicted value", self._ppo.predict_values(obs))
-                print("Action distribution", self._ppo.get_distribution(obs))
+                print(f"Predicted value {predicted_value}")
+                print(f"Action distribution {distribution}")
 
             # Perform the action
             new_obs, reward, done, info = self._env.step(selected_action)
 
-            episode_observations.append(new_obs)
-            episode_actions.append(selected_action)
+            episode_states.append(f"value {predicted_value}")
+            episode_actions.append(f"{selected_action} prob {distribution[selected_action]}")
 
             # Increasing our total reward and updating the state
             episode_reward += reward
@@ -275,7 +278,7 @@ class PPOAgent:
                 # print("Reward", reward)
                 break
 
-        return episode_observations, episode_actions, episode_reward
+        return episode_states, episode_actions, episode_reward
 
 
 def create_agent(
@@ -488,15 +491,16 @@ def play_round(hands: list[Hand], do_logging: bool, **kwargs):
         for i in range(len(states)):
             print(i, "state", states[i], "action", actions[i])
 
-            for a in range(base_env.max_action_value):
-                print(
-                    "  action",
-                    a,
-                    "value",
-                    # agent._Q[(*states[i], a)],
-                    "count",
-                    # agent._state_count[(*states[i], a)],
-                )
+            if hasattr(agent, "_Q"):
+                for a in range(base_env.max_action_value):
+                    print(
+                        "  action",
+                        a,
+                        "value",
+                        agent._Q[(*states[i], a)],
+                        "count",
+                        agent._state_count[(*states[i], a)],
+                    )
         print("Reward", reward)
 
     return reward
