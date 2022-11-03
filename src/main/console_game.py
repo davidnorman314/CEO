@@ -5,6 +5,8 @@ from tkinter import W
 from copy import deepcopy
 from pathlib import Path
 
+from statsmodels.stats.proportion import proportion_confint
+
 import CEO.cards.game as g
 from CEO.cards.game import *
 from CEO.cards.player import *
@@ -355,9 +357,22 @@ def play_ceo_rounds(agent_args: dict):
         agent_reward = play_round(hands_copy, True, **agent_args)
         agent_won_round = agent_reward > 0.0
 
+        # Log the history stats
         print(
             f"Won {history.total_won} of {history.total_hands} or {history.total_won/history.total_hands}"
         )
+
+        alpha = 0.05
+        l, r = proportion_confint(
+            count=history.total_won, nobs=history.total_hands, alpha=alpha, method="normal"
+        )
+        print(f"{1-alpha} confidence interval ({l}, {r})")
+
+        alpha = 0.01
+        l, r = proportion_confint(
+            count=history.total_won, nobs=history.total_hands, alpha=alpha, method="normal"
+        )
+        print(f"{1-alpha} confidence interval ({l}, {r})")
 
         # Log if there was a different result
         if player_won_round != agent_won_round:
