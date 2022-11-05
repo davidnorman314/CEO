@@ -15,6 +15,8 @@
 
 `python -m main.console_game --play-ceo --agent-file training.pkl`
 
+`python -m main.console_game --play-ceo --ppo-file eval_log/PPOM01/best_model.zip --device cpu`
+
 
 ## Train agents
 

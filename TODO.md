@@ -2,19 +2,17 @@
 - Save environment or environment args in eval_log
   - Currently play_qagent.py creates the enviornment from scratch, so it might not match.
 
-- Convert StableBaselines changes to a custom policy, see [here](https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html).
-
 - Learning rate.
   - Tune learning rate.
   - Variable learning rate
 
 - Tune gaelambda parameter.
 
-- Support loading a saved agent and playing games with it.
-
 - Load a trained model and train it further
 
 - Test different activation functions
+
+- Add feature for number of aces remaining and see how much better the agent does.
 
 # TODO Items: Q learning
 
