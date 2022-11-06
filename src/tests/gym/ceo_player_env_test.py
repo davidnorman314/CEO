@@ -27,6 +27,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
     def lead(self, player_position: int, hand: Hand, state) -> CardValue:
 
         if len(self.value_to_play) <= self.to_play_next_index:
+            print(f"Not enough values to play")
             assert "No more values to play" != ""
 
         ret = self.value_to_play[self.to_play_next_index]
@@ -53,6 +54,19 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
         return ret
 
 
+def create_play(hand: Hand, behavior: MockPlayerBehavior, cv: CardValue, count: int):
+    hand.add_cards(cv, count)
+    behavior.value_to_play.append(cv)
+
+
+def create_rl_play(hand: Hand, cv: CardValue, count: int):
+    hand.add_cards(cv, count)
+
+
+def create_pass(behavior: MockPlayerBehavior):
+    behavior.value_to_play.append(None)
+
+
 def test_CEOPlayerEnv_check_env():
     """
     Test using the Gym check_env
@@ -63,17 +77,32 @@ def test_CEOPlayerEnv_check_env():
 
     print("Checking CEOPlayerEnv. Seed 0")
     random.seed(0)
-    env = CEOPlayerEnv(listener=listener)
+    env = CEOPlayerEnv(seat_number=0, listener=listener)
     check_env(env, True, True)
 
     print("Checking CEOPlayerEnv. Seed 1")
     random.seed(1)
-    env = CEOPlayerEnv(listener=listener)
+    env = CEOPlayerEnv(seat_number=0, listener=listener)
     check_env(env, True, True)
 
     print("Checking CEOPlayerEnv. Seed 2")
     random.seed(2)
-    env = CEOPlayerEnv(listener=listener)
+    env = CEOPlayerEnv(seat_number=1, listener=listener)
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv. Seed 3")
+    random.seed(3)
+    env = CEOPlayerEnv(seat_number=1, listener=listener)
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv. Seed 4")
+    random.seed(4)
+    env = CEOPlayerEnv(seat_number=5, listener=listener)
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv. Seed 5")
+    random.seed(5)
+    env = CEOPlayerEnv(seat_number=4, listener=listener)
     check_env(env, True, True)
 
 
@@ -87,21 +116,733 @@ def test_CEOPlayerEnv_AllCardActionSpace_check_env():
 
     print("Checking CEOPlayerEnv all_card. Seed 0")
     random.seed(0)
-    env = CEOPlayerEnv(listener=listener, action_space_type="all_card")
+    env = CEOPlayerEnv(seat_number=0, listener=listener, action_space_type="all_card")
     check_env(env, True, True)
 
     print("Checking CEOPlayerEnv all_card. Seed 1")
     random.seed(1)
-    env = CEOPlayerEnv(listener=listener)
+    env = CEOPlayerEnv(seat_number=0, listener=listener, action_space_type="all_card")
     check_env(env, True, True)
 
     print("Checking CEOPlayerEnv all_card. Seed 2")
     random.seed(2)
-    env = CEOPlayerEnv(listener=listener)
+    env = CEOPlayerEnv(seat_number=5, listener=listener, action_space_type="all_card")
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv all_card. Seed 3")
+    random.seed(3)
+    env = CEOPlayerEnv(seat_number=5, listener=listener, action_space_type="all_card")
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv all_card. Seed 4")
+    random.seed(4)
+    env = CEOPlayerEnv(seat_number=2, listener=listener, action_space_type="all_card")
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv all_card. Seed 5")
+    random.seed(5)
+    env = CEOPlayerEnv(seat_number=4, listener=listener, action_space_type="all_card")
     check_env(env, True, True)
 
 
-def test_CEOPlayerEnv_OnlyPlayPass():
+def test_CEOPlayerEnv_Bottom_Stay():
+    """
+    Test when the player is in the bottom position and stays there.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+
+    # Make the hands and players. Note that we disable passing below
+    hand0 = Hand()
+    hand1 = Hand()
+    hand2 = Hand()
+    hand3 = Hand()
+
+    behavior0 = MockPlayerBehavior()
+    behavior1 = MockPlayerBehavior()
+    behavior2 = MockPlayerBehavior()
+
+    # Trick 1
+    create_play(hand0, behavior0, cv0, 2)
+    create_play(hand1, behavior1, cv1, 2)
+    create_play(hand2, behavior2, cv2, 2)
+    create_rl_play(hand3, cv3, 2)
+
+    # Trick 2
+    create_rl_play(hand3, cv4, 1)
+    create_play(hand0, behavior0, cv5, 1)
+    create_play(hand1, behavior1, cv6, 1)
+    create_play(hand2, behavior2, cv7, 1)
+
+    # Trick 3
+    create_play(hand2, behavior2, cv8, 3)
+    create_rl_play(hand3, cv9, 3)
+    create_play(hand1, behavior1, cv11, 3)
+
+    # Final cards
+    create_rl_play(hand3, cv0, 1)
+
+    hands = [hand0, hand1, hand2, hand3]
+    behaviors = [behavior0, behavior1, behavior2, None]
+
+    env = CEOPlayerEnv(
+        seat_number=3,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+    )
+
+    # Trick 1
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 2
+    assert observation.get_cur_trick_count() == 2
+
+    action = 3
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_count() == 0
+
+    # Trick 2 - Lead
+    action = 4
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 8
+    assert observation.get_cur_trick_count() == 3
+
+    # Trick 3
+    action = 9
+    observation_array, reward, done, info = env.step(action)
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_count() == 0
+
+    # Trick 4
+    action = 0
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == 0
+
+
+def test_CEOPlayerEnv_Bottom_MoveUp():
+    """
+    Test when the player is in the bottom position and moves up.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+
+    # Make the hands and players. Note that we disable passing below
+    hand0 = Hand()
+    hand1 = Hand()
+    hand2 = Hand()
+    hand3 = Hand()
+
+    behavior0 = MockPlayerBehavior()
+    behavior1 = MockPlayerBehavior()
+    behavior2 = MockPlayerBehavior()
+
+    # Trick 1
+    create_play(hand0, behavior0, cv0, 2)
+    create_play(hand1, behavior1, cv1, 2)
+    create_play(hand2, behavior2, cv2, 2)
+    create_rl_play(hand3, cv3, 2)
+
+    # Trick 2
+    create_rl_play(hand3, cv4, 1)
+    create_play(hand0, behavior0, cv5, 1)
+    create_play(hand1, behavior1, cv6, 1)
+    create_play(hand2, behavior2, cv7, 1)
+
+    # Trick 3
+    create_play(hand2, behavior2, cv8, 3)
+    create_rl_play(hand3, cv9, 3)
+    create_play(hand1, behavior1, cv11, 3)
+
+    # Final cards
+    create_play(hand2, behavior2, cv0, 4)
+
+    hands = [hand0, hand1, hand2, hand3]
+    behaviors = [behavior0, behavior1, behavior2, None]
+
+    env = CEOPlayerEnv(
+        seat_number=3,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+    )
+
+    # Trick 1
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 2
+    assert observation.get_cur_trick_count() == 2
+
+    action = 3
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_count() == 0
+
+    # Trick 2 - Lead
+    action = 4
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 8
+    assert observation.get_cur_trick_count() == 3
+
+    # Trick 3
+    action = 9
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == 1
+
+
+def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
+    """
+    Test when the player is in the bottom position and moves up because the CEO
+    doesn't go out.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+
+    # Make the hands and players. Note that we disable passing below
+    hand0 = Hand()
+    hand1 = Hand()
+    hand2 = Hand()
+    hand3 = Hand()
+
+    behavior0 = MockPlayerBehavior()
+    behavior1 = MockPlayerBehavior()
+    behavior2 = MockPlayerBehavior()
+
+    # Trick 1
+    create_play(hand0, behavior0, cv0, 2)
+    create_play(hand1, behavior1, cv1, 2)
+    create_play(hand2, behavior2, cv2, 2)
+    create_rl_play(hand3, cv3, 2)
+
+    # Trick 2
+    create_rl_play(hand3, cv4, 1)
+    create_play(hand0, behavior0, cv5, 1)
+    create_play(hand1, behavior1, cv6, 1)
+    create_play(hand2, behavior2, cv7, 1)
+
+    # Trick 3
+    create_play(hand2, behavior2, cv8, 3)
+    create_rl_play(hand3, cv9, 3)
+    create_play(hand0, behavior0, cv10, 3)
+    create_play(hand1, behavior1, cv11, 3)
+
+    # Trick 4
+    create_play(hand2, behavior2, cv9, 3)
+    create_rl_play(hand3, cv10, 3)
+    create_play(hand0, behavior0, cv11, 3)
+
+    hands = [hand0, hand1, hand2, hand3]
+    behaviors = [behavior0, behavior1, behavior2, None]
+
+    env = CEOPlayerEnv(
+        seat_number=3,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+    )
+
+    # Trick 1
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 2
+    assert observation.get_cur_trick_count() == 2
+
+    action = 3
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_count() == 0
+
+    # Trick 2 - Lead
+    action = 4
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 8
+    assert observation.get_cur_trick_count() == 3
+
+    # Trick 3
+    action = 9
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 9
+    assert observation.get_cur_trick_count() == 3
+
+    # Trick 4
+    action = 10
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == 1
+
+
+def test_CEOPlayerEnv_ThirdPlayer_Stay():
+    """
+    Test when the player is in the third position and stays there.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+
+    # Make the hands and players. Note that we disable passing below
+    hand0 = Hand()
+    hand1 = Hand()
+    hand2 = Hand()
+    hand3 = Hand()
+
+    behavior0 = MockPlayerBehavior()
+    behavior1 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+
+    # Trick 1
+    create_play(hand0, behavior0, cv0, 2)
+    create_play(hand1, behavior1, cv1, 2)
+    create_rl_play(hand2, cv2, 2)
+    create_play(hand3, behavior3, cv3, 2)
+
+    # Trick 2
+    create_play(hand3, behavior3, cv4, 1)
+    create_play(hand0, behavior0, cv5, 1)
+    create_play(hand1, behavior1, cv6, 1)
+    create_rl_play(hand2, cv7, 1)
+
+    # Trick 3
+    create_rl_play(hand2, cv8, 3)
+    create_play(hand3, behavior3, cv9, 3)
+
+    hands = [hand0, hand1, hand2, hand3]
+    behaviors = [behavior0, behavior1, None, behavior3]
+
+    env = CEOPlayerEnv(
+        seat_number=2,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+    )
+
+    # Trick 1
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 1
+    assert observation.get_cur_trick_count() == 2
+
+    action = 2
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 6
+    assert observation.get_cur_trick_count() == 1
+
+    # Trick 2
+    action = 7
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_count() == 0
+
+    # Trick 3 - Lead
+    action = 8
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == 0
+
+
+def test_CEOPlayerEnv_ThirdPlayer_MoveUp():
+    """
+    Test when the player is in the third position and moves up.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+
+    # Make the hands and players. Note that we disable passing below
+    hand0 = Hand()
+    hand1 = Hand()
+    hand2 = Hand()
+    hand3 = Hand()
+
+    behavior0 = MockPlayerBehavior()
+    behavior1 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+
+    # Trick 1
+    create_play(hand0, behavior0, cv0, 2)
+    create_play(hand1, behavior1, cv1, 2)
+    create_rl_play(hand2, cv2, 2)
+    create_play(hand3, behavior3, cv3, 2)
+
+    # Trick 2
+    create_play(hand3, behavior3, cv4, 1)
+    create_play(hand0, behavior0, cv5, 1)
+    create_play(hand1, behavior1, cv6, 1)
+    create_rl_play(hand2, cv7, 1)
+
+    # Trick 3
+    create_rl_play(hand2, cv8, 3)
+    create_play(hand3, behavior3, cv9, 3)
+    create_play(hand1, behavior1, cv11, 3)
+
+    # Final trick
+    create_play(hand1, behavior1, cv0, 4)
+    create_play(hand3, behavior3, cv2, 4)
+
+    hands = [hand0, hand1, hand2, hand3]
+    behaviors = [behavior0, behavior1, None, behavior3]
+
+    env = CEOPlayerEnv(
+        seat_number=2,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+    )
+
+    # Trick 1
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 1
+    assert observation.get_cur_trick_count() == 2
+
+    action = 2
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 6
+    assert observation.get_cur_trick_count() == 1
+
+    # Trick 2
+    action = 7
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_count() == 0
+
+    # Trick 3 - Lead
+    action = 8
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == 1
+
+
+def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
+    """
+    Test when the player is in the third position and moves down.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+
+    # Make the hands and players. Note that we disable passing below
+    hand0 = Hand()
+    hand1 = Hand()
+    hand2 = Hand()
+    hand3 = Hand()
+
+    behavior0 = MockPlayerBehavior()
+    behavior1 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+
+    # Trick 1
+    create_play(hand0, behavior0, cv0, 2)
+    create_play(hand1, behavior1, cv1, 2)
+    create_rl_play(hand2, cv2, 2)
+    create_play(hand3, behavior3, cv3, 2)
+
+    # Trick 2
+    create_play(hand3, behavior3, cv4, 1)
+    create_play(hand0, behavior0, cv5, 1)
+    create_play(hand1, behavior1, cv6, 1)
+    create_rl_play(hand2, cv7, 1)
+
+    # Trick 3
+    create_rl_play(hand2, cv8, 3)
+    create_play(hand3, behavior3, cv9, 3)
+    create_play(hand1, behavior1, cv11, 3)
+
+    # Final trick
+    create_rl_play(hand2, cv0, 4)
+
+    hands = [hand0, hand1, hand2, hand3]
+    behaviors = [behavior0, behavior1, None, behavior3]
+
+    env = CEOPlayerEnv(
+        seat_number=2,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+    )
+
+    # Trick 1
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 1
+    assert observation.get_cur_trick_count() == 2
+
+    action = 2
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 6
+    assert observation.get_cur_trick_count() == 1
+
+    # Trick 2
+    action = 7
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_count() == 0
+
+    # Trick 3 - Lead
+    action = 8
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_count() == 0
+
+    # Trick 4 - Lead
+    action = 0
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == -1
+
+
+def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick_DefaultActionSpace():
+    """
+    Test when the player is in the third position must pass on the first trick.
+    This does not use all card action space.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+
+    # Make the hands and players. Note that we disable passing below
+    hand0 = Hand()
+    hand1 = Hand()
+    hand2 = Hand()
+    hand3 = Hand()
+
+    behavior0 = MockPlayerBehavior()
+    behavior1 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+
+    # Trick 1
+    create_play(hand0, behavior0, cv11, 2)
+    create_pass(behavior1)
+    # RL will automatically pass
+    create_pass(behavior3)
+
+    # Trick 2
+    create_play(hand0, behavior0, cv0, 1)
+    create_play(hand1, behavior1, cv1, 1)
+    create_rl_play(hand2, cv2, 1)
+    create_play(hand3, behavior3, cv3, 1)
+
+    # Trick 3
+    create_play(hand3, behavior3, cv4, 3)
+    create_rl_play(hand2, cv5, 3)
+    create_play(hand1, behavior1, cv6, 3)
+
+    hands = [hand0, hand1, hand2, hand3]
+    behaviors = [behavior0, behavior1, None, behavior3]
+
+    env = CEOPlayerEnv(
+        seat_number=2,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+    )
+
+    # Trick 1 and trick 2
+    observation_array = env.reset()
+    assert observation is not None
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 1
+    assert observation.get_cur_trick_count() == 1
+
+    action = 2
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 4
+    assert observation.get_cur_trick_count() == 3
+
+    # Trick 2
+    action = 5
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == -1
+
+
+def test_CEOPlayerEnv_CEO_OnlyPlayPass():
     """
     Test when the the agent's only valid play is to pass. The agent should
     not need to perform the action.
@@ -172,11 +913,12 @@ def test_CEOPlayerEnv_OnlyPlayPass():
     behavior3.value_to_play.append(cv4)
     behavior4.value_to_play.append(cv5)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     obs_kwargs = {"include_valid_actions": True}
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -220,7 +962,7 @@ def test_CEOPlayerEnv_OnlyPlayPass():
     assert reward == 1.0
 
 
-def test_CEOPlayerEnv_AllCardActionSpace_NegativeReward_Lead():
+def test_CEOPlayerEnv_CEO_AllCardActionSpace_NegativeReward_Lead():
     """
     Test when the action space returns a negative reward and ends the episode
     for invalid actions. Here the invalid action is passing when the agent
@@ -287,9 +1029,10 @@ def test_CEOPlayerEnv_AllCardActionSpace_NegativeReward_Lead():
 
     behavior2.value_to_play.append(cv6)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -309,7 +1052,7 @@ def test_CEOPlayerEnv_AllCardActionSpace_NegativeReward_Lead():
     assert reward == pytest.approx(-(2.0 + 8.0 * remaining_cards / 13.0))
 
 
-def test_CEOPlayerEnv_AllCardActionSpace_NegativeReward_InvalidCard():
+def test_CEOPlayerEnv_CEO_AllCardActionSpace_NegativeReward_InvalidCard():
     """
     Test when the action space returns a negative reward and ends the episode
     for invalid actions. Here the agent's action is to lead an invalid card.
@@ -376,9 +1119,10 @@ def test_CEOPlayerEnv_AllCardActionSpace_NegativeReward_InvalidCard():
 
     behavior2.value_to_play.append(cv6)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -412,7 +1156,7 @@ def test_CEOPlayerEnv_AllCardActionSpace_NegativeReward_InvalidCard():
     assert done
 
 
-def test_CEOPlayerEnv_AllCardActionSpace_ActionOrderMatchesObservationOrder():
+def test_CEOPlayerEnv_CEO_AllCardActionSpace_ActionOrderMatchesObservationOrder():
     """
     Test that the order of actions in the AllCardActionSpace match the order of
     actions in the observation when the observation includes which actions are valid.
@@ -479,11 +1223,12 @@ def test_CEOPlayerEnv_AllCardActionSpace_ActionOrderMatchesObservationOrder():
 
     behavior2.value_to_play.append(cv6)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     obs_kwargs = {"include_valid_actions": True}
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -549,7 +1294,7 @@ def test_CEOPlayerEnv_AllCardActionSpace_ActionOrderMatchesObservationOrder():
     assert valid_play_array[7] == 0.0
 
 
-def test_CEOPlayerEnv_Passing():
+def test_CEOPlayerEnv_CEO_Passing():
     """
     Test the environment that models a player in the the CEO seat. Here we test that passing
     cards at the beginning of the round happens. For other tests, see below where passing is
@@ -596,9 +1341,10 @@ def test_CEOPlayerEnv_Passing():
     behavior3 = MockPlayerBehavior()
     behavior4 = MockPlayerBehavior()
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -613,7 +1359,7 @@ def test_CEOPlayerEnv_Passing():
     assert observation.get_card_count(7) == 2
 
 
-def test_CEOPlayerEnv_NoPassing():
+def test_CEOPlayerEnv_CEO_NoPassing():
     """
     Test the environment that models a player in the the CEO seat. Here we disable passing
     to make the tests easier.
@@ -668,9 +1414,10 @@ def test_CEOPlayerEnv_NoPassing():
     behavior4.value_to_play.append(cv1)
     behavior2.value_to_play.append(cv2)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -697,7 +1444,7 @@ def test_CEOPlayerEnv_NoPassing():
     assert done
 
 
-def test_CEOPlayerEnv_CEOLeadsAndNoOnePlays():
+def test_CEOPlayerEnv_CEO_CEOLeadsAndNoOnePlays():
     """
     Test the environment that models a player in the the CEO seat. Here we disable passing
     to make the tests easier.
@@ -759,9 +1506,10 @@ def test_CEOPlayerEnv_CEOLeadsAndNoOnePlays():
     behavior4.value_to_play.append(cv1)
     behavior2.value_to_play.append(cv2)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -797,7 +1545,7 @@ def test_CEOPlayerEnv_CEOLeadsAndNoOnePlays():
     assert done
 
 
-def test_CEOPlayerEnv_observation():
+def test_CEOPlayerEnv_CEO_observation():
     """
     Test the observation returned by SetCEOEnv.
     """
@@ -858,9 +1606,10 @@ def test_CEOPlayerEnv_observation():
     behavior3.value_to_play.append(cv5)
     behavior4.value_to_play.append(cv6)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -928,7 +1677,7 @@ def test_CEOPlayerEnv_observation():
     assert observation.get_other_player_card_count(2) == 5
 
 
-def test_CEOPlayerEnv_observation_valid_plays():
+def test_CEOPlayerEnv_CEO_observation_valid_plays():
     """
     Test the observation returned by SetCEOEnv. Here the observation is configured to
     include which actions are valid.
@@ -994,11 +1743,12 @@ def test_CEOPlayerEnv_observation_valid_plays():
     behavior3.value_to_play.append(cv5)
     behavior4.value_to_play.append(cv6)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     obs_kwargs = {"include_valid_actions": True}
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1112,7 +1862,7 @@ def test_CEOPlayerEnv_observation_valid_plays():
     assert observation.get_play_card_action_valid(cv10.value) == False
 
 
-def test_CEOPlayerEnv_reward_cards_left():
+def test_CEOPlayerEnv_CEO_reward_cards_left():
     """
     Test the reward from losing when the environment is configured to
     include the cards left in the hand.
@@ -1158,9 +1908,10 @@ def test_CEOPlayerEnv_reward_cards_left():
     behavior3.value_to_play.append(cv2)
     behavior4.value_to_play.append(cv3)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1183,7 +1934,7 @@ def test_CEOPlayerEnv_reward_cards_left():
     assert reward == pytest.approx(-1.0 - cards_left / 13.0)
 
 
-def test_CEOPlayerEnv_ActionSpace_Play_SingleCard():
+def test_CEOPlayerEnv_CEO_ActionSpace_Play_SingleCard():
     """
     Test that the action space changes based on the cards available to play.
     Here we test where there is a single card value that can be played on
@@ -1243,9 +1994,10 @@ def test_CEOPlayerEnv_ActionSpace_Play_SingleCard():
     behavior4.value_to_play.append(cv5)
     behavior2.value_to_play.append(cv6)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1274,7 +2026,7 @@ def test_CEOPlayerEnv_ActionSpace_Play_SingleCard():
     assert done
 
 
-def test_CEOPlayerEnv_ActionSpace_Play_TwoCards():
+def test_CEOPlayerEnv_CEO_ActionSpace_Play_TwoCards():
     """
     Test that the action space changes based on the cards available to play.
     Here we test where there are two card values that can be played on
@@ -1340,9 +2092,10 @@ def test_CEOPlayerEnv_ActionSpace_Play_TwoCards():
     behavior4.value_to_play.append(cv5)
     behavior2.value_to_play.append(cv6)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1380,7 +2133,7 @@ def test_CEOPlayerEnv_ActionSpace_Play_TwoCards():
     assert done
 
 
-def test_CEOPlayerEnv_ActionSpace_Lead_TwoCards():
+def test_CEOPlayerEnv_CEO_ActionSpace_Lead_TwoCards():
     """
     Test that the action space changes based on the cards available to play.
     Here we test where there are two card values that can be lead.
@@ -1455,9 +2208,10 @@ def test_CEOPlayerEnv_ActionSpace_Lead_TwoCards():
     behavior2.value_to_play.append(cv4)
     behavior3.value_to_play.append(cv5)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1504,7 +2258,7 @@ def test_CEOPlayerEnv_ActionSpace_Lead_TwoCards():
     assert done
 
 
-def test_CEOPlayerEnv_CanNotPlay_TwoTricks():
+def test_CEOPlayerEnv_CEO_CanNotPlay_TwoTricks():
     """
     Test the environment that models a player in the the CEO seat.
     Here CEO has low cards so can't play on the final two tricks.
@@ -1562,9 +2316,10 @@ def test_CEOPlayerEnv_CanNotPlay_TwoTricks():
     behavior2.value_to_play.append(cv7)
     # All players are out, so CEO drops
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1582,7 +2337,7 @@ def test_CEOPlayerEnv_CanNotPlay_TwoTricks():
     assert done
 
 
-def test_CEOPlayerEnv_CanNotPlay_ThreeTricks():
+def test_CEOPlayerEnv_CEO_CanNotPlay_ThreeTricks():
     """
     Test the environment that models a player in the the CEO seat.
     Here CEO has low cards so can't play on the final three tricks.
@@ -1647,9 +2402,10 @@ def test_CEOPlayerEnv_CanNotPlay_ThreeTricks():
     behavior3.value_to_play.append(cv7)
     behavior4.value_to_play.append(cv8)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1667,7 +2423,7 @@ def test_CEOPlayerEnv_CanNotPlay_ThreeTricks():
     assert reward < 0
 
 
-def test_CEOPlayerEnv_get_afterstate():
+def test_CEOPlayerEnv_CEO_get_afterstate():
     """
     Test SetCEOEnv.get_afterstate(). This is an end-to-end test where the environment
     creates the observation.
@@ -1723,9 +2479,10 @@ def test_CEOPlayerEnv_get_afterstate():
 
     behavior4.value_to_play.append(cv0)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1810,7 +2567,7 @@ def test_CEOPlayerEnv_get_afterstate():
     assert afterstate.get_last_player() == 3
 
 
-def test_CEOPlayerEnv_CardActionSpace():
+def test_CEOPlayerEnv_CEO_CardActionSpace():
     """
     Test the environment that models a player in the the CEO seat. Test where the enviroment
     uses an action space corresponding to the cards that can be played.
@@ -1872,10 +2629,11 @@ def test_CEOPlayerEnv_CardActionSpace():
     behavior4.value_to_play.append(cv1)
     behavior2.value_to_play.append(cv2)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
         action_space_type="card",
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -1929,7 +2687,7 @@ def test_CEOPlayerEnv_CardActionSpace():
     assert done
 
 
-def test_CEOPlayerEnv_CardActionSpace_NotPlayable():
+def test_CEOPlayerEnv_CEO_CardActionSpace_NotPlayable():
     """
     Test the environment that models a player in the the CEO seat. Test where the enviroment
     uses an action space corresponding to the cards that can be played. Here there are cards
@@ -1999,10 +2757,11 @@ def test_CEOPlayerEnv_CardActionSpace_NotPlayable():
     behavior3.value_to_play.append(cv9)
     behavior4.value_to_play.append(cv10)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
         action_space_type="card",
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -2061,7 +2820,7 @@ def test_CEOPlayerEnv_CardActionSpace_NotPlayable():
     assert done
 
 
-def test_CEOPlayerEnv_CardActionSpace_PassOnTrick():
+def test_CEOPlayerEnv_CEO_CardActionSpace_PassOnTrick():
     """
     Test the environment that models a player in the the CEO seat. Test where the enviroment
     uses an action space corresponding to the cards that can be played. Here we test the pass
@@ -2129,10 +2888,11 @@ def test_CEOPlayerEnv_CardActionSpace_PassOnTrick():
     behavior3.value_to_play.append(cv9)
     behavior4.value_to_play.append(cv10)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
         action_space_type="card",
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -2191,7 +2951,7 @@ def test_CEOPlayerEnv_CardActionSpace_PassOnTrick():
     assert done
 
 
-def test_CEOPlayerEnv_CardActionSpace_get_afterstate():
+def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate():
     """
     Test SetCEOEnv.get_afterstate() when the environment is using card action spaces. This is an
     end-to-end test where the environment creates the observation.
@@ -2247,10 +3007,11 @@ def test_CEOPlayerEnv_CardActionSpace_get_afterstate():
 
     behavior4.value_to_play.append(cv0)
 
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
         action_space_type="card",
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,
@@ -2346,7 +3107,7 @@ def test_CEOPlayerEnv_CardActionSpace_get_afterstate():
     assert afterstate.get_last_player() == 3
 
 
-def test_CEOPlayerEnv_CardActionSpace_get_afterstate_TrickState():
+def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate_TrickState():
     """
     Test SetCEOEnv.get_afterstate() when the environment is using card action spaces. Test
     that the trick information is correctly updated.
@@ -2381,10 +3142,11 @@ def test_CEOPlayerEnv_CardActionSpace_get_afterstate_TrickState():
     behavior4 = MockPlayerBehavior()
 
     hands = [hand1, hand2, hand3, hand4]
-    behaviors = [behavior2, behavior3, behavior4]
+    behaviors = [None, behavior2, behavior3, behavior4]
 
     env = CEOPlayerEnv(
         action_space_type="card",
+        seat_number=0,
         num_players=4,
         behaviors=behaviors,
         hands=hands,

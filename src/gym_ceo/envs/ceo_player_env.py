@@ -63,6 +63,7 @@ class CEOPlayerEnv(gym.Env):
 
     def __init__(
         self,
+        seat_number: int,
         num_players=6,
         behaviors=[],
         hands=[],
@@ -74,7 +75,7 @@ class CEOPlayerEnv(gym.Env):
         obs_kwargs=None,
     ):
         self.num_players = num_players
-        self.seat_number = 0
+        self.seat_number = seat_number
         self._skip_passing = skip_passing
         self._reward_includes_cards_left = reward_includes_cards_left
 
@@ -85,15 +86,20 @@ class CEOPlayerEnv(gym.Env):
 
         self._hands = hands
 
-        self._players = []
-        self._players.append(Player("RL", RLBehavior()))
-        for i in range(num_players - 1):
-            name = "Basic" + str(i + 1)
+        assert len(behaviors) == self.num_players or len(behaviors) == 0
 
-            if i >= len(behaviors):
-                self._players.append(Player(name, BasicBehavior()))
+        self._players = []
+        for i in range(num_players):
+            if i == self.seat_number:
+                assert len(behaviors) == 0 or behaviors[i] == None
+                self._players.append(Player("RL", RLBehavior()))
             else:
-                self._players.append(Player(name, behaviors[i]))
+                name = "Basic" + str(i)
+
+                if len(behaviors) == 0:
+                    self._players.append(Player(name, BasicBehavior()))
+                else:
+                    self._players.append(Player(name, behaviors[i]))
 
         if obs_kwargs is None:
             obs_kwargs = dict()
@@ -146,17 +152,20 @@ class CEOPlayerEnv(gym.Env):
             passcards = PassCards(self._players, self._hands, self._listener)
             passcards.do_card_passing()
 
+        # Start the round.
         self._round = Round(self._players, self._hands, self._listener)
         self._gen = self._round.play_generator()
 
         self.action_space = self._action_space_factory.create_lead(self._hands[0])
 
         gen_tuple = next(self._gen)
-        assert gen_tuple[0] == "lead"
 
         obs = self._make_observation(gen_tuple)
 
-        if not self.observation_space.contains(obs):
+        if obs is not None and not self.observation_space.contains(obs):
+            # For testing: allow stepping into the _make_observation call again.
+            # obs = self._make_observation(gen_tuple)
+
             print("Obs", obs)
             print("len(obs)", len(obs))
             print("Obs space", self.observation_space)
@@ -239,12 +248,30 @@ class CEOPlayerEnv(gym.Env):
             obs = None
             next_round_order = self._round.get_next_round_order()
 
-            if next_round_order[0] == 0:
+            next_round_position = next_round_order.index(self.seat_number)
+
+            if self.seat_number == 0 and next_round_position == 0:
+                # CEO stays in CEO
+                reward += 1.0
+            elif (
+                self.seat_number == self.num_players - 1
+                and next_round_position == self.num_players - 1
+            ):
+                # Bottom stays in bottom
+                reward += 0.0
+            elif self.seat_number == next_round_position:
+                # Same position
+                reward += 0.0
+            elif self.seat_number > next_round_position:
+                # Move up
                 reward += 1.0
             else:
+                # Move down
+                assert self.seat_number < next_round_position
                 reward += -1.0
 
                 if self._reward_includes_cards_left:
+                    assert self.seat_number == 0
                     reward -= self._round.get_final_ceo_card_count() / 13.0
 
             self._hands = None
