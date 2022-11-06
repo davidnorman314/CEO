@@ -160,16 +160,11 @@ class CEOPlayerEnv(gym.Env):
 
         gen_tuple = next(self._gen)
 
-        obs = self._make_observation(gen_tuple)
+        obs, reward, done, info = self._play_until_action_needed(gen_tuple)
 
-        if obs is not None and not self.observation_space.contains(obs):
-            # For testing: allow stepping into the _make_observation call again.
-            # obs = self._make_observation(gen_tuple)
-
-            print("Obs", obs)
-            print("len(obs)", len(obs))
-            print("Obs space", self.observation_space)
-            assert self.observation_space.contains(obs)
+        # TODO: Handle the case where the round ends without the agent being able to play.
+        assert not done
+        assert reward == 0.0
 
         return obs
 
@@ -216,65 +211,77 @@ class CEOPlayerEnv(gym.Env):
             )
             assert cv is not None
 
+        try:
+            # Peform the action
+            gen_tuple = self._gen.send(cv)
+        except StopIteration:
+            return self._end_round()
+
+        return self._play_until_action_needed(gen_tuple)
+
+    def _play_until_action_needed(self, gen_tuple: tuple):
+        """Advances the round until an action from the agent is needed. In particular,
+        if the only action is to pass, then just pass instead of asking the agent for
+        the action. The parameter is the tuple returned from performing the action.
+        The method will return immediately if the tuple implys that an action is needed
+        now."""
+
         reward = 0.0
         done = False
         try:
-            while True:
-                gen_tuple = self._gen.send(cv)
 
+            while True:
                 obs = self._make_observation(gen_tuple)
 
-                # Check if pass is the only possible play.
-                if obs is None:
-                    # There aren't any playable cards
-                    cv = None
-                    continue
-
-                obsObj = self.observation_factory.create_observation(array=obs)
-                if not obsObj.has_playable_card_action():
-                    # There aren't any playable cards
-                    cv = None
-                    continue
-
                 if obs is not None:
-                    break
+                    obsObj = self.observation_factory.create_observation(array=obs)
+                    if obsObj.has_playable_card_action():
+                        break
+
                 else:
                     # The only action is to pass
-                    cv = None
+                    pass
+
+                # Pass on the trick.
+                gen_tuple = self._gen.send(None)
 
             done = False
         except StopIteration:
-            done = True
-            obs = None
-            next_round_order = self._round.get_next_round_order()
+            return self._end_round()
 
-            next_round_position = next_round_order.index(self.seat_number)
+        return obs, reward, done, self._info
 
-            if self.seat_number == 0 and next_round_position == 0:
-                # CEO stays in CEO
-                reward += 1.0
-            elif (
-                self.seat_number == self.num_players - 1
-                and next_round_position == self.num_players - 1
-            ):
-                # Bottom stays in bottom
-                reward += 0.0
-            elif self.seat_number == next_round_position:
-                # Same position
-                reward += 0.0
-            elif self.seat_number > next_round_position:
-                # Move up
-                reward += 1.0
-            else:
-                # Move down
-                assert self.seat_number < next_round_position
-                reward += -1.0
+    def _end_round(self):
+        done = True
+        obs = None
+        next_round_order = self._round.get_next_round_order()
 
-                if self._reward_includes_cards_left:
-                    assert self.seat_number == 0
-                    reward -= self._round.get_final_ceo_card_count() / 13.0
+        next_round_position = next_round_order.index(self.seat_number)
 
-            self._hands = None
+        if self.seat_number == 0 and next_round_position == 0:
+            # CEO stays in CEO
+            reward = 1.0
+        elif (
+            self.seat_number == self.num_players - 1 and next_round_position == self.num_players - 1
+        ):
+            # Bottom stays in bottom
+            reward = 0.0
+        elif self.seat_number == next_round_position:
+            # Same position
+            reward = 0.0
+        elif self.seat_number > next_round_position:
+            # Move up
+            reward = 1.0
+        else:
+            # Move down
+            assert self.seat_number < next_round_position
+            reward = -1.0
+
+            if self._reward_includes_cards_left:
+                assert self.seat_number == 0
+                reward -= self._round.get_final_ceo_card_count() / 13.0
+
+        self._hands = None
 
         return obs, reward, done, self._info
 

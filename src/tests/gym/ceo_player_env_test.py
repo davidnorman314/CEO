@@ -145,6 +145,60 @@ def test_CEOPlayerEnv_AllCardActionSpace_check_env():
     check_env(env, True, True)
 
 
+def test_CEOPlayerEnv_AllCardActionSpace_ValidActions_check_env():
+    """
+    Test using the Gym check_env were the environment uses the AllCardActionSpace.
+    The observation includes valid actions.
+    """
+
+    listener = EventListenerInterface()
+    listener = PrintAllEventListener()
+
+    obs_kwargs = {"include_valid_actions": True}
+
+    print("Checking CEOPlayerEnv all_card. Seed 0")
+    random.seed(0)
+    env = CEOPlayerEnv(
+        seat_number=0, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+    )
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv all_card. Seed 1")
+    random.seed(1)
+    env = CEOPlayerEnv(
+        seat_number=0, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+    )
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv all_card. Seed 2")
+    random.seed(2)
+    env = CEOPlayerEnv(
+        seat_number=5, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+    )
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv all_card. Seed 3")
+    random.seed(3)
+    env = CEOPlayerEnv(
+        seat_number=5, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+    )
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv all_card. Seed 4")
+    random.seed(4)
+    env = CEOPlayerEnv(
+        seat_number=2, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+    )
+    check_env(env, True, True)
+
+    print("Checking CEOPlayerEnv all_card. Seed 5")
+    random.seed(5)
+    env = CEOPlayerEnv(
+        seat_number=4, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+    )
+    check_env(env, True, True)
+
+
 def test_CEOPlayerEnv_Bottom_Stay():
     """
     Test when the player is in the bottom position and stays there.
@@ -758,10 +812,11 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
     assert reward == -1
 
 
-def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick_DefaultActionSpace():
+def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick():
     """
     Test when the player is in the third position must pass on the first trick.
-    This does not use all card action space.
+    Here we include valid actions in the observation, so that the environment can
+    check if pass is the only valid action.
     """
 
     # Create CardValue objects for ease of use later
@@ -802,11 +857,13 @@ def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick_DefaultActionSpace():
 
     # Trick 3
     create_play(hand3, behavior3, cv4, 3)
-    create_rl_play(hand2, cv5, 3)
-    create_play(hand1, behavior1, cv6, 3)
+    create_play(hand1, behavior1, cv5, 3)
+    create_rl_play(hand2, cv6, 3)
 
     hands = [hand0, hand1, hand2, hand3]
     behaviors = [behavior0, behavior1, None, behavior3]
+
+    obs_kwargs = {"include_valid_actions": True}
 
     env = CEOPlayerEnv(
         seat_number=2,
@@ -815,11 +872,13 @@ def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick_DefaultActionSpace():
         hands=hands,
         listener=PrintAllEventListener(),
         skip_passing=True,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
     )
 
     # Trick 1 and trick 2
     observation_array = env.reset()
-    assert observation is not None
+    assert observation_array is not None
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 1
     assert observation.get_cur_trick_count() == 1
@@ -831,11 +890,11 @@ def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick_DefaultActionSpace():
     assert reward == 0.0
 
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == 4
+    assert observation.get_cur_trick_value() == 5
     assert observation.get_cur_trick_count() == 3
 
-    # Trick 2
-    action = 5
+    # Trick 3
+    action = 6
     observation_array, reward, done, info = env.step(action)
 
     assert done
