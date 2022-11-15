@@ -3,6 +3,9 @@
 import numpy as np
 import argparse
 import random
+import json
+import pathlib
+import copy
 from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import torch as th
@@ -14,7 +17,6 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import HParam
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.policies import ActorCriticPolicy
-from stable_baselines3.common.torch_layers import MlpExtractor
 from stable_baselines3.common.type_aliases import Schedule
 from stable_baselines3.common.distributions import Distribution, CategoricalDistribution
 
@@ -27,7 +29,7 @@ from enum import Enum
 import gym
 
 from gym_ceo.envs.observation import ObservationFactory, Observation
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
+from gym_ceo.envs.ceo_player_env import CEOPlayerEnv
 from gym_ceo.envs.actions import ActionEnum
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 
@@ -298,7 +300,7 @@ class PPOLearning:
         else:
             self._azure_client = None
 
-    def train(self, observation_factory, params: dict, do_log: bool):
+    def train(self, observation_factory, eval_log_path: str, params: dict, do_log: bool):
         # Load the parameters
         learning_rate = params["learning_rate"] if "learning_rate" in params else None
         if learning_rate is None:
@@ -389,7 +391,7 @@ class PPOLearning:
             eval_env=self._eval_env,
             eval_freq=50000,
             n_eval_episodes=10000,
-            eval_log_path="eval_log/" + self._name,
+            eval_log_path=eval_log_path,
             tb_log_name=self._name,
             callback=callback,
         )
@@ -410,7 +412,7 @@ class PPOLearning:
 def make_env(env_number, env_args: dict):
     def _init():
         random.seed(env_number)
-        env = SeatCEOEnv(**env_args)
+        env = CEOPlayerEnv(**env_args)
 
         return env
 
@@ -516,15 +518,37 @@ def main():
         default=False,
         help="Save agent and log information to azure blob storage.",
     )
+    parser.add_argument(
+        "--seat-number",
+        dest="seat_number",
+        type=int,
+        default=None,
+        help="The seat number for the agent.",
+    )
+    parser.add_argument(
+        "--num-players",
+        dest="num_players",
+        type=int,
+        default=None,
+        help="The number of players in the game.",
+    )
 
     args = parser.parse_args()
 
-    kwargs = dict()
+    if not args.seat_number:
+        args.seat_number = 0
+        print(f"Using default {args.seat_number} seat for the agent.")
+
+    if not args.num_players:
+        args.num_players = 6
+        print(f"Using default {args.num_players} seat for the agent.")
+
+    learning_kwargs = dict()
 
     if args.total_steps:
-        kwargs["total_steps"] = args.total_steps
+        learning_kwargs["total_steps"] = args.total_steps
     if args.azure:
-        kwargs["azure_client"] = AzureClient()
+        learning_kwargs["azure_client"] = AzureClient()
 
     do_log = False
     if args.log:
@@ -537,6 +561,8 @@ def main():
     obs_kwargs = {"include_valid_actions": True}
 
     env_args = {
+        "num_players": args.num_players,
+        "seat_number": args.seat_number,
         "listener": listener,
         "action_space_type": "all_card",
         "reward_includes_cards_left": False,
@@ -544,12 +570,14 @@ def main():
     }
 
     if args.parallel_env_count is None:
-        env = SeatCEOEnv(**env_args)
+        env = CEOPlayerEnv(**env_args)
     else:
         env = SubprocVecEnv([make_env(i, env_args) for i in range(args.parallel_env_count)])
 
     # Use the usual reward for eval_env
-    eval_env = SeatCEOEnv(
+    eval_env = CEOPlayerEnv(
+        num_players=args.num_players,
+        seat_number=args.seat_number,
         listener=listener,
         action_space_type="all_card",
         reward_includes_cards_left=False,
@@ -558,29 +586,48 @@ def main():
 
     observation_factory = eval_env.observation_factory
 
-    learning = PPOLearning(args.name, env, eval_env, **kwargs)
+    learning = PPOLearning(args.name, env, eval_env, **learning_kwargs)
 
-    params = dict()
+    train_params = dict()
     if args.n_steps_per_update:
-        params["n_steps_per_update"] = args.n_steps_per_update
+        train_params["n_steps_per_update"] = args.n_steps_per_update
     if args.batch_size:
-        params["batch_size"] = args.batch_size
+        train_params["batch_size"] = args.batch_size
     if args.learning_rate:
-        params["learning_rate"] = args.learning_rate
+        train_params["learning_rate"] = args.learning_rate
     if args.gae_lambda:
-        params["gae_lambda"] = args.gae_lambda
+        train_params["gae_lambda"] = args.gae_lambda
     if args.pi_net_arch:
-        params["pi_net_arch"] = args.pi_net_arch
+        train_params["pi_net_arch"] = args.pi_net_arch
     if args.vf_net_arch:
-        params["vf_net_arch"] = args.vf_net_arch
+        train_params["vf_net_arch"] = args.vf_net_arch
     if args.device:
-        params["device"] = args.device
+        train_params["device"] = args.device
+
+    # Save all parameters to the eval_log directory
+    eval_log_path = "eval_log/" + args.name
+    param_file = eval_log_path + "/params.json"
+
+    save_params = dict()
+    save_params["env_args"] = copy.copy(env_args)
+    del save_params["env_args"]["listener"]
+    save_params["learning_kwargs"] = learning_kwargs
+    save_params["train_params"] = train_params
+
+    eval_log_path_obj = pathlib.Path(eval_log_path)
+    if not eval_log_path_obj.is_dir():
+        eval_log_path_obj.mkdir(parents=True)
+
+    with open(param_file, "w") as data_file:
+        json.dump(save_params, data_file, indent=4, sort_keys=True)
 
     if args.profile:
         print("Running with profiling")
-        cProfile.run("learning.train(observation_factory, params, do_log)", sort=SortKey.CUMULATIVE)
+        cProfile.run(
+            "learning.train(observation_factory, train_params, do_log)", sort=SortKey.CUMULATIVE
+        )
     else:
-        learning.train(observation_factory, params, do_log)
+        learning.train(observation_factory, eval_log_path, train_params, do_log)
 
     # Save the agent in a pickle file.
     learning.save("seatceo_ppo")
