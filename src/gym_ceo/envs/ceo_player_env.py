@@ -181,6 +181,8 @@ class CEOPlayerEnv(gym.Env):
             isinstance(action, int) or isinstance(action, np.int32) or isinstance(action, np.int64)
         )
 
+        if action >= self.action_space.n:
+            print(f"Error: action {action} is larger than {self.action_space}")
         assert action < self.action_space.n
 
         ret = self.action_space.card_to_play(
