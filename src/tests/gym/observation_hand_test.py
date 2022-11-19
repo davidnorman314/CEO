@@ -67,7 +67,7 @@ def create_ceo_env(hand1: Hand) -> tuple[SeatCEOEnv, Observation]:
         listener=PrintAllEventListener(),
         skip_passing=True,
     )
-    factory = ObservationFactory(env.num_players)
+    factory = ObservationFactory(env.num_players, env.seat_number)
 
     observation_array = env.reset()
     observation = factory.create_observation(array=observation_array)

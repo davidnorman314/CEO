@@ -85,7 +85,7 @@ def create_ceo_env(
         listener=PrintAllEventListener(),
         skip_passing=True,
     )
-    factory = ObservationFactory(env.num_players)
+    factory = ObservationFactory(env.num_players, env.seat_number)
 
     observation_array = env.reset()
     observation = factory.create_observation(array=observation_array)
@@ -191,7 +191,7 @@ def test_TriplesUnderValueCount():
         hands=hands,
         listener=PrintAllEventListener(),
     )
-    factory = ObservationFactory(env.num_players)
+    factory = ObservationFactory(env.num_players, env.seat_number)
 
     feature_calc = TriplesUnderValueCount(env, threshold=10)
 
@@ -775,7 +775,7 @@ def test_ValuesInRangeCount():
         listener=PrintAllEventListener(),
         skip_passing=True,
     )
-    factory = ObservationFactory(env.num_players)
+    factory = ObservationFactory(env.num_players, env.seat_number)
 
     feature_calc_0_3 = ValuesInRangeCount(env, range_begin=0, range_end=3, max_value=3)
     feature_calc_0_4 = ValuesInRangeCount(env, range_begin=0, range_end=4, max_value=3)
@@ -868,7 +868,7 @@ def test_OtherPlayerHandCount():
         listener=PrintAllEventListener(),
         skip_passing=True,
     )
-    factory = ObservationFactory(env.num_players)
+    factory = ObservationFactory(env.num_players, env.seat_number)
 
     feature_0 = OtherPlayerHandCount(env, other_player_index=0, max_value=5)
     feature_1 = OtherPlayerHandCount(env, other_player_index=1, max_value=5)

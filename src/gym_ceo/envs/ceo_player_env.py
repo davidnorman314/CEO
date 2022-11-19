@@ -104,7 +104,7 @@ class CEOPlayerEnv(gym.Env):
         if obs_kwargs is None:
             obs_kwargs = dict()
 
-        self.observation_factory = ObservationFactory(num_players, **obs_kwargs)
+        self.observation_factory = ObservationFactory(num_players, seat_number, **obs_kwargs)
         self._observation_dimension = self.observation_factory.observation_dimension
 
         self.observation_space = Box(

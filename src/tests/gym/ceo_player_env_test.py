@@ -267,6 +267,10 @@ def test_CEOPlayerEnv_Bottom_Stay():
     assert observation.get_cur_trick_value() == 2
     assert observation.get_cur_trick_count() == 2
 
+    assert observation.get_other_player_card_count(0) == 1
+    assert observation.get_other_player_card_count(1) == 4
+    assert observation.get_other_player_card_count(2) == 4
+
     action = 3
     observation_array, reward, done, info = env.step(action)
 
@@ -276,6 +280,10 @@ def test_CEOPlayerEnv_Bottom_Stay():
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == None
     assert observation.get_cur_trick_count() == 0
+
+    assert observation.get_other_player_card_count(0) == 1
+    assert observation.get_other_player_card_count(1) == 4
+    assert observation.get_other_player_card_count(2) == 4
 
     # Trick 2 - Lead
     action = 4
@@ -287,6 +295,10 @@ def test_CEOPlayerEnv_Bottom_Stay():
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 8
     assert observation.get_cur_trick_count() == 3
+
+    assert observation.get_other_player_card_count(0) == 0
+    assert observation.get_other_player_card_count(1) == 3
+    assert observation.get_other_player_card_count(2) == 0
 
     # Trick 3
     action = 9
@@ -723,6 +735,10 @@ def test_CEOPlayerEnv_ThirdPlayer_Stay():
     assert observation.get_cur_trick_value() == 1
     assert observation.get_cur_trick_count() == 2
 
+    assert observation.get_other_player_card_count(0) == 1
+    assert observation.get_other_player_card_count(1) == 1
+    assert observation.get_other_player_card_count(2) == 6
+
     action = 2
     observation_array, reward, done, info = env.step(action)
 
@@ -732,6 +748,10 @@ def test_CEOPlayerEnv_ThirdPlayer_Stay():
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 6
     assert observation.get_cur_trick_count() == 1
+
+    assert observation.get_other_player_card_count(0) == 0
+    assert observation.get_other_player_card_count(1) == 0
+    assert observation.get_other_player_card_count(2) == 3
 
     # Trick 2
     action = 7

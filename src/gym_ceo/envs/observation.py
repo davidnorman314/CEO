@@ -10,7 +10,6 @@ class ObservationFactory:
     # The indices into the observation array where the various features start
     _obs_index_hand_cards: int
     _obs_index_other_player_card_count: int
-    _obs_index_other_player_card_count: int
     _obs_index_cur_trick_value: int
     _obs_index_cur_trick_count: int
     _obs_index_start_player: int
@@ -22,10 +21,12 @@ class ObservationFactory:
     _obs_value_trick_not_started: int
 
     _num_players: int
+    _seat_number: int
+    """The seat number of the agent. Zero is CEO."""
 
     observation_dimension: int
 
-    def __init__(self, num_players: int, include_valid_actions=False):
+    def __init__(self, num_players: int, seat_number: int, include_valid_actions=False):
         # Thirteen dimensions for the cards in the hand.
         # (num_players - 1) dimensions for the number of cards in the other player's hands
         # One dimension for the current value of the trick
@@ -53,6 +54,7 @@ class ObservationFactory:
         self._obs_value_trick_not_started = num_players
 
         self._num_players = num_players
+        self._seat_number = seat_number
 
     def create_observation(self, **kwargs):
         """Creates an observation. See Observation constructor for a description of
@@ -117,6 +119,7 @@ class Observation:
         obs_value_trick_not_started = self._factory._obs_value_trick_not_started
 
         num_players = self._factory._num_players
+        seat_number = self._factory._seat_number
 
         if "type" in kwargs and kwargs["type"] == "lead":
             cur_hand = kwargs["cur_hand"]
@@ -131,8 +134,9 @@ class Observation:
                 self._obs[obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
 
             # Add the cards in other players' hands. Don't include the agent's hand.
-            for p in range(1, num_players):
-                self._obs[obs_index_other_player_card_count + p - 1] = state.cards_remaining[p]
+            seat_iter = [p1 for p1 in range(num_players) if p1 != seat_number]
+            for p, i in zip(seat_iter, range(0, num_players - 1)):
+                self._obs[obs_index_other_player_card_count + i] = state.cards_remaining[p]
 
             # Add the trick state
             self._obs[obs_index_cur_trick_value] = 0
@@ -159,8 +163,9 @@ class Observation:
                 self._obs[obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
 
             # Add the cards in other players' hands. Don't include the agent's hand.
-            for p in range(1, num_players):
-                self._obs[obs_index_other_player_card_count + p - 1] = state.cards_remaining[p]
+            seat_iter = [p1 for p1 in range(num_players) if p1 != seat_number]
+            for p, i in zip(seat_iter, range(0, num_players - 1)):
+                self._obs[obs_index_other_player_card_count + i] = state.cards_remaining[p]
 
             # Add the trick state
             self._obs[obs_index_cur_trick_value] = cur_card_value.value
@@ -230,8 +235,11 @@ class Observation:
     def get_card_count(self, card_value: int):
         return self._obs[self._factory._obs_index_hand_cards + card_value]
 
-    def get_other_player_card_count(self, player_index: int):
-        return self._obs[self._factory._obs_index_other_player_card_count + player_index]
+    def get_other_player_card_count(self, adj_player_index: int):
+        """Returns the number of cards in another player's hand. The index is
+        the position of the other player in a list containing all players except for
+        the agent."""
+        return self._obs[self._factory._obs_index_other_player_card_count + adj_player_index]
 
     def get_starting_player(self):
         return self._obs[self._factory._obs_index_start_player]
