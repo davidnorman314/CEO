@@ -162,7 +162,6 @@ class CEOPlayerEnv(gym.Env):
 
         obs, reward, done, info = self._play_until_action_needed(gen_tuple)
 
-        # TODO: Handle the case where the round ends without the agent being able to play.
         assert not done
         assert reward == 0.0
 
