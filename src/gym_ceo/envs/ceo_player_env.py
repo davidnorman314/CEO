@@ -149,8 +149,14 @@ class CEOPlayerEnv(gym.Env):
 
         # Pass cards
         if not self._skip_passing:
+            orig_card_counts = list([hand.card_count() for hand in self._hands])
+
             passcards = PassCards(self._players, self._hands, self._listener)
             passcards.do_card_passing()
+
+            # Validate
+            for hand, orig_count in zip(self._hands, orig_card_counts):
+                assert hand.card_count() == orig_count
 
         # Start the round.
         self._round = Round(self._players, self._hands, self._listener)

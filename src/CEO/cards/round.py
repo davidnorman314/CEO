@@ -56,8 +56,15 @@ class Round:
         cur_player = self._players[starting_player]
         cur_hand = self._hands[starting_player]
 
+        # Validate and diagnostic logging.
+        if cur_hand.is_empty():
+            print(f"Error: No cards in leader's hand. Starting player {starting_player}")
+            print(f"cur_player.behavior.is_rl {cur_player.behavoir.is_reinforcement_learning}")
+            for hand in self._hands:
+                print(hand)
         assert not cur_hand.is_empty()
 
+        # Run the round.
         state = RoundState()
         state.initialize(self._hands, None)
 
