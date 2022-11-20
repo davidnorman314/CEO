@@ -667,7 +667,84 @@ def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTrick():
     assert observation.get_cur_trick_value() == 2
     assert observation.get_cur_trick_count() == 1
 
-    # Lead
+    # Play on second trick
+    action = 3
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == 0.0
+
+
+def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTwoTricks():
+    """
+    Test when the the CEO and can play all their cards on the first two tricks.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+
+    # Make the hands and players. Note that we disable passing below
+    hand0 = Hand()
+    hand1 = Hand()
+    hand2 = Hand()
+    hand3 = Hand()
+
+    behavior0 = MockPlayerBehavior()
+    behavior1 = MockPlayerBehavior()
+    behavior2 = MockPlayerBehavior()
+
+    # Trick 1
+    create_play(hand0, behavior0, cv7, 5)
+    create_play(hand1, behavior1, cv8, 5)
+    create_pass(behavior2)
+    # RL will pass
+
+    # Trick 2
+    create_play(hand1, behavior1, cv9, 5)
+    create_pass(behavior2)
+    # RL will pass
+    create_play(hand0, behavior0, cv10, 5)
+
+    # Trick 3
+    create_play(hand1, behavior1, cv1, 1)
+    create_play(hand2, behavior2, cv2, 1)
+    create_rl_play(hand3, cv3, 1)
+
+    hands = [hand0, hand1, hand2, hand3]
+    behaviors = [behavior0, behavior1, behavior2, None]
+
+    obs_kwargs = {"include_valid_actions": True}
+
+    env = CEOPlayerEnv(
+        seat_number=3,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
+    )
+
+    action_space = env.action_space
+
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 2
+    assert observation.get_cur_trick_count() == 1
+
+    # Play on third trick
     action = 3
     observation_array, reward, done, info = env.step(action)
 

@@ -166,6 +166,7 @@ class Round:
 
         # If the last player to play on the trick went out, then
         # find the next player to lead.
+        orig_last_index_to_play = last_index_to_play
         if self._hands[last_index_to_play].is_empty():
             last_index_to_play = 0
             while (
@@ -174,6 +175,17 @@ class Round:
             ):
                 last_index_to_play += 1
 
+        if last_index_to_play == len(self._hands):
+            for hand in self._hands:
+                assert hand.is_empty()
+        else:
+            if self._hands[last_index_to_play].is_empty():
+                print(
+                    f"Error: next to play is empty {last_index_to_play} orig {orig_last_index_to_play}"
+                )
+                for hand in self._hands:
+                    print(hand)
+            assert not self._hands[last_index_to_play].is_empty()
         return last_index_to_play
 
     def _check_ceo_done(self):
