@@ -181,7 +181,7 @@ class Round:
         else:
             if self._hands[last_index_to_play].is_empty():
                 print(
-                    f"Error: next to play is empty {last_index_to_play} orig {orig_last_index_to_play}"
+                    f"Error: next to play is empty {last_index_to_play} orig {orig_last_index_to_play} player count {self._player_count}"
                 )
                 for hand in self._hands:
                     print(hand)
