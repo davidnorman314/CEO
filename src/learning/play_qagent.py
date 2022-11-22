@@ -6,6 +6,7 @@ import random
 import pickle
 import argparse
 import json
+import pathlib
 from typing import List, Tuple
 from copy import copy, deepcopy
 import numpy as np
@@ -13,6 +14,7 @@ from statsmodels.stats.proportion import proportion_confint
 from collections import deque
 from typing import NamedTuple
 
+from gym_ceo.envs.ceo_player_env import CEOPlayerEnv
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from gym_ceo.envs.features import FeatureObservationFactory
@@ -285,7 +287,7 @@ def create_agent(
     listener: EventListenerInterface,
     *,
     local_file=None,
-    ppo_file=None,
+    ppo_dir=None,
     azure_blob_name=None,
     env=None,
     base_env=None,
@@ -296,21 +298,20 @@ def create_agent(
     device=None,
 ):
 
-    if ppo_file:
+    if ppo_dir:
         if device is None:
-            print("No device specified.")
+            raise Exception("No device specified.")
 
         print("Creating ppo agent")
 
-        ppo = PPO.load(ppo_file, device=device, print_system_info=True)
-
-        obs_kwargs = {"include_valid_actions": True}
-        env = SeatCEOEnv(
-            listener=listener,
-            action_space_type="all_card",
-            reward_includes_cards_left=False,
-            obs_kwargs=obs_kwargs,
+        ppo = PPO.load(
+            pathlib.Path(ppo_dir, "best_model.zip"), device=device, print_system_info=True
         )
+
+        with open(pathlib.Path(ppo_dir, "params.json"), "rb") as f:
+            params = json.load(f)
+
+        env = CEOPlayerEnv(listener=listener, **params["env_args"])
 
         return env, env, PPOAgent(env, ppo)
 
@@ -413,6 +414,7 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
     # Play the episodes
     total_wins = 0
     total_losses = 0
+    total_stay = 0
     total_illegal_play = 0
     for count in range(episodes):
         if do_logging:
@@ -430,6 +432,8 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
             total_wins += 1
         elif reward == -1.0:
             total_losses += 1
+        elif reward == 0.0:
+            total_stay += 1
         else:
             total_illegal_play += 1
 
@@ -449,6 +453,8 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
         episodes,
         "Total wins",
         total_wins,
+        "Total stay",
+        total_stay,
         "Total losses",
         total_losses,
         "Total illegal",
@@ -459,11 +465,11 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
 
     alpha = 0.05
     l, r = proportion_confint(count=total_wins, nobs=episodes, alpha=alpha, method="normal")
-    print(f"{1-alpha} confidence interval ({l}, {r})")
+    print(f"{1-alpha} wins confidence interval ({l}, {r})")
 
     alpha = 0.01
     l, r = proportion_confint(count=total_wins, nobs=episodes, alpha=alpha, method="normal")
-    print(f"{1-alpha} confidence interval ({l}, {r})")
+    print(f"{1-alpha} wins confidence interval ({l}, {r})")
 
     return PlayStats(
         episodes=episodes,
@@ -533,10 +539,10 @@ def main():
     )
 
     parser.add_argument(
-        "--ppo-file",
-        dest="ppo_file",
+        "--ppo-dir",
+        dest="ppo_dir",
         type=str,
-        help="The zip file containing the PPO agent",
+        help="The zip file containing the PPO agent. The directory should have best_model.zip and params.json.",
     )
 
     parser.add_argument(
@@ -601,8 +607,8 @@ def main():
     agent_args = dict()
     if args.agent_file:
         agent_args["local_file"] = args.agent_file
-    elif args.ppo_file:
-        agent_args["ppo_file"] = args.ppo_file
+    elif args.ppo_dir:
+        agent_args["ppo_dir"] = args.ppo_dir
     elif args.azure_agent:
         agent_args["azure_blob_name"] = args.azure_agent
     else:
