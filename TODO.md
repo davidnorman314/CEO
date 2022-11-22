@@ -14,6 +14,8 @@
 
 - Add feature for number of aces remaining and see how much better the agent does.
 
+- Test games with seven and eight players.
+
 # TODO Items: Q learning
 
 - Features need to contain information that if the agent played a triple,
