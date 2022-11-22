@@ -258,7 +258,8 @@ class PPOAgent:
             selected_action_array, _ = self._ppo.predict(obs, deterministic=True)
             selected_action = int(selected_action_array)
 
-            obs_tensor_array = th.Tensor([obs], device=self._device)
+            nparr = np.array([obs])
+            obs_tensor_array = th.tensor(nparr, device=self._device)
 
             predicted_value = self._ppo.policy.predict_values(obs_tensor_array)[0][0]
             distribution = self._ppo.policy.get_distribution(obs_tensor_array).distribution.probs[0]
