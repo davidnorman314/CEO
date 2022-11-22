@@ -53,7 +53,7 @@ class QAgent:
 
     def do_episode(
         self, hands: list[Hand] = None, log_state: bool = False
-    ) -> Tuple[List[tuple], List[int], float]:
+    ) -> Tuple[List[tuple], List[int], float, dict]:
         """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
         # Reseting the environment each time as per requirement
         state = self._env.reset(hands)
@@ -65,6 +65,7 @@ class QAgent:
         episode_reward = 0
 
         # Run until the episode is finished
+        final_info = None
         while True:
             selected_action = self._pick_action(state_tuple)
 
@@ -129,9 +130,10 @@ class QAgent:
             # See if the episode is finished
             if done == True:
                 # print("Reward", reward)
+                final_info = info
                 break
 
-        return episode_states, episode_actions, episode_reward
+        return episode_states, episode_actions, episode_reward, final_info
 
 
 class AfterstateAgent:
@@ -157,7 +159,7 @@ class AfterstateAgent:
 
     def do_episode(
         self, hands: list[Hand] = None, log_state: bool = False
-    ) -> tuple[list[tuple], list[int], float]:
+    ) -> tuple[list[tuple], list[int], float, dict]:
         """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
         state = self._env.reset(hands)
         info = dict()
@@ -167,6 +169,7 @@ class AfterstateAgent:
         episode_reward = 0
 
         # Run until the episode is finished
+        final_info = None
         while True:
             selected_action, expected_reward, visit_count = self._pick_action(state)
 
@@ -219,9 +222,10 @@ class AfterstateAgent:
             # See if the episode is finished
             if done == True:
                 # print("Reward", reward)
+                final_info = info
                 break
 
-        return episode_states, episode_actions, episode_reward
+        return episode_states, episode_actions, episode_reward, final_info
 
 
 class PPOAgent:
@@ -246,6 +250,7 @@ class PPOAgent:
         episode_reward = 0
 
         # Run until the episode is finished
+        final_info = None
         while True:
             selected_action_array, _ = self._ppo.predict(obs, deterministic=True)
             selected_action = int(selected_action_array)
@@ -278,9 +283,10 @@ class PPOAgent:
             # See if the episode is finished
             if done == True:
                 # print("Reward", reward)
+                final_info = info
                 break
 
-        return episode_states, episode_actions, episode_reward
+        return episode_states, episode_actions, episode_reward, final_info
 
 
 def create_agent(
@@ -416,6 +422,8 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
     total_losses = 0
     total_stay = 0
     total_illegal_play = 0
+    total_ceo_stay = 0
+    total_ceo_to_bottom = 0
     for count in range(episodes):
         if do_logging:
             print("Playing episode", count + 1)
@@ -426,7 +434,8 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
         hands = deck.deal()
         save_hands = deepcopy(hands)
 
-        states, actions, reward = agent.do_episode(hands, do_logging)
+        states, actions, reward, final_info = agent.do_episode(hands, do_logging)
+        assert final_info is not None
 
         if reward > 0.0:
             total_wins += 1
@@ -446,6 +455,12 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
             if do_logging:
                 for i in range(len(states)):
                     print(i, "state", states[i], "action", actions[i])
+
+        if "ceo_stay" in final_info:
+            if final_info["ceo_stay"]:
+                total_ceo_stay += 1
+            else:
+                total_ceo_to_bottom += 1
 
     pct_win = total_wins / episodes
     print(
@@ -470,6 +485,13 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
     alpha = 0.01
     l, r = proportion_confint(count=total_wins, nobs=episodes, alpha=alpha, method="normal")
     print(f"{1-alpha} wins confidence interval ({l}, {r})")
+
+    assert episodes == total_ceo_stay + total_ceo_to_bottom or (
+        total_ceo_stay == 0 and total_ceo_to_bottom == 0
+    )
+
+    pct_ceo_stay = total_ceo_stay / episodes
+    print(f"CEO stay {total_ceo_stay} CEO to bottom {total_ceo_to_bottom} pct stay {pct_ceo_stay}")
 
     return PlayStats(
         episodes=episodes,

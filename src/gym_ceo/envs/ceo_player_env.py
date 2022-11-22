@@ -290,7 +290,9 @@ class CEOPlayerEnv(gym.Env):
 
         self._hands = None
 
-        return obs, reward, done, self._info
+        info = {"ceo_stay": next_round_order[0] == 0}
+
+        return obs, reward, done, info
 
     def render(self, mode="human"):
         pass

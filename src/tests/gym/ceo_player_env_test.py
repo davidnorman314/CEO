@@ -318,6 +318,7 @@ def test_CEOPlayerEnv_Bottom_Stay():
 
     assert done
     assert reward == 0
+    assert info["ceo_stay"] == True
 
 
 def test_CEOPlayerEnv_Bottom_MoveUp():
@@ -415,6 +416,7 @@ def test_CEOPlayerEnv_Bottom_MoveUp():
 
     assert done
     assert reward == 1
+    assert info["ceo_stay"] == True
 
 
 def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
@@ -527,6 +529,7 @@ def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
 
     assert done
     assert reward == 1
+    assert info["ceo_stay"] == False
 
 
 def test_CEOPlayerEnv_ValidActions_Bottom_NeverPlay():
@@ -1146,6 +1149,93 @@ def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick():
 
     assert done
     assert reward == -1
+
+def test_CEOPlayerEnv_CEO_MoveDown():
+    """
+    Test when the player is in the CEO position and doesn't go out first, so they drop
+    to the bottom.
+    """
+
+    # Create CardValue objects for ease of use later
+    cv0 = CardValue(0)
+    cv1 = CardValue(1)
+    cv2 = CardValue(2)
+    cv3 = CardValue(3)
+    cv4 = CardValue(4)
+    cv5 = CardValue(5)
+    cv6 = CardValue(6)
+    cv7 = CardValue(7)
+    cv8 = CardValue(8)
+    cv9 = CardValue(9)
+    cv10 = CardValue(10)
+    cv11 = CardValue(11)
+
+    # Make the hands and players. Note that we disable passing below
+    hand0 = Hand()
+    hand1 = Hand()
+    hand2 = Hand()
+    hand3 = Hand()
+
+    behavior1 = MockPlayerBehavior()
+    behavior2 = MockPlayerBehavior()
+    behavior3 = MockPlayerBehavior()
+
+    # Trick 1
+    create_rl_play(hand0, cv0, 2)
+    create_play(hand1, behavior1, cv1, 2)
+    create_play(hand2, behavior2, cv2, 2)
+    create_play(hand3, behavior3, cv3, 2)
+
+    # Trick 2
+    create_play(hand3, behavior3, cv4, 2)
+    create_rl_play(hand0, cv5, 2)
+    create_play(hand1, behavior1, cv6, 2)
+    create_play(hand2, behavior2, cv7, 2)
+
+    # Trick 3
+    create_play(hand2, behavior2, cv8, 3)
+    create_play(hand3, behavior3, cv9, 3)
+    # RL passes
+    create_play(hand1, behavior1, cv10, 3)
+
+    # Remaining cards
+    create_rl_play(hand0, cv1, 3)
+
+    hands = [hand0, hand1, hand2, hand3]
+    behaviors = [None, behavior1, behavior2, behavior3]
+
+    env = CEOPlayerEnv(
+        seat_number=0,
+        num_players=4,
+        behaviors=behaviors,
+        hands=hands,
+        listener=PrintAllEventListener(),
+        skip_passing=True,
+        action_space_type="all_card",
+    )
+
+    # Trick 1
+    observation_array = env.reset()
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_count() == 0
+
+    action = 0
+    observation_array, reward, done, info = env.step(action)
+
+    assert not done
+    assert reward == 0.0
+
+    observation = Observation(env.observation_factory, array=observation_array)
+    assert observation.get_cur_trick_value() == 4
+    assert observation.get_cur_trick_count() == 2
+
+    action = 5
+    observation_array, reward, done, info = env.step(action)
+
+    assert done
+    assert reward == -1.0
+    assert info["ceo_stay"] == False
 
 
 def test_CEOPlayerEnv_CEO_OnlyPlayPass():
