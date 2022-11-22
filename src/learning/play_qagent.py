@@ -233,9 +233,12 @@ class PPOAgent:
 
     _ppo: PPO
 
-    def __init__(self, env: gym.Env, ppo: PPO):
+    _device: str
+
+    def __init__(self, env: gym.Env, ppo: PPO, device: str):
         self._env = env
         self._ppo = ppo
+        self._device = device
 
     def do_episode(
         self, hands: list[Hand] = None, log_state: bool = False
@@ -255,7 +258,7 @@ class PPOAgent:
             selected_action_array, _ = self._ppo.predict(obs, deterministic=True)
             selected_action = int(selected_action_array)
 
-            obs_tensor_array = th.Tensor([obs])
+            obs_tensor_array = th.Tensor([obs], device=self._device)
 
             predicted_value = self._ppo.policy.predict_values(obs_tensor_array)[0][0]
             distribution = self._ppo.policy.get_distribution(obs_tensor_array).distribution.probs[0]
@@ -319,7 +322,7 @@ def create_agent(
 
         env = CEOPlayerEnv(listener=listener, **params["env_args"])
 
-        return env, env, PPOAgent(env, ppo)
+        return env, env, PPOAgent(env, ppo, device)
 
     elif local_file or azure_blob_name:
         assert not base_env
