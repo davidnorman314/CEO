@@ -32,6 +32,8 @@ from learning.value_table import ValueTable
 
 from stable_baselines3 import PPO
 
+from learning.ppo_agents import PPOAgent
+
 import torch as th
 import cloudpickle
 
@@ -228,69 +230,6 @@ class AfterstateAgent:
         return episode_states, episode_actions, episode_reward, final_info
 
 
-class PPOAgent:
-    _env: gym.Env
-
-    _ppo: PPO
-
-    _device: str
-
-    def __init__(self, env: gym.Env, ppo: PPO, device: str):
-        self._env = env
-        self._ppo = ppo
-        self._device = device
-
-    def do_episode(
-        self, hands: list[Hand] = None, log_state: bool = False
-    ) -> Tuple[List[tuple], List[int], float]:
-        """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
-        # Reseting the environment each time as per requirement
-        obs = self._env.reset(hands)
-        info = dict()
-
-        episode_states = []
-        episode_actions = []
-        episode_reward = 0
-
-        # Run until the episode is finished
-        final_info = None
-        while True:
-            selected_action_array, _ = self._ppo.predict(obs, deterministic=True)
-            selected_action = int(selected_action_array)
-
-            nparr = np.array([obs])
-            obs_tensor_array = th.tensor(nparr, device=self._device)
-
-            predicted_value = self._ppo.policy.predict_values(obs_tensor_array)[0][0]
-            distribution = self._ppo.policy.get_distribution(obs_tensor_array).distribution.probs[0]
-
-            if log_state:
-                print("Obs", obs)
-                print("Obs info:")
-                for key, value in info.items():
-                    print(" ", key, "->", value)
-                print("Selected action", selected_action)
-
-                print(f"Predicted value {predicted_value}")
-                print(f"Action distribution {distribution}")
-
-            # Perform the action
-            new_obs, reward, done, info = self._env.step(selected_action)
-
-            episode_states.append(f"value {predicted_value}")
-            episode_actions.append(f"{selected_action} prob {distribution[selected_action]}")
-
-            # Increasing our total reward and updating the state
-            episode_reward += reward
-            obs = new_obs
-
-            # See if the episode is finished
-            if done == True:
-                # print("Reward", reward)
-                final_info = info
-                break
-
-        return episode_states, episode_actions, episode_reward, final_info
 
 
 def create_agent(
