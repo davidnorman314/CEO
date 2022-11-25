@@ -60,8 +60,9 @@ class PPOBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
         # Use the default pass method.
         return self.pass_singles(hand, count)
 
-    def _get_action(self, obs):
-        action_array, _ = self._ppo.predict(obs, deterministic=True)
+    def _get_action(self, obs: Observation):
+        obs_array = obs.get_array()
+        action_array, _ = self._ppo.predict(obs_array, deterministic=True)
         action = int(action_array)
 
         if action < 13:
@@ -78,7 +79,7 @@ class PPOBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
 
     def play_on_trick(
         self,
-        starting_position: int,
+        starting_player: int,
         player_position: int,
         hand: Hand,
         cur_trick_value: CardValue,
@@ -88,7 +89,7 @@ class PPOBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
         obs = self._observation_factory.create_observation(
             type="play",
             cur_index=player_position,
-            starting_position=starting_position,
+            starting_player=starting_player,
             cur_card_value=cur_trick_value,
             cur_card_count=cur_trick_count,
             cur_hand=hand,
