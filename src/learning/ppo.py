@@ -604,6 +604,13 @@ def main():
     )
     print("main", type(custom_behaviors))
 
+    # Check that the custom behaviors don't include the seat being trained.
+    if args.seat_number in custom_behaviors:
+        raise Exception(
+            f"The seat {args.seat_number} has a custom behavior, but that is the seat being trained."
+        )
+
+    # Create the environment.
     env_args = {
         "num_players": args.num_players,
         "seat_number": args.seat_number,
