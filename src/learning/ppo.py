@@ -420,7 +420,7 @@ def make_env(env_number, env_args: dict):
     return _init
 
 
-def process_ppo_agents(ppo_agents: list[str], device: str) -> tuple[dict, dict]:
+def process_ppo_agents(ppo_agents: list[str], device: str, num_players: int) -> tuple[dict, dict]:
     if not ppo_agents:
         return None
 
@@ -429,8 +429,16 @@ def process_ppo_agents(ppo_agents: list[str], device: str) -> tuple[dict, dict]:
     for ppo_dir in ppo_agents:
         ppo, params = load_ppo(ppo_dir, device)
 
-        num_players = params["env_args"]["num_players"]
+        agent_num_players = params["env_args"]["num_players"]
         seat_num = params["env_args"]["seat_number"]
+
+        if num_players != agent_num_players:
+            raise Exception(
+                (
+                    f"The agent {ppo_dir} is for a game with {agent_num_players} players, "
+                    f"but the game has {num_players} players."
+                )
+            )
 
         behavior = PPOBehavior(
             seat_num=seat_num, num_players=num_players, ppo=ppo, params=params, device=device
@@ -592,7 +600,7 @@ def main():
     obs_kwargs = {"include_valid_actions": True}
 
     custom_behaviors, custom_behavior_descs = process_ppo_agents(
-        args.ppo_agents, device=args.device
+        args.ppo_agents, device=args.device, num_players=args.num_players
     )
     print("main", type(custom_behaviors))
 
