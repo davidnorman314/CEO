@@ -38,9 +38,11 @@
 
 `python -m learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu`
 
+`python -m learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu --ppo-agents eval_log/BL_0_6_A`
+
 ## Use trained agents to play
 
-`python -m learning.play_qagent --play --episodes 100 --ppo-file eval_log/PPOM01/best_model.zip`
+`python -m learning.play_qagent --play --episodes 100 --ppo-dir eval_log/PPOM01 --device cpu`
 
 `python -m learning.play_qagent --play --agent-file monte_carlo.pickle --episodes 200 > log.txt`
 

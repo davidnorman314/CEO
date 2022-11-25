@@ -32,7 +32,7 @@ from learning.value_table import ValueTable
 
 from stable_baselines3 import PPO
 
-from learning.ppo_agents import PPOAgent
+from learning.ppo_agents import PPOAgent, load_ppo
 
 import torch as th
 import cloudpickle
@@ -230,8 +230,6 @@ class AfterstateAgent:
         return episode_states, episode_actions, episode_reward, final_info
 
 
-
-
 def create_agent(
     listener: EventListenerInterface,
     *,
@@ -246,19 +244,10 @@ def create_agent(
     feature_defs=None,
     device=None,
 ):
-
     if ppo_dir:
-        if device is None:
-            raise Exception("No device specified.")
-
         print("Creating ppo agent")
 
-        ppo = PPO.load(
-            pathlib.Path(ppo_dir, "best_model.zip"), device=device, print_system_info=True
-        )
-
-        with open(pathlib.Path(ppo_dir, "params.json"), "rb") as f:
-            params = json.load(f)
+        ppo, params = load_ppo(ppo_dir=ppo_dir, device=device)
 
         env = CEOPlayerEnv(listener=listener, **params["env_args"])
 

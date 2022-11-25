@@ -32,6 +32,7 @@ from gym_ceo.envs.observation import ObservationFactory, Observation
 from gym_ceo.envs.ceo_player_env import CEOPlayerEnv
 from gym_ceo.envs.actions import ActionEnum
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
+from learning.ppo_agents import PPOBehavior, load_ppo
 
 from typing import Any, Dict, List, Optional, Sequence, TextIO, Tuple, Union
 
@@ -419,6 +420,28 @@ def make_env(env_number, env_args: dict):
     return _init
 
 
+def process_ppo_agents(ppo_agents: list[str], device: str) -> tuple[dict, dict]:
+    if not ppo_agents:
+        return None
+
+    agents = dict()
+    agent_descs = dict()
+    for ppo_dir in ppo_agents:
+        ppo, params = load_ppo(ppo_dir, device)
+
+        num_players = params["env_args"]["num_players"]
+        seat_num = params["env_args"]["seat_number"]
+
+        behavior = PPOBehavior(
+            seat_num=seat_num, num_players=num_players, ppo=ppo, params=params, device=device
+        )
+
+        agents[seat_num] = behavior
+        agent_descs[seat_num] = ppo_dir
+
+    return agents, agent_descs
+
+
 # Main function
 def main():
     print("In main")
@@ -532,6 +555,14 @@ def main():
         default=None,
         help="The number of players in the game.",
     )
+    parser.add_argument(
+        "--ppo-agents",
+        dest="ppo_agents",
+        type=str,
+        nargs="*",
+        default=[],
+        help="Specifies directories containing trained PPO agents to play other seats in the game.",
+    )
 
     args = parser.parse_args()
 
@@ -560,12 +591,18 @@ def main():
 
     obs_kwargs = {"include_valid_actions": True}
 
+    custom_behaviors, custom_behavior_descs = process_ppo_agents(
+        args.ppo_agents, device=args.device
+    )
+    print("main", type(custom_behaviors))
+
     env_args = {
         "num_players": args.num_players,
         "seat_number": args.seat_number,
         "listener": listener,
         "action_space_type": "all_card",
         "reward_includes_cards_left": False,
+        "custom_behaviors": custom_behaviors,
         "obs_kwargs": obs_kwargs,
     }
 
@@ -580,6 +617,7 @@ def main():
         seat_number=args.seat_number,
         listener=listener,
         action_space_type="all_card",
+        custom_behaviors=custom_behaviors,
         reward_includes_cards_left=False,
         obs_kwargs=obs_kwargs,
     )
@@ -609,10 +647,12 @@ def main():
     param_file = eval_log_path + "/params.json"
 
     save_params = dict()
-    save_params["env_args"] = copy.copy(env_args)
-    del save_params["env_args"]["listener"]
     save_params["learning_kwargs"] = learning_kwargs
     save_params["train_params"] = train_params
+
+    save_params["env_args"] = copy.copy(env_args)
+    del save_params["env_args"]["listener"]
+    save_params["env_args"]["custom_behaviors"] = custom_behavior_descs
 
     eval_log_path_obj = pathlib.Path(eval_log_path)
     if not eval_log_path_obj.is_dir():

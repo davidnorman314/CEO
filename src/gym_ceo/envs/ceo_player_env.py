@@ -66,6 +66,7 @@ class CEOPlayerEnv(gym.Env):
         seat_number: int,
         num_players=6,
         behaviors=[],
+        custom_behaviors=None,
         hands=[],
         listener=EventListenerInterface(),
         skip_passing=False,
@@ -88,11 +89,16 @@ class CEOPlayerEnv(gym.Env):
 
         assert len(behaviors) == self.num_players or len(behaviors) == 0
 
+        print(type(custom_behaviors))
+
         self._players = []
         for i in range(num_players):
             if i == self.seat_number:
                 assert len(behaviors) == 0 or behaviors[i] == None
                 self._players.append(Player("RL", RLBehavior()))
+            elif i in custom_behaviors:
+                name = "Custom" + str(i)
+                self._players.append(Player(name, custom_behaviors[i]))
             else:
                 name = "Basic" + str(i)
 
