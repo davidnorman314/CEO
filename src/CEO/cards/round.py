@@ -38,6 +38,15 @@ class Round:
             trick_number += 1
             assert trick_number < len(self._hands) * 13
 
+            # Validate and diagnostic logging.
+            starting_hand = self._hands[starting_player]
+            if starting_hand.is_empty():
+                print(f"Error: No cards in leader's hand. Starting player {starting_player}"
+                    f" trick number {trick_number}")
+                for hand in self._hands:
+                    print(f"{hand.card_count()} = {hand}")
+            assert not starting_hand.is_empty()
+
             starting_player = yield from self._play_trick(starting_player)
 
         next_round_players = [self._players[i] for i in self.get_next_round_order()]
@@ -61,7 +70,7 @@ class Round:
             print(f"Error: No cards in leader's hand. Starting player {starting_player}")
             print(f"cur_player.behavior.is_rl {cur_player.behavoir.is_reinforcement_learning}")
             for hand in self._hands:
-                print(hand)
+                print(f"{hand.card_count()} = {hand}")
         assert not cur_hand.is_empty()
 
         # Run the round.
