@@ -89,7 +89,8 @@ class CEOPlayerEnv(gym.Env):
 
         assert len(behaviors) == self.num_players or len(behaviors) == 0
 
-        print(type(custom_behaviors))
+        if custom_behaviors is None:
+            custom_behaviors = dict()
 
         self._players = []
         for i in range(num_players):
