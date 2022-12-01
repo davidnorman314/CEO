@@ -49,6 +49,9 @@ class CEOPlayerEnv(gym.Env):
     _observation_dimension: int
     _info = dict()
 
+    _next_reset_hands: list[Hand]
+    """Hands to be used the next time reset is called."""
+
     _skip_passing: bool
 
     _cur_hand: Hand
@@ -67,7 +70,7 @@ class CEOPlayerEnv(gym.Env):
         num_players=6,
         behaviors=[],
         custom_behaviors=None,
-        hands=[],
+        hands=None,
         listener=EventListenerInterface(),
         skip_passing=False,
         *,
@@ -85,7 +88,8 @@ class CEOPlayerEnv(gym.Env):
         else:
             self._listener = listener
 
-        self._hands = hands
+        self._next_reset_hands = hands
+        assert self._next_reset_hands is None or len(self._next_reset_hands) == self.num_players
 
         assert len(behaviors) == self.num_players or len(behaviors) == 0
 
@@ -150,7 +154,11 @@ class CEOPlayerEnv(gym.Env):
         # Deal the cards
         if hands is not None:
             self._hands = hands
-        elif self._hands is None or len(self._hands) == 0:
+        elif self._next_reset_hands is not None:
+            self._hands = self._next_reset_hands
+            self._next_reset_hands = None
+            assert len(self._hands) == len(self._players)
+        else:
             deck = Deck(self.num_players)
             self._hands = deck.deal()
 
