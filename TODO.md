@@ -1,6 +1,4 @@
 # TODO Items: PPO
-- Save environment or environment args in eval_log
-  - Currently play_qagent.py creates the enviornment from scratch, so it might not match.
 
 - Learning rate.
   - Tune learning rate.
@@ -8,13 +6,11 @@
 
 - Tune gaelambda parameter.
 
-- Load a trained model and train it further
-
 - Test different activation functions
 
 - Add feature for number of aces remaining and see how much better the agent does.
 
-- Test games with seven and eight players.
+- Test games with eight players.
 
 # TODO Items: Q learning
 

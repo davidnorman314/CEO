@@ -40,6 +40,9 @@
 
 `python -m learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu --ppo-agents eval_log/BL_0_6_A`
 
+### Continue training
+`python -m learning.ppo --name PPOTest --device cpu --ppo-agents eval_log/BL_0_6_A`
+
 ## Use trained agents to play
 
 `python -m learning.play_qagent --play --episodes 100 --ppo-dir eval_log/PPOM01 --device cpu`
