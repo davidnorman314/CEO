@@ -610,17 +610,6 @@ def main():
 
     obs_kwargs = {"include_valid_actions": True}
 
-    custom_behaviors, custom_behavior_descs = process_ppo_agents(
-        args.ppo_agents, device=args.device, num_players=args.num_players
-    )
-    print("main", type(custom_behaviors))
-
-    # Check that the custom behaviors don't include the seat being trained.
-    if custom_behaviors is not None and args.seat_number in custom_behaviors:
-        raise Exception(
-            f"The seat {args.seat_number} has a custom behavior, but that is the seat being trained."
-        )
-
     # Set up the parameters file location
     eval_log_path = "eval_log/" + args.name
     param_file = eval_log_path + "/params.json"
@@ -653,6 +642,18 @@ def main():
         if not args.num_players:
             args.num_players = 6
             print(f"Using default {args.num_players} seat for the agent.")
+
+    # Set up custom behaviors
+    custom_behaviors, custom_behavior_descs = process_ppo_agents(
+        args.ppo_agents, device=args.device, num_players=args.num_players
+    )
+    print("main", type(custom_behaviors))
+
+    # Check that the custom behaviors don't include the seat being trained.
+    if custom_behaviors is not None and args.seat_number in custom_behaviors:
+        raise Exception(
+            f"The seat {args.seat_number} has a custom behavior, but that is the seat being trained."
+        )
 
     # Create the environment.
     env_args = {
