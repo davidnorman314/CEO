@@ -49,6 +49,7 @@ class PPOCallback(BaseCallback):
     ):
         super(PPOCallback, self).__init__(verbose)
 
+        print(f"Hyperparameters {hyperparameters}")
         self._hyperparameters = hyperparameters
         self._do_log = do_log
 
@@ -302,6 +303,44 @@ class PPOLearning:
             self._azure_client = None
 
     def train(self, observation_factory, eval_log_path: str, params: dict, do_log: bool):
+        if "continue_ppo" in params:
+            self._ppo = params["continue_ppo"]
+            del params["continue_ppo"]
+            reset_timesteps = False
+        else:
+            self._create_ppo(params, observation_factory)
+            reset_timesteps = True
+
+        # Log the start of training to Azure, if necessary.
+        if self._azure_client:
+            self._azure_client.start_training(
+                "ppo",
+                self._base_env.action_space_type,
+                self._env.full_env.num_players,
+                self._env.full_env.seat_number,
+                params,
+                self._env.feature_defs,
+            )
+
+        callback = PPOCallback(params, do_log)
+
+        self._ppo.learn(
+            self._total_steps,
+            eval_env=self._eval_env,
+            eval_freq=50000,
+            n_eval_episodes=10000,
+            reset_num_timesteps=reset_timesteps,
+            eval_log_path=eval_log_path,
+            tb_log_name=self._name,
+            callback=callback,
+        )
+
+        if self._azure_client:
+            self._azure_client.end_training()
+
+        return
+
+    def _create_ppo(self, params, observation_factory):
         # Load the parameters
         learning_rate = params["learning_rate"] if "learning_rate" in params else None
         if learning_rate is None:
@@ -348,17 +387,6 @@ class PPOLearning:
 
         print("Training with", self._total_steps, "total steps")
 
-        # Log the start of training to Azure, if necessary.
-        if self._azure_client:
-            self._azure_client.start_training(
-                "ppo",
-                self._base_env.action_space_type,
-                self._env.full_env.num_players,
-                self._env.full_env.seat_number,
-                params,
-                self._env.feature_defs,
-            )
-
         tensorboard_log = "tensorboard_log"
         verbose = 1
         verbose = 0
@@ -385,23 +413,6 @@ class PPOLearning:
             device=device,
         )
 
-        callback = PPOCallback(params, do_log)
-
-        self._ppo.learn(
-            self._total_steps,
-            eval_env=self._eval_env,
-            eval_freq=50000,
-            n_eval_episodes=10000,
-            eval_log_path=eval_log_path,
-            tb_log_name=self._name,
-            callback=callback,
-        )
-
-        if self._azure_client:
-            self._azure_client.end_training()
-
-        return
-
     def save(self, file: str):
         self._ppo.save(file)
 
@@ -422,7 +433,7 @@ def make_env(env_number, env_args: dict):
 
 def process_ppo_agents(ppo_agents: list[str], device: str, num_players: int) -> tuple[dict, dict]:
     if not ppo_agents:
-        return None
+        return None, None
 
     agents = dict()
     agent_descs = dict()
@@ -564,6 +575,14 @@ def main():
         help="The number of players in the game.",
     )
     parser.add_argument(
+        "--continue-training",
+        dest="continue_training",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Continue training the previously saved agent.",
+    )
+    parser.add_argument(
         "--ppo-agents",
         dest="ppo_agents",
         type=str,
@@ -573,14 +592,6 @@ def main():
     )
 
     args = parser.parse_args()
-
-    if not args.seat_number:
-        args.seat_number = 0
-        print(f"Using default {args.seat_number} seat for the agent.")
-
-    if not args.num_players:
-        args.num_players = 6
-        print(f"Using default {args.num_players} seat for the agent.")
 
     learning_kwargs = dict()
 
@@ -605,10 +616,43 @@ def main():
     print("main", type(custom_behaviors))
 
     # Check that the custom behaviors don't include the seat being trained.
-    if args.seat_number in custom_behaviors:
+    if custom_behaviors is not None and args.seat_number in custom_behaviors:
         raise Exception(
             f"The seat {args.seat_number} has a custom behavior, but that is the seat being trained."
         )
+
+    # Set up the parameters file location
+    eval_log_path = "eval_log/" + args.name
+    param_file = eval_log_path + "/params.json"
+
+    # If we are continuing a previous training, then load the environment args from
+    # the saved parameters.
+    if args.continue_training:
+        if args.num_players:
+            raise Exception("Can't specify --num-players when using --continue-training")
+
+        if args.seat_number:
+            raise Exception("Can't specify --seat-number when using --continue-training")
+
+        with open(param_file, "r") as data_file:
+            prev_params = json.load(data_file)
+
+        args.num_players = prev_params["env_args"]["num_players"]
+        args.seat_number = prev_params["env_args"]["seat_number"]
+
+        print(f"Loading previous num_players {args.num_players} and seat_number {args.seat_number}")
+
+        assert args.num_players is not None
+        assert args.seat_number is not None
+    else:
+        # Handle defaults for starting a new training
+        if not args.seat_number:
+            args.seat_number = 0
+            print(f"Using default {args.seat_number} seat for the agent.")
+
+        if not args.num_players:
+            args.num_players = 6
+            print(f"Using default {args.num_players} seat for the agent.")
 
     # Create the environment.
     env_args = {
@@ -657,24 +701,27 @@ def main():
     if args.device:
         train_params["device"] = args.device
 
-    # Save all parameters to the eval_log directory
-    eval_log_path = "eval_log/" + args.name
-    param_file = eval_log_path + "/params.json"
+    if not args.continue_training:
+        # Save all parameters to the eval_log directory
+        save_params = dict()
+        save_params["learning_kwargs"] = learning_kwargs
+        save_params["train_params"] = train_params
 
-    save_params = dict()
-    save_params["learning_kwargs"] = learning_kwargs
-    save_params["train_params"] = train_params
+        save_params["env_args"] = copy.copy(env_args)
+        del save_params["env_args"]["listener"]
+        save_params["env_args"]["custom_behaviors"] = custom_behavior_descs
 
-    save_params["env_args"] = copy.copy(env_args)
-    del save_params["env_args"]["listener"]
-    save_params["env_args"]["custom_behaviors"] = custom_behavior_descs
+        eval_log_path_obj = pathlib.Path(eval_log_path)
+        if not eval_log_path_obj.is_dir():
+            eval_log_path_obj.mkdir(parents=True)
 
-    eval_log_path_obj = pathlib.Path(eval_log_path)
-    if not eval_log_path_obj.is_dir():
-        eval_log_path_obj.mkdir(parents=True)
-
-    with open(param_file, "w") as data_file:
-        json.dump(save_params, data_file, indent=4, sort_keys=True)
+        with open(param_file, "w") as data_file:
+            json.dump(save_params, data_file, indent=4, sort_keys=True)
+    else:
+        ppo = PPO.load(
+            eval_log_path + "/best_model.zip", device=args.device, print_system_info=True, env=env
+        )
+        train_params["continue_ppo"] = ppo
 
     if args.profile:
         print("Running with profiling")
