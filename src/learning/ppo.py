@@ -633,6 +633,8 @@ def main():
 
         assert args.num_players is not None
         assert args.seat_number is not None
+
+        prev_custom_behaviors = prev_params["env_args"].get("custom_behaviors", None)
     else:
         # Handle defaults for starting a new training
         if not args.seat_number:
@@ -643,11 +645,28 @@ def main():
             args.num_players = 6
             print(f"Using default {args.num_players} seat for the agent.")
 
+        prev_custom_behaviors = None
+
     # Set up custom behaviors
     custom_behaviors, custom_behavior_descs = process_ppo_agents(
         args.ppo_agents, device=args.device, num_players=args.num_players
     )
     print("main", type(custom_behaviors))
+
+    # If continuing training, validate that the custom behaviors match the previous
+    # custom behaviors
+    if prev_custom_behaviors is None and custom_behavior_descs is not None:
+        raise Exception(
+            "The saved agent did not use custom behaviors, but they were specified on the command line."
+        )
+    elif prev_custom_behaviors is not None and custom_behavior_descs is None:
+        raise Exception(
+            "The saved agent did used custom behaviors, but they were not specified on the command line."
+        )
+    elif prev_custom_behaviors is not None and custom_behavior_descs is not None and prev_custom_behaviors != custom_behavior_descs:
+        raise Exception(
+            f"The saved agent did used custom behaviors {prev_custom_behaviors}, but they don't match the command line custom behaviors {custom_behavior_descs}."
+        )
 
     # Check that the custom behaviors don't include the seat being trained.
     if custom_behaviors is not None and args.seat_number in custom_behaviors:
