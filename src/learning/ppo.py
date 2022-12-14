@@ -655,7 +655,11 @@ def main():
 
     # If continuing training, validate that the custom behaviors match the previous
     # custom behaviors
-    if prev_custom_behaviors is None and custom_behavior_descs is not None:
+    if (
+        args.continue_training
+        and prev_custom_behaviors is None
+        and custom_behavior_descs is not None
+    ):
         raise Exception(
             "The saved agent did not use custom behaviors, but they were specified on the command line."
         )
@@ -663,7 +667,11 @@ def main():
         raise Exception(
             "The saved agent did used custom behaviors, but they were not specified on the command line."
         )
-    elif prev_custom_behaviors is not None and custom_behavior_descs is not None and prev_custom_behaviors != custom_behavior_descs:
+    elif (
+        prev_custom_behaviors is not None
+        and custom_behavior_descs is not None
+        and prev_custom_behaviors != custom_behavior_descs
+    ):
         raise Exception(
             f"The saved agent did used custom behaviors {prev_custom_behaviors}, but they don't match the command line custom behaviors {custom_behavior_descs}."
         )
