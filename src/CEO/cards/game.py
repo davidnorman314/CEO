@@ -23,7 +23,7 @@ class Game:
         self._players = players
         self._player_count = len(players)
 
-    def play(self, *, round_count: int = 500, do_shuffle: bool = True):
+    def play(self, *, round_count: int = 500, do_shuffle: bool = True, reorder_seats: bool = True):
         """
         Play a game with a given number of rounds
         """
@@ -53,7 +53,9 @@ class Game:
             next_round_order = round.get_next_round_order()
             assert len(self._seats) == len(next_round_order)
 
-            self._seats = list(map(lambda i: self._seats[i], next_round_order))
+            if reorder_seats:
+                # Put the players in their seats for the next round.
+                self._seats = list(map(lambda i: self._seats[i], next_round_order))
 
             assert len(self._seats) == self._player_count
 

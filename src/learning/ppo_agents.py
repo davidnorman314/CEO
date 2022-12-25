@@ -164,3 +164,35 @@ class PPOAgent:
                 break
 
         return episode_states, episode_actions, episode_reward, final_info
+
+
+def process_ppo_agents(ppo_agents: list[str], device: str, num_players: int) -> tuple[dict, dict]:
+    """Takes as input a list of directories containing a saved PPO agent, e.g., eval_log/BL_0_7_A,
+    loads them, and returns an dict mapping seat number to the RLBehavior."""
+    if not ppo_agents:
+        return None, None
+
+    agents = dict()
+    agent_descs = dict()
+    for ppo_dir in ppo_agents:
+        ppo, params = load_ppo(ppo_dir, device)
+
+        agent_num_players = params["env_args"]["num_players"]
+        seat_num = params["env_args"]["seat_number"]
+
+        if num_players != agent_num_players:
+            raise Exception(
+                (
+                    f"The agent {ppo_dir} is for a game with {agent_num_players} players, "
+                    f"but the game has {num_players} players."
+                )
+            )
+
+        behavior = PPOBehavior(
+            seat_num=seat_num, num_players=num_players, ppo=ppo, params=params, device=device
+        )
+
+        agents[seat_num] = behavior
+        agent_descs[seat_num] = ppo_dir
+
+    return agents, agent_descs
