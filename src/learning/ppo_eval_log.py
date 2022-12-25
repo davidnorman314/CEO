@@ -1,4 +1,4 @@
-"""File for evaluating PPO training"""
+"""File for evaluating parsing the PPO eval_log."""
 
 import argparse
 import numpy as np
