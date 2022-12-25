@@ -2,11 +2,10 @@
 import json
 import argparse
 from CEO.cards.game import Game
-from CEO.cards.player import *
-from CEO.cards.simplebehavior import *
-from CEO.cards.heuristicbehavior import *
+from CEO.cards.simplebehavior import BasicBehavior
 from CEO.cards.behaviorstatistics import BehaviorStatisticsCollector
 from CEO.cards.eventlistener import GameWatchListener, PrintAllEventListener
+from CEO.cards.player import Player
 
 from learning.ppo_agents import process_ppo_agents
 
@@ -44,6 +43,14 @@ def main():
         help="Specifies directories containing trained PPO agents to include in the games.",
     )
     parser.add_argument(
+        "--basic-agent-seats",
+        dest="basic_agent_seats",
+        type=int,
+        nargs="*",
+        default=[],
+        help="Specifies which seats should be played by BasicBehavior agents.",
+    )
+    parser.add_argument(
         "--device",
         dest="device",
         type=str,
@@ -53,6 +60,7 @@ def main():
 
     args = parser.parse_args()
     num_players = args.num_players
+    basic_agent_seats = set(args.basic_agent_seats)
 
     # Load the agents
     custom_behaviors, custom_behavior_descs = process_ppo_agents(
@@ -61,10 +69,18 @@ def main():
 
     players = []
     for seat in range(args.num_players):
-        if seat not in custom_behaviors:
+        if seat not in custom_behaviors and seat not in basic_agent_seats:
+            print(f"Basic agents {basic_agent_seats}.")
             raise Exception(f"No player specified for seat {seat}.")
 
-        players.append(Player(custom_behavior_descs[seat], custom_behaviors[seat]))
+        if seat in basic_agent_seats:
+            assert seat not in custom_behaviors
+            name = "Basic" + str(seat)
+            players.append(Player(name, BasicBehavior()))
+
+        if seat in custom_behaviors:
+            assert seat not in basic_agent_seats
+            players.append(Player(custom_behavior_descs[seat], custom_behaviors[seat]))
 
     if args.print:
         doStats = False
@@ -144,7 +160,10 @@ def main():
 
             print(format1.format("Start seat " + str(i)), end="")
             for j in range(num_players):
-                val = stats.start_to_finish[i][j] / total_for_start_seat
+                if total_for_start_seat > 0:
+                    val = stats.start_to_finish[i][j] / total_for_start_seat
+                else:
+                    val = 0.0
                 print(format2.format(val), end="")
             print("")
 
@@ -154,28 +173,29 @@ def main():
         stay_count = stats.bottom_half_stay / stats.players_with_behavior_count
         bottom_half_count = move_up_count + move_down_count + stay_count
 
-        print("Bottom half stats:")
-        print(format1.format("    Move up:"), end="")
-        print(
-            format2a.format(move_up_count),
-            format2.format(move_up_count / bottom_half_count),
-            end="",
-        )
-        print("")
-        print(format1.format("       Stay:"), end="")
-        print(
-            format2a.format(stay_count),
-            format2.format(stay_count / bottom_half_count),
-            end="",
-        )
-        print("")
-        print(format1.format("  Move down:"), end="")
-        print(
-            format2a.format(move_down_count),
-            format2.format(move_down_count / bottom_half_count),
-            end="",
-        )
-        print("")
+        if bottom_half_count > 0:
+            print("Bottom half stats:")
+            print(format1.format("    Move up:"), end="")
+            print(
+                format2a.format(move_up_count),
+                format2.format(move_up_count / bottom_half_count),
+                end="",
+            )
+            print("")
+            print(format1.format("       Stay:"), end="")
+            print(
+                format2a.format(stay_count),
+                format2.format(stay_count / bottom_half_count),
+                end="",
+            )
+            print("")
+            print(format1.format("  Move down:"), end="")
+            print(
+                format2a.format(move_down_count),
+                format2.format(move_down_count / bottom_half_count),
+                end="",
+            )
+            print("")
 
         # for i in range(num_players):
         #    pct = stats.end_position_count[i]
