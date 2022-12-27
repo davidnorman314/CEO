@@ -1,7 +1,11 @@
 """File for evaluating parsing the PPO eval_log."""
 
 import argparse
+import pathlib
+import json
 import numpy as np
+import pandas as pd
+import tabulate
 
 
 def load_eval(eval_dir: str):
@@ -48,18 +52,74 @@ def load_eval(eval_dir: str):
     print("Avg episode length", ep_sum_lengths / count)
 
 
+def load_all_eval(eval_dirs: list[str]):
+    for path_str in eval_dirs:
+        path = pathlib.Path(path_str)
+
+        name = []
+        num_players = []
+        seat_number = []
+        avg_rewards = []
+        for subdir in path.iterdir():
+            evaluations = np.load(subdir / "evaluations.npz")
+            param_file = subdir / "params.json"
+            with open(param_file, "r") as data_file:
+                params = json.load(data_file)
+
+            # Take the average of the last 10 evaluations, assuming that the agent training has
+            # reached steady state
+            eval_reward = []
+            for eval in evaluations["results"][-11:-1]:
+                eval_reward.append(np.average(eval))
+            avg_reward = np.average(eval_reward)
+
+            name.append(subdir.stem)
+            num_players.append(params["env_args"]["num_players"])
+            seat_number.append(params["env_args"]["seat_number"])
+            avg_rewards.append(avg_reward)
+
+    df = pd.DataFrame(
+        {
+            "Num Players": num_players,
+            "Seat Number": seat_number,
+            "Avg Reward": avg_rewards,
+        },
+        index=name,
+    )
+    df.sort_values(
+        by=["Num Players", "Seat Number", "Avg Reward"], ascending=[True, True, False], inplace=True
+    )
+
+    print(tabulate.tabulate(df, headers="keys", tablefmt="github"))
+
+
 # Main function
 def main():
     parser = argparse.ArgumentParser(description="Do learning")
 
     parser.add_argument(
-        "eval_dir",
+        "--eval-dir",
+        dest="eval_dir",
+        default=None,
         help="The directory containing the evaluation information.",
+    )
+    parser.add_argument(
+        "--all",
+        dest="all",
+        type=str,
+        nargs="*",
+        default=[],
+        help="Load all logs in the given directories.",
     )
 
     args = parser.parse_args()
 
-    load_eval(args.eval_dir)
+    if args.eval_dir:
+        load_eval(args.eval_dir)
+    elif args.all:
+        load_all_eval(args.all)
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":
