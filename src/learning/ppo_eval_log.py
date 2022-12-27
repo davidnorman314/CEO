@@ -66,6 +66,7 @@ def load_all_eval(eval_dirs: list[str]):
 
             if not param_file.exists():
                 print(f"Skipping {param_file}, since params.json doesn't exist")
+                continue
 
             with open(param_file, "r") as data_file:
                 params = json.load(data_file)
