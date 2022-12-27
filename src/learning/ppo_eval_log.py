@@ -63,6 +63,10 @@ def load_all_eval(eval_dirs: list[str]):
         for subdir in path.iterdir():
             evaluations = np.load(subdir / "evaluations.npz")
             param_file = subdir / "params.json"
+
+            if not param_file.exists():
+                print(f"Skipping {param_file}, since params.json doesn't exist")
+
             with open(param_file, "r") as data_file:
                 params = json.load(data_file)
 
