@@ -64,12 +64,15 @@ def load_all_eval(eval_dirs: list[str]):
             evaluations = np.load(subdir / "evaluations.npz")
             param_file = subdir / "params.json"
 
-            if not param_file.exists():
-                print(f"Skipping {param_file}, since params.json doesn't exist")
-                continue
+            if param_file.exists():
+                with open(param_file, "r") as data_file:
+                    params = json.load(data_file)
 
-            with open(param_file, "r") as data_file:
-                params = json.load(data_file)
+                this_num_players = params["env_args"]["num_players"]
+                this_seat_number = params["env_args"]["seat_number"]
+            else:
+                this_num_players = 6
+                this_seat_number = 0
 
             # Take the average of the last 10 evaluations, assuming that the agent training has
             # reached steady state
@@ -79,8 +82,8 @@ def load_all_eval(eval_dirs: list[str]):
             avg_reward = np.average(eval_reward)
 
             name.append(subdir.stem)
-            num_players.append(params["env_args"]["num_players"])
-            seat_number.append(params["env_args"]["seat_number"])
+            num_players.append(this_num_players)
+            seat_number.append(this_seat_number)
             avg_rewards.append(avg_reward)
 
     df = pd.DataFrame(
