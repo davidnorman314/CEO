@@ -431,7 +431,6 @@ def make_env(env_number, env_args: dict):
     return _init
 
 
-
 # Main function
 def main():
     print("In main")
@@ -622,7 +621,6 @@ def main():
     custom_behaviors, custom_behavior_descs = process_ppo_agents(
         args.ppo_agents, device=args.device, num_players=args.num_players
     )
-    print("main", type(custom_behaviors))
 
     # If continuing training, validate that the custom behaviors match the previous
     # custom behaviors

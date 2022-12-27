@@ -76,6 +76,24 @@ def test_PlayCardsFromHand():
     assert theHand.to_dict() == {1: 2}
 
 
+def test_GetCardValues():
+    theHand = hand.Hand()
+
+    cv0 = hand.CardValue(0)
+    cv3 = hand.CardValue(3)
+    cv5 = hand.CardValue(5)
+    cv7 = hand.CardValue(7)
+
+    theHand.add_cards(cv0, 3)
+    assert theHand.get_card_values() == [(cv0, 3)]
+
+    theHand.add_cards(cv3, 5)
+    assert theHand.get_card_values() == [(cv0, 3), (cv3, 5)]
+
+    theHand.add_cards(cv5, 2)
+    assert theHand.get_card_values() == [(cv0, 3), (cv3, 5), (cv5, 2)]
+
+
 def test_HandCardCount():
     theHand = hand.Hand()
 

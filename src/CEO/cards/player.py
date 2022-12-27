@@ -71,6 +71,9 @@ class Player:
     Class describing a player in a CEO game
     """
 
+    name: str
+    behavior: PlayerBehaviorInterface
+
     def __init__(self, name: str, behavior: PlayerBehaviorInterface):
         self.name = name
         self.behavoir = behavior

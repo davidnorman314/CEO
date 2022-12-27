@@ -165,6 +165,17 @@ class Hand(HandInterface):
 
         assert False
 
+    def get_card_values(self) -> list[tuple[CardValue, int]]:
+        """Returns a list of tuples (card value, cound of cards with that value)
+        in order from smallest to largest value."""
+
+        ret = list()
+        for i in range(len(self._cards)):
+            if self._cards[i] > 0:
+                ret.append((CardValue(i), self._cards[i]))
+
+        return ret
+
     def play_cards(self, cards: PlayedCards):
         assert cards.count > 0
 

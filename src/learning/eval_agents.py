@@ -2,12 +2,60 @@
 import json
 import argparse
 from CEO.cards.game import Game
+from CEO.cards.deck import CardValue
+from CEO.cards.hand import Hand
+from CEO.cards.player import RoundState
 from CEO.cards.simplebehavior import BasicBehavior
 from CEO.cards.winlossstatistics import WinLossStatisticsCollector
-from CEO.cards.eventlistener import GameWatchListener, PrintAllEventListener
+from CEO.cards.eventlistener import (
+    PrintAllEventListener,
+    EventListenerInterface,
+    MultiEventListener,
+)
 from CEO.cards.player import Player
 
 from learning.ppo_agents import process_ppo_agents
+
+
+class HeuristicMonitorListener(EventListenerInterface):
+    """Listener that counts the number of times a behavior uses a specified heuristic,
+    e.g., always lead your lowest card.
+    """
+
+    class Stats:
+        lead_lowest_count: int
+        lead_second_lowest_count: int
+
+        def __init__(self):
+            self.lead_lowest_count = 0
+            self.lead_second_lowest_count = 0
+
+    stats: dict[int, Stats]
+
+    _seat: int
+    _hand: Hand
+
+    def __init__(self, num_players: int):
+        self.stats = dict()
+
+        for i in range(num_players):
+            self.stats[i] = self.Stats()
+
+    def before_lead(self, index: int, player: Player, hand: Hand, state: RoundState):
+        self._seat = index
+        self._hand = hand
+
+    def lead(self, cards: CardValue, count: int, index: int, player: Player):
+        card_values = self._hand.get_card_values()
+
+        # Don't save statistics if there are one or two values in the hand
+        if len(card_values) <= 2:
+            return
+
+        if cards == card_values[0][0]:
+            self.stats[index].lead_lowest_count += 1
+        elif cards == card_values[1][0]:
+            self.stats[index].lead_second_lowest_count += 1
 
 
 def main():
@@ -82,12 +130,19 @@ def main():
             assert seat not in basic_agent_seats
             players.append(Player(custom_behavior_descs[seat], custom_behaviors[seat]))
 
+    listeners = []
     if args.print:
         doStats = False
-        listener = PrintAllEventListener()
+        listeners.append(PrintAllEventListener())
     else:
         doStats = True
-        listener = WinLossStatisticsCollector(players)
+        win_loss_listener = WinLossStatisticsCollector(players)
+        listeners.append(win_loss_listener)
+
+    heuristic_monitor = HeuristicMonitorListener(num_players)
+    listeners.append(heuristic_monitor)
+
+    listener = MultiEventListener(listeners)
 
     num_rounds = args.num_rounds
     game = Game(players, listener)
@@ -100,10 +155,10 @@ def main():
     if not doStats:
         exit(1)
 
-    # Print statistics
-    for behavior_name in listener.stats:
+    # Print win/loss statistics
+    for behavior_name in win_loss_listener.stats:
         print(behavior_name)
-        stats = listener.stats[behavior_name]
+        stats = win_loss_listener.stats[behavior_name]
 
         print(format1.format("Percent in seat:"), end="")
         for i in range(num_players):
@@ -203,6 +258,23 @@ def main():
         #    print("{0:5d}".format(pct), end="")
 
         print("")
+
+    # Print heuristics statistics
+    print("Heuristics:")
+    for seat in range(num_players):
+        name = players[seat].name
+        lead_lowest_count = heuristic_monitor.stats[seat].lead_lowest_count
+        lead_second_lowest_count = heuristic_monitor.stats[seat].lead_second_lowest_count
+
+        total = lead_lowest_count + lead_second_lowest_count
+        if total == 0:
+            print(f"Skipping {name}, since no data")
+
+        pct_lead_lowest = lead_lowest_count / total
+
+        print(f"{name:20} lead lowest pct {pct_lead_lowest:5.2f} total {total}")
+
+    print("")
 
 
 if __name__ == "__main__":

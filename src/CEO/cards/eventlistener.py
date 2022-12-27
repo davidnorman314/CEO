@@ -48,6 +48,50 @@ class EventListenerInterface:
         pass
 
 
+class MultiEventListener:
+    """
+    Class that implements the listener interface and passes messages on to a specified list
+    of other listeners
+    """
+
+    _listeners: list[EventListenerInterface]
+
+    def __init__(self, listeners: list[EventListenerInterface]):
+        self._listeners = listeners
+
+    def start_round(self, *args, **kwargs):
+        for listener in self._listeners:
+            listener.start_round(*args, **kwargs)
+
+    def pass_cards(self, *args, **kwargs):
+        for listener in self._listeners:
+            listener.pass_cards(*args, **kwargs)
+
+    def before_lead(self, *args, **kwargs):
+        for listener in self._listeners:
+            listener.before_lead(*args, **kwargs)
+
+    def lead(self, *args, **kwargs):
+        for listener in self._listeners:
+            listener.lead(*args, **kwargs)
+
+    def before_play_cards(self, *args, **kwargs):
+        for listener in self._listeners:
+            listener.before_play_cards(*args, **kwargs)
+
+    def play_cards(self, *args, **kwargs):
+        for listener in self._listeners:
+            listener.play_cards(*args, **kwargs)
+
+    def pass_on_trick(self, *args, **kwargs):
+        for listener in self._listeners:
+            listener.pass_on_trick(*args, **kwargs)
+
+    def end_round(self, *args, **kwargs):
+        for listener in self._listeners:
+            listener.end_round(*args, **kwargs)
+
+
 class PrintAllEventListener(EventListenerInterface):
     """
     Interface that prints all events. This includes information that would
