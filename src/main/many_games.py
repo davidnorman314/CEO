@@ -5,7 +5,7 @@ from CEO.cards.game import *
 from CEO.cards.player import *
 from CEO.cards.simplebehavior import *
 from CEO.cards.heuristicbehavior import *
-from CEO.cards.behaviorstatistics import *
+from CEO.cards.winlossstatistics import *
 from CEO.cards.eventlistener import GameWatchListener
 
 
@@ -55,7 +55,7 @@ def main():
         print("Logging information for", console_log_player)
     else:
         doStats = True
-        listener = BehaviorStatisticsCollector(players)
+        listener = WinLossStatisticsCollector(players)
 
     round_count = args.count
     game = g.Game(players, listener)

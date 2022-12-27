@@ -4,7 +4,7 @@ from CEO.cards.player import *
 from CEO.cards.eventlistener import EventListenerInterface
 
 
-class BehaviorStatistics:
+class WinLossStatistics:
     """
     Class that keeps track of statistics for a single behavior
     """
@@ -71,14 +71,14 @@ class BehaviorStatistics:
                 self.bottom_half_move_up += 1
 
 
-class BehaviorStatisticsCollector(EventListenerInterface):
+class WinLossStatisticsCollector(EventListenerInterface):
     """
     Class that keeps statistics on how each behavior did playing the game.
     """
 
     _begin_order: list[Player]
 
-    stats: dict[str, BehaviorStatistics]
+    stats: dict[str, WinLossStatistics]
 
     def __init__(self, players: list[Player]):
         self.stats = dict()
@@ -89,7 +89,7 @@ class BehaviorStatisticsCollector(EventListenerInterface):
             if behavior_name in self.stats:
                 self.stats[behavior_name].add_another_player_with_behavior()
             else:
-                self.stats[behavior_name] = BehaviorStatistics(count)
+                self.stats[behavior_name] = WinLossStatistics(count)
 
     def start_round(self, players: list[Player]):
         self._begin_order = players.copy()

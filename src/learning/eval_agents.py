@@ -3,7 +3,7 @@ import json
 import argparse
 from CEO.cards.game import Game
 from CEO.cards.simplebehavior import BasicBehavior
-from CEO.cards.behaviorstatistics import BehaviorStatisticsCollector
+from CEO.cards.winlossstatistics import WinLossStatisticsCollector
 from CEO.cards.eventlistener import GameWatchListener, PrintAllEventListener
 from CEO.cards.player import Player
 
@@ -87,7 +87,7 @@ def main():
         listener = PrintAllEventListener()
     else:
         doStats = True
-        listener = BehaviorStatisticsCollector(players)
+        listener = WinLossStatisticsCollector(players)
 
     num_rounds = args.num_rounds
     game = Game(players, listener)
