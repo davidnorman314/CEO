@@ -26,9 +26,15 @@ class HeuristicMonitorListener(EventListenerInterface):
         lead_lowest_count: int
         lead_second_lowest_count: int
 
+        lead_lowest_lgdiff_count: int
+        lead_second_lgdiff_lowest_count: int
+
         def __init__(self):
             self.lead_lowest_count = 0
             self.lead_second_lowest_count = 0
+
+            self.lead_lowest_lgdiff_count = 0
+            self.lead_second_lgdiff_lowest_count = 0
 
     stats: dict[int, Stats]
 
@@ -52,10 +58,21 @@ class HeuristicMonitorListener(EventListenerInterface):
         if len(card_values) <= 2:
             return
 
+        # Don't save statistics if there are different numbers of the two cards.
+        if card_values[0][1] != card_values[1][1]:
+            return
+
+        # Save the count of what was played
         if cards == card_values[0][0]:
             self.stats[index].lead_lowest_count += 1
         elif cards == card_values[1][0]:
             self.stats[index].lead_second_lowest_count += 1
+
+        if card_values[1][0].value - card_values[0][0].value >= 5:
+            if cards == card_values[0][0]:
+                self.stats[index].lead_lowest_lgdiff_count += 1
+            elif cards == card_values[1][0]:
+                self.stats[index].lead_second_lgdiff_lowest_count += 1
 
 
 def main():
@@ -260,7 +277,7 @@ def main():
         print("")
 
     # Print heuristics statistics
-    print("Heuristics:")
+    print("Lead lowest heuristics:")
     for seat in range(num_players):
         name = players[seat].name
         lead_lowest_count = heuristic_monitor.stats[seat].lead_lowest_count
@@ -273,6 +290,20 @@ def main():
         pct_lead_lowest = lead_lowest_count / total
 
         print(f"{name:20} lead lowest pct {pct_lead_lowest:5.2f} total {total}")
+
+    print("Lead lowest heuristics with large difference:")
+    for seat in range(num_players):
+        name = players[seat].name
+        lead_lowest_count = heuristic_monitor.stats[seat].lead_lowest_lgdiff_count
+        lead_second_lowest_count = heuristic_monitor.stats[seat].lead_second_lgdiff_lowest_count
+
+        total = lead_lowest_count + lead_second_lowest_count
+        if total == 0:
+            print(f"Skipping {name}, since no data")
+
+        pct_lead_lowest = lead_lowest_count / total
+
+        print(f"{name:20} lead lowest large diff pct {pct_lead_lowest:5.2f} total {total}")
 
     print("")
 
