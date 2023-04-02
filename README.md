@@ -41,7 +41,7 @@
 `python -m learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu --ppo-agents eval_log/BL_0_6_A`
 
 ### Continue training
-`python -m learning.ppo --name PPOTest --device cpu --ppo-agents eval_log/BL_0_6_A`
+`python -m learning.ppo --continue-training --name PPOTest --device cpu --ppo-agents eval_log/BL_0_6_A`
 
 ## Use trained agents to play
 
@@ -54,6 +54,12 @@
 `python -m learning.play_qagent --play --ppo-file eval_log/PPOM01/best_model.zip --episodes 200 > log.txt`
 
 `python -m learning.play_qagent --play-round-file play_hands/hands9.pickle --agent-file monte_carlo.pickle --do-logging > log.txt`
+
+## Evaluate agents
+`python -m learning.eval_agents --num-players 6 --num-rounds 1000 --device cuda:1 --ppo-agents eval_log/BL_0_6_A eval_log/BL_1_6_A eval_log/BL_2_6_A eval_log/BL_3_6_A eval_log/BL_4_6_A eval_log/BL_5_6_A`
+
+`python -m learning.eval_agents --num-players 6 --num-rounds 1000 --device cpu --ppo-agents eval_log/BL_2_6_A eval_log/BL_3_6_A eval_log/BL_4_6_A eval_log/BL_5_6_A --basic-agent-seats 0 1`
+
 
 ## Azure command-line client
 

@@ -1,3 +1,9 @@
+# Code cleanup
+
+- Fix import *
+
+- Move CEO/cards to CEO
+
 # TODO Items: PPO
 
 - Learning rate.
