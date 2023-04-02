@@ -13,7 +13,7 @@ from torch import nn
 
 import stable_baselines3
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
 from stable_baselines3.common.logger import HParam
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.policies import ActorCriticPolicy
@@ -322,15 +322,18 @@ class PPOLearning:
                 self._env.feature_defs,
             )
 
-        callback = PPOCallback(params, do_log)
-
-        self._ppo.learn(
-            self._total_steps,
+        ppo_callback = PPOCallback(params, do_log)
+        eval_callback = EvalCallback(
             eval_env=self._eval_env,
             eval_freq=50000,
             n_eval_episodes=10000,
+            log_path=eval_log_path,
+        )
+        callback = CallbackList([ppo_callback, eval_callback])
+
+        self._ppo.learn(
+            self._total_steps,
             reset_num_timesteps=reset_timesteps,
-            eval_log_path=eval_log_path,
             tb_log_name=self._name,
             callback=callback,
         )
@@ -383,6 +386,12 @@ class PPOLearning:
             params["vf_net_arch"] = vf_net_arch
             print("Using default vf_net_arch of", vf_net_arch)
 
+        activation_fn = params["activation_fn"] if "activation_fn" in params else None
+        if activation_fn is None:
+            activation_fn = "tanh"
+            params["activation_fn"] = activation_fn
+            print("Using default activation_fn of", activation_fn)
+
         device = params["device"] if "device" in params else "cuda"
 
         print("Training with", self._total_steps, "total steps")
@@ -395,6 +404,13 @@ class PPOLearning:
         policy_kwargs["net_arch"] = [
             dict(pi=self.str_to_net_arch(pi_net_arch), vf=self.str_to_net_arch(vf_net_arch))
         ]
+        if activation_fn is None:
+            policy_kwargs["activation_fn"] = th.nn.Tanh
+        elif activation_fn == "relu":
+            policy_kwargs["activation_fn"] = th.nn.ReLU
+        else:
+            raise Exception(f"Unknown activation function {activation_fn}")
+
         policy_kwargs["observation_factory"] = observation_factory
 
         print("net_arch", policy_kwargs["net_arch"])
@@ -514,6 +530,13 @@ def main():
         type=str,
         default=None,
         help="The value function network architecture",
+    )
+    parser.add_argument(
+        "--activation-fn",
+        dest="activation_fn",
+        type=str,
+        default=None,
+        help="The neural network activation function network architectur, e.g., relu or tanh. Optional.",
     )
     parser.add_argument(
         "--device",
@@ -695,6 +718,8 @@ def main():
         train_params["pi_net_arch"] = args.pi_net_arch
     if args.vf_net_arch:
         train_params["vf_net_arch"] = args.vf_net_arch
+    if args.activation_fn:
+        train_params["activation_fn"] = args.activation_fn
     if args.device:
         train_params["device"] = args.device
 
