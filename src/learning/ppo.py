@@ -402,9 +402,10 @@ class PPOLearning:
         verbose = 0
 
         policy_kwargs = dict()
-        policy_kwargs["net_arch"] = [
-            dict(pi=self.str_to_net_arch(pi_net_arch), vf=self.str_to_net_arch(vf_net_arch))
-        ]
+        policy_kwargs["net_arch"] = dict(
+            pi=self.str_to_net_arch(pi_net_arch), vf=self.str_to_net_arch(vf_net_arch)
+        )
+
         if activation_fn is None:
             policy_kwargs["activation_fn"] = th.nn.Tanh
         elif activation_fn == "tanh":
