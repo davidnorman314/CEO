@@ -117,6 +117,7 @@ class CEOPlayerEnv(gym.Env):
 
         self.observation_factory = ObservationFactory(num_players, seat_number, **obs_kwargs)
         self._observation_dimension = self.observation_factory.observation_dimension
+        print(f"Observation space dimension {self._observation_dimension}")
 
         self.observation_space = Box(
             low=np.array([0.0] * self._observation_dimension),
@@ -251,7 +252,6 @@ class CEOPlayerEnv(gym.Env):
         reward = 0.0
         done = False
         try:
-
             while True:
                 obs = self._make_observation(gen_tuple)
 
