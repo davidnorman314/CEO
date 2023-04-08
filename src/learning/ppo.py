@@ -16,6 +16,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback, CallbackList
 from stable_baselines3.common.logger import HParam
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
+from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.type_aliases import Schedule
 from stable_baselines3.common.distributions import Distribution, CategoricalDistribution
@@ -406,6 +407,8 @@ class PPOLearning:
         ]
         if activation_fn is None:
             policy_kwargs["activation_fn"] = th.nn.Tanh
+        elif activation_fn == "tanh":
+            policy_kwargs["activation_fn"] = th.nn.Tanh
         elif activation_fn == "relu":
             policy_kwargs["activation_fn"] = th.nn.ReLU
         else:
@@ -688,7 +691,8 @@ def main():
     if args.parallel_env_count is None:
         env = CEOPlayerEnv(**env_args)
     else:
-        env = SubprocVecEnv([make_env(i, env_args) for i in range(args.parallel_env_count)])
+        # env = SubprocVecEnv([make_env(i, env_args) for i in range(args.parallel_env_count)])
+        env = make_vec_env(CEOPlayerEnv, n_envs=args.parallel_env_count, env_kwargs=env_args)
 
     # Use the usual reward for eval_env
     eval_env = CEOPlayerEnv(
