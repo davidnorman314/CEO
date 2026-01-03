@@ -1,26 +1,26 @@
-import gym
-import matplotlib.pyplot as plt
-import numpy as np
 import argparse
-import random
 import copy
-import math
-from azure_rl.azure_client import AzureClient
-from learning.learning_base import QTableLearningBase, EpisodeInfo
-from collections import deque
-
 import cProfile
+import math
+import random
+from collections import deque
 from pstats import SortKey
 
+import gymnasium
+import matplotlib.pyplot as plt
+import numpy as np
+
+from azure_rl.azure_client import AzureClient
+from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 from gym_ceo.envs.actions import ActionEnum
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
-from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
+from learning.learning_base import EpisodeInfo, QTableLearningBase
 
 
 class QLearningTraces(QTableLearningBase):
     """
-    Class implementing Watkins Q(\lambda) with eligibility traces for an OpenAI gym.
+    Class implementing Watkins Q(\lambda) with eligibility traces for a Gymnasium environment.
     See:
         1. Sutton and Barto 312 and the
         2. The screenshot from an earlier version of Sutton and Barto in
@@ -30,7 +30,13 @@ class QLearningTraces(QTableLearningBase):
 
     _train_episodes: int
 
-    def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000, **kwargs):
+    def __init__(
+        self,
+        env: gymnasium.Env,
+        base_env: gymnasium.Env,
+        train_episodes=100000,
+        **kwargs,
+    ):
         super().__init__("qlearning_traces", env, base_env, **kwargs)
         self._train_episodes = train_episodes
 
@@ -123,7 +129,7 @@ class QLearningTraces(QTableLearningBase):
                 print("Starting episode")
 
             # Reseting the environment each time as per requirement
-            state = self._env.reset()
+            state, info = self._env.reset()
             state_tuple = tuple(state.astype(int))
             info = dict()
 
@@ -165,14 +171,20 @@ class QLearningTraces(QTableLearningBase):
                     print("Action values")
                     for a in range(self._env.full_env.max_action_value):
                         full_action = ActionEnum(a)
-                        name = full_action.name if full_action in action_space.actions else ""
+                        name = (
+                            full_action.name
+                            if full_action in action_space.actions
+                            else ""
+                        )
                         selected = "selected" if full_action == action else ""
 
                         print(
                             "  action",
                             a,
                             "value",
-                            self._qtable.state_action_value((*state_tuple, full_action)),
+                            self._qtable.state_action_value(
+                                (*state_tuple, full_action)
+                            ),
                             "count",
                             self._qtable.state_visit_count((*state_tuple, full_action)),
                             name,
@@ -184,7 +196,9 @@ class QLearningTraces(QTableLearningBase):
                 episode_info = EpisodeInfo()
                 episode_infos.append(episode_info)
                 episode_info.state = state_action_tuple
-                episode_info.value_before = self._qtable.state_action_value(state_action_tuple)
+                episode_info.value_before = self._qtable.state_action_value(
+                    state_action_tuple
+                )
                 if state_action_tuple not in episode_value_before:
                     episode_value_before[state_action_tuple] = episode_info.value_before
 
@@ -195,7 +209,10 @@ class QLearningTraces(QTableLearningBase):
 
                 # Perform the action
                 action_index = self._env.action_space.actions.index(action)
-                state_prime, reward, done, info = self._env.step(action_index)
+                state_prime, reward, done, truncated, info = self._env.step(
+                    action_index
+                )
+                assert not truncated
 
                 if state_prime is not None:
                     if do_log:
@@ -216,9 +233,13 @@ class QLearningTraces(QTableLearningBase):
                                 "    action",
                                 a,
                                 "value",
-                                self._qtable.state_action_value((*state_tuple, full_action)),
+                                self._qtable.state_action_value(
+                                    (*state_tuple, full_action)
+                                ),
                                 "count",
-                                self._qtable.state_visit_count((*state_tuple, full_action)),
+                                self._qtable.state_visit_count(
+                                    (*state_tuple, full_action)
+                                ),
                                 name,
                             )
 
@@ -228,7 +249,9 @@ class QLearningTraces(QTableLearningBase):
                     )
 
                     # Pick the next action
-                    action_prime, is_exploit = self._pick_action(state_prime_tuple, epsilon)
+                    action_prime, is_exploit = self._pick_action(
+                        state_prime_tuple, epsilon
+                    )
 
                     # Find the action with the highest estimated reward
                     action_star = self._qtable.greedy_action(
@@ -244,7 +267,9 @@ class QLearningTraces(QTableLearningBase):
                     delta = (
                         reward
                         + discount_factor
-                        * self._qtable.state_action_value((*state_prime_tuple, action_star))
+                        * self._qtable.state_action_value(
+                            (*state_prime_tuple, action_star)
+                        )
                         - self._qtable.state_action_value((*state_tuple, action))
                     )
 
@@ -265,7 +290,9 @@ class QLearningTraces(QTableLearningBase):
                     action_prime = None
 
                     # Calculate the update value
-                    delta = reward - self._qtable.state_action_value((*state_tuple, action))
+                    delta = reward - self._qtable.state_action_value(
+                        (*state_tuple, action)
+                    )
 
                 if do_log:
                     print("delta", delta)
@@ -279,7 +306,7 @@ class QLearningTraces(QTableLearningBase):
                 # Find the step size alpha
                 # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
                 # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
-                alpha = 1.0 / (state_visit_count ** alpha_exponent)
+                alpha = 1.0 / (state_visit_count**alpha_exponent)
 
                 # Update Q and the traces
                 for update_tuple in eligibility_traces.keys():
@@ -313,7 +340,9 @@ class QLearningTraces(QTableLearningBase):
                 action = action_prime
 
                 # Save information from after the update
-                episode_info.value_after = self._qtable.state_action_value(state_action_tuple)
+                episode_info.value_after = self._qtable.state_action_value(
+                    state_action_tuple
+                )
                 episode_info.action_type = action_type
                 episode_info.alpha = alpha
                 episode_info.state_visit_count = state_visit_count
@@ -328,7 +357,9 @@ class QLearningTraces(QTableLearningBase):
                     break
 
             # Cutting down on exploration by reducing the epsilon
-            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
+            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(
+                -decay * episode
+            )
 
             # Save the reward
             total_training_reward += episode_reward
@@ -340,9 +371,13 @@ class QLearningTraces(QTableLearningBase):
                 recent_explore_counts.popleft()
                 recent_exploit_counts.popleft()
 
-            if (episode > 0 and episode % 2000 == 0) or (episode == self._train_episodes):
+            if (episode > 0 and episode % 2000 == 0) or (
+                episode == self._train_episodes
+            ):
                 ave_training_rewards = total_training_reward / episode
-                recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
+                recent_rewards = sum(recent_episode_rewards) / len(
+                    recent_episode_rewards
+                )
                 recent_explore_rate = sum(recent_explore_counts) / (
                     sum(recent_exploit_counts) + sum(recent_explore_counts)
                 )
@@ -379,7 +414,9 @@ class QLearningTraces(QTableLearningBase):
                 # Log the states for this episode
                 print("Episode info")
                 for info in episode_infos:
-                    max_visit_count = max(map(lambda info: info.state_visit_count, episode_infos))
+                    max_visit_count = max(
+                        map(lambda info: info.state_visit_count, episode_infos)
+                    )
                     visit_chars = math.ceil(math.log10(max_visit_count))
 
                     format_str = "{action:2} value {val_before:6.3f} -> {val_after:6.3f} visit {visit_count:#w#} alpha {alpha:.3e}"

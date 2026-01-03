@@ -1,27 +1,27 @@
-import gym
+import argparse
+import copy
+import cProfile
+import math
+import random
+from collections import deque
+from enum import Enum
+from pstats import SortKey
+
+import gymnasium
 import matplotlib.pyplot as plt
 import numpy as np
-import argparse
-import random
-import copy
-import math
+
 from azure_rl.azure_client import AzureClient
-from learning.learning_base import QTableLearningBase, EpisodeInfo
-from collections import deque
-
-import cProfile
-from pstats import SortKey
-from enum import Enum
-
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv, CEOActionSpace
-from gym_ceo.envs.actions import ActionEnum
-from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
+from gym_ceo.envs.actions import ActionEnum
+from gym_ceo.envs.seat_ceo_env import CEOActionSpace, SeatCEOEnv
+from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
+from learning.learning_base import EpisodeInfo, QTableLearningBase
 
 
 class QLearning(QTableLearningBase):
     """
-    Class implementing q-learning for an OpenAI gym
+    Class implementing q-learning for a Gymnasium environment
     """
 
     class AlphaType(Enum):
@@ -31,7 +31,13 @@ class QLearning(QTableLearningBase):
 
     _train_episodes: int
 
-    def __init__(self, env: gym.Env, base_env: gym.Env, train_episodes=100000, **kwargs):
+    def __init__(
+        self,
+        env: gymnasium.Env,
+        base_env: gymnasium.Env,
+        train_episodes=100000,
+        **kwargs,
+    ):
         super().__init__("qlearning", env, base_env, **kwargs)
         self._train_episodes = train_episodes
 
@@ -118,7 +124,7 @@ class QLearning(QTableLearningBase):
         states_visited = 0
         for episode in range(1, self._train_episodes + 1):
             # Reseting the environment each time as per requirement
-            state = self._env.reset()
+            state, info = self._env.reset()
             state_tuple = tuple(state.astype(int))
 
             # Starting the tracker for the rewards
@@ -134,7 +140,9 @@ class QLearning(QTableLearningBase):
                 # Choose if we will explore or exploit
                 exp_exp_sample = random.uniform(0, 1)
 
-                exploit_action = self._qtable.greedy_action(state_tuple, self._env.action_space)
+                exploit_action = self._qtable.greedy_action(
+                    state_tuple, self._env.action_space
+                )
 
                 explore_action_index = self._env.action_space.sample()
                 explore_action = self._env.action_space.actions[explore_action_index]
@@ -154,7 +162,8 @@ class QLearning(QTableLearningBase):
 
                 # Perform the action
                 action_index = self._env.action_space.actions.index(action)
-                new_state, reward, done, info = self._env.step(action_index)
+                new_state, reward, done, truncated, info = self._env.step(action_index)
+                assert not truncated
 
                 # print("state", state)
                 # print("state_tuple", state_tuple)
@@ -178,7 +187,9 @@ class QLearning(QTableLearningBase):
                 episode_infos.append(episode_info)
 
                 episode_info.state = state_action_tuple
-                episode_info.value_before = self._qtable.state_action_value(state_action_tuple)
+                episode_info.value_before = self._qtable.state_action_value(
+                    state_action_tuple
+                )
 
                 self._qtable.increment_state_visit_count(state_action_tuple)
                 state_visit_count = self._qtable.state_visit_count(state_action_tuple)
@@ -190,23 +201,27 @@ class QLearning(QTableLearningBase):
                     # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
                     # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
                     # They recommend 0.85.
-                    alpha = 1.0 / (state_visit_count ** alpha_exponent)
+                    alpha = 1.0 / (state_visit_count**alpha_exponent)
                 elif alpha_type == self.AlphaType.EPISODE_COUNT:
                     # Calculate the learning rate based on the state count.
                     # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
                     # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
                     # They recommend 0.85.
-                    alpha = 1.0 / (episode ** alpha_exponent)
+                    alpha = 1.0 / (episode**alpha_exponent)
                 elif alpha_type == self.AlphaType.CONSTANT:
                     alpha = alpha_constant
                 else:
                     raise ValueError("alpha_type is not defined")
 
                 state_action_value = self._qtable.state_action_value(state_action_tuple)
-                delta = alpha * (reward + discount_factor * new_state_value - state_action_value)
+                delta = alpha * (
+                    reward + discount_factor * new_state_value - state_action_value
+                )
                 self._qtable.update_state_visit_value(state_action_tuple, delta)
 
-                episode_info.value_after = self._qtable.state_action_value(state_action_tuple)
+                episode_info.value_after = self._qtable.state_action_value(
+                    state_action_tuple
+                )
                 episode_info.action_type = action_type
                 episode_info.alpha = alpha
                 episode_info.state_visit_count = state_visit_count
@@ -228,7 +243,9 @@ class QLearning(QTableLearningBase):
                     break
 
             # Cutting down on exploration by reducing the epsilon
-            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
+            epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(
+                -decay * episode
+            )
 
             # Save the reward
             total_training_reward += episode_reward
@@ -240,9 +257,13 @@ class QLearning(QTableLearningBase):
                 recent_explore_counts.popleft()
                 recent_exploit_counts.popleft()
 
-            if (episode > 0 and episode % 2000 == 0) or (episode == self._train_episodes):
+            if (episode > 0 and episode % 2000 == 0) or (
+                episode == self._train_episodes
+            ):
                 ave_training_rewards = total_training_reward / episode
-                recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
+                recent_rewards = sum(recent_episode_rewards) / len(
+                    recent_episode_rewards
+                )
                 recent_explore_rate = sum(recent_explore_counts) / (
                     sum(recent_exploit_counts) + sum(recent_explore_counts)
                 )
@@ -279,7 +300,9 @@ class QLearning(QTableLearningBase):
                 # Log the states for this episode
                 print("Episode info")
                 for info in episode_infos:
-                    max_visit_count = max(map(lambda info: info.state_visit_count, episode_infos))
+                    max_visit_count = max(
+                        map(lambda info: info.state_visit_count, episode_infos)
+                    )
                     visit_chars = math.ceil(math.log10(max_visit_count))
 
                     format_str = "{action:2} value {val_before:6.3f} -> {val_after:6.3f} visit {visit_count:#w#} -> {alpha:.3e} {hand}"

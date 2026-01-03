@@ -1,7 +1,7 @@
-gym == 0.21
-torch >= 1.13.0+cu117
-torchaudio >= 0.13.0+cu117
-torchvision >= 0.14.0+cu117
+gymnasium >= 1.2.3
+torch >= 1.13.0
+torchaudio >= 0.13.0
+torchvision >= 0.14.0
 tensorboard >= 2.10.1
 stable_baselines3 >= 1.6.2
 statsmodels >= 0.13.4

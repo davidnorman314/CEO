@@ -1,7 +1,7 @@
 from argparse import ArgumentError
-import gym
+import gymnasium
 import numpy as np
-from gym.spaces import Box
+from gymnasium.spaces import Box
 
 from gym_ceo.envs.actions import (
     ActionSpaceFactory,
@@ -23,7 +23,7 @@ from CEO.cards.player import Player, PlayerBehaviorInterface
 from CEO.cards.passcards import PassCards
 
 
-class CEOPlayerEnv(gym.Env):
+class CEOPlayerEnv(gymnasium.Env):
     """
     Environment for a player in the CEO seat. This environment's observations
     contains all the information available to a player.
@@ -149,7 +149,8 @@ class CEOPlayerEnv(gym.Env):
 
         self._simple_behavior_base = SimpleBehaviorBase()
 
-    def reset(self, hands: list[Hand] = None):
+    def reset(self, *, seed=None, options=None, hands: list[Hand] = None):
+        super().reset(seed=seed)
         self._listener.start_round(self._players)
 
         # Deal the cards
@@ -182,12 +183,12 @@ class CEOPlayerEnv(gym.Env):
 
         gen_tuple = next(self._gen)
 
-        obs, reward, done, info = self._play_until_action_needed(gen_tuple)
+        obs, reward, done, truncated, info = self._play_until_action_needed(gen_tuple)
 
         assert not done
         assert reward == 0.0
 
-        return obs
+        return obs, info
 
     def step_full_action(self, full_action):
         self.step(self.action_space.find_full_action(full_action))
@@ -223,7 +224,7 @@ class CEOPlayerEnv(gym.Env):
             # The gym environment checker wants to have an np array for the observation here.
             obs = np.zeros(self._observation_dimension)
 
-            return obs, action_reward, True, self._info
+            return obs, action_reward, True, False, self._info
 
         if cv is None and self._cur_trick_value is None:
             print(
@@ -271,7 +272,7 @@ class CEOPlayerEnv(gym.Env):
         except StopIteration:
             return self._end_round()
 
-        return obs, reward, done, self._info
+        return obs, reward, done, False, self._info
 
     def _end_round(self):
         done = True
@@ -307,7 +308,7 @@ class CEOPlayerEnv(gym.Env):
 
         info = {"ceo_stay": next_round_order[0] == 0}
 
-        return obs, reward, done, info
+        return obs, reward, done, False, info
 
     def render(self, mode="human"):
         pass

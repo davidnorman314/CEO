@@ -27,7 +27,7 @@ import cProfile
 from pstats import SortKey
 from enum import Enum
 
-import gym
+import gymnasium
 
 from gym_ceo.envs.observation import ObservationFactory, Observation
 from gym_ceo.envs.ceo_player_env import CEOPlayerEnv
@@ -82,8 +82,8 @@ class CustomActorCriticPolicy(ActorCriticPolicy):
 
     def __init__(
         self,
-        observation_space: gym.spaces.Space,
-        action_space: gym.spaces.Space,
+        observation_space: gymnasium.spaces.Space,
+        action_space: gymnasium.spaces.Space,
         lr_schedule: Callable[[float], float],
         net_arch: Optional[List[Union[int, Dict[str, List[int]]]]] = None,
         activation_fn: Type[nn.Module] = nn.Tanh,
@@ -286,11 +286,11 @@ class PPOLearning:
     _name: str
     _total_steps: int
     _ppo: stable_baselines3.PPO
-    _env: gym.Env
-    _eval_env: gym.Env
+    _env: gymnasium.Env
+    _eval_env: gymnasium.Env
 
     def __init__(
-        self, name: str, env: gym.Env, eval_env: gym.Env, total_steps=1000000000, **kwargs
+        self, name: str, env: gymnasium.Env, eval_env: gymnasium.Env, total_steps=1000000000, **kwargs
     ):
         self._name = name
         self._env = env

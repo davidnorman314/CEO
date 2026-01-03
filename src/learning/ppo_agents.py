@@ -14,7 +14,7 @@ from gym_ceo.envs.observation import Observation, ObservationFactory
 
 from stable_baselines3 import PPO
 
-import gym
+import gymnasium
 
 
 def load_ppo(ppo_dir: str, device: str) -> tuple[PPO, dict]:
@@ -100,15 +100,15 @@ class PPOBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
 
 
 class PPOAgent:
-    """Class that uses a trained PPO agent to play a CEO game given by a gym environment."""
+    """Class that uses a trained PPO agent to play a CEO game given by a Gymnasium environment."""
 
-    _env: gym.Env
+    _env: gymnasium.Env
 
     _ppo: PPO
 
     _device: str
 
-    def __init__(self, env: gym.Env, ppo: PPO, device: str):
+    def __init__(self, env: gymnasium.Env, ppo: PPO, device: str):
         self._env = env
         self._ppo = ppo
         self._device = device

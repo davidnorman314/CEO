@@ -1,4 +1,4 @@
-import gym
+import gymnasium
 import numpy as np
 import pickle
 import datetime
@@ -25,7 +25,7 @@ class LearningBase:
     Base class for classes that learn how to play CEO well.
     """
 
-    _env: gym.Env
+    _env: gymnasium.Env
 
     _type: str
     _search_statistics: list[dict]
@@ -38,7 +38,7 @@ class LearningBase:
 
     _azure_client: AzureClient
 
-    def __init__(self, type: str, env: gym.Env, **kwargs):
+    def __init__(self, type: str, env: gymnasium.Env, **kwargs):
         """Constructor for a learning base class object."""
         if "azure_client" in kwargs:
             self._azure_client = kwargs["azure_client"]
@@ -73,7 +73,7 @@ class LearningBase:
         self._last_backup_pickle_time = datetime.datetime.now()
         self._last_azure_log_time = datetime.datetime.now()
 
-    def set_env(self, env: gym.Env):
+    def set_env(self, env: gymnasium.Env):
         """Sets the environment used by the agent"""
         self._env = env
 
@@ -149,7 +149,7 @@ class LearningBase:
 class QTableLearningBase(LearningBase):
     _qtable: QTable
 
-    def __init__(self, type: str, env: gym.Env, base_env: gym.Env, **kwargs):
+    def __init__(self, type: str, env: gymnasium.Env, base_env: gymnasium.Env, **kwargs):
         """Constructor for a learning base class object that uses a Q table.
         The kwargs are passed to the QTable constructor so it can be initialized
         for multiprocessing.
@@ -208,7 +208,7 @@ class QTableLearningBase(LearningBase):
 class ValueTableLearningBase(LearningBase):
     _valuetable: ValueTable
 
-    def __init__(self, type: str, env: gym.Env, **kwargs):
+    def __init__(self, type: str, env: gymnasium.Env, **kwargs):
         """Constructor for a learning base class object that uses a value table."""
         super().__init__(type, env, **kwargs)
 

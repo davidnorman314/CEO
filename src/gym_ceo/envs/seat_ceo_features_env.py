@@ -1,6 +1,6 @@
-import gym
+import gymnasium
 import numpy as np
-from gym.spaces import Box, Discrete
+from gymnasium.spaces import Box, Discrete
 
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.actions import Actions
@@ -15,7 +15,7 @@ from CEO.cards.simplebehavior import BasicBehavior
 from CEO.cards.player import Player
 
 
-class SeatCEOFeaturesEnv(gym.Env):
+class SeatCEOFeaturesEnv(gymnasium.Env):
     """
     Environment for a player in the CEO seat. This environment reduces the observation space
     to a set of features.
@@ -102,8 +102,8 @@ class SeatCEOFeaturesEnv(gym.Env):
 
         return self.feature_defs
 
-    def reset(self, hands: list[Hand] = None):
-        full_obs = self.full_env.reset(hands)
+    def reset(self, *, seed=None, options=None, hands: list[Hand] = None):
+        full_obs, full_info = self.full_env.reset(seed=seed, options=options, hands=hands)
         self.action_space = self.full_env.action_space
 
         info = dict()
@@ -115,14 +115,14 @@ class SeatCEOFeaturesEnv(gym.Env):
             print("Obs space", self.observation_space)
             assert self.observation_space.contains(obs)
 
-        return obs
+        return obs, info
 
     def step(self, action):
-        full_obs, reward, done, info = self.full_env.step(action)
+        full_obs, reward, terminated, truncated, info = self.full_env.step(action)
         self.action_space = self.full_env.action_space
 
         obs = self.make_feature_observation(full_obs, info)
-        return obs, reward, done, info
+        return obs, reward, terminated, truncated, info
 
     def render(self, mode="human"):
         pass

@@ -1,18 +1,18 @@
-import pytest
 import random as random
-from CEO.cards.eventlistener import PrintAllEventListener
-from CEO.cards.hand import *
-import CEO.cards.round as rd
-from CEO.cards.simplebehavior import SimpleBehaviorBase
-import CEO.cards.player as player
-from gym_ceo.envs.observation_hand import ObservationHand
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
-from gym_ceo.envs.observation import Observation, ObservationFactory
-from stable_baselines3.common.env_checker import check_env
-
-from gym_ceo.envs.actions import Actions
 
 import numpy as np
+import pytest
+from stable_baselines3.common.env_checker import check_env
+
+import CEO.cards.player as player
+import CEO.cards.round as rd
+from CEO.cards.eventlistener import PrintAllEventListener
+from CEO.cards.hand import *
+from CEO.cards.simplebehavior import SimpleBehaviorBase
+from gym_ceo.envs.actions import Actions
+from gym_ceo.envs.observation import Observation, ObservationFactory
+from gym_ceo.envs.observation_hand import ObservationHand
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
@@ -69,7 +69,7 @@ def create_ceo_env(hand1: Hand) -> tuple[SeatCEOEnv, Observation]:
     )
     factory = ObservationFactory(env.num_players, env.seat_number)
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = factory.create_observation(array=observation_array)
 
     return env, observation

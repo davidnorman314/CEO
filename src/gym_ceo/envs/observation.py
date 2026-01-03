@@ -1,7 +1,7 @@
 import numpy as np
 import torch as th
 
-from CEO.cards.hand import Hand, CardValue, HandInterface, PlayedCards
+from CEO.cards.hand import CardValue, Hand, HandInterface, PlayedCards
 
 
 class ObservationFactory:
@@ -35,7 +35,9 @@ class ObservationFactory:
         # One dimension for the last player that played on the trick.
         self._obs_index_hand_cards = 0
         self._obs_index_other_player_card_count = self._obs_index_hand_cards + 13
-        self._obs_index_cur_trick_value = self._obs_index_other_player_card_count + num_players - 1
+        self._obs_index_cur_trick_value = (
+            self._obs_index_other_player_card_count + num_players - 1
+        )
         self._obs_index_cur_trick_count = self._obs_index_cur_trick_value + 1
         self._obs_index_start_player = self._obs_index_cur_trick_count + 1
         self._obs_index_last_player = self._obs_index_start_player + 1
@@ -110,7 +112,9 @@ class Observation:
         self._factory = factory
 
         obs_index_hand_cards = self._factory._obs_index_hand_cards
-        obs_index_other_player_card_count = self._factory._obs_index_other_player_card_count
+        obs_index_other_player_card_count = (
+            self._factory._obs_index_other_player_card_count
+        )
         obs_index_cur_trick_value = self._factory._obs_index_cur_trick_value
         obs_index_cur_trick_count = self._factory._obs_index_cur_trick_count
         obs_index_start_player = self._factory._obs_index_start_player
@@ -136,7 +140,9 @@ class Observation:
             # Add the cards in other players' hands. Don't include the agent's hand.
             seat_iter = [p1 for p1 in range(num_players) if p1 != seat_number]
             for p, i in zip(seat_iter, range(0, num_players - 1)):
-                self._obs[obs_index_other_player_card_count + i] = state.cards_remaining[p]
+                self._obs[obs_index_other_player_card_count + i] = (
+                    state.cards_remaining[p]
+                )
 
             # Add the trick state
             self._obs[obs_index_cur_trick_value] = 0
@@ -165,7 +171,9 @@ class Observation:
             # Add the cards in other players' hands. Don't include the agent's hand.
             seat_iter = [p1 for p1 in range(num_players) if p1 != seat_number]
             for p, i in zip(seat_iter, range(0, num_players - 1)):
-                self._obs[obs_index_other_player_card_count + i] = state.cards_remaining[p]
+                self._obs[obs_index_other_player_card_count + i] = (
+                    state.cards_remaining[p]
+                )
 
             # Add the trick state
             self._obs[obs_index_cur_trick_value] = cur_card_value.value
@@ -197,7 +205,9 @@ class Observation:
             self._obs[obs_index_last_player] = update_last_player
 
         elif "array" in kwargs:
-            assert isinstance(kwargs["array"], np.ndarray)
+            assert isinstance(kwargs["array"], np.ndarray), (
+                f"Expected ndarray but got {type(kwargs['array'])}"
+            )
             self._obs = kwargs["array"]
 
         elif "tensor" in kwargs:
@@ -223,7 +233,9 @@ class Observation:
 
         for card_value in range(13):
             if card_value <= cur_trick_value.value:
-                self._obs[self._factory._obs_index_play_value_0_valid + card_value] = 0.0
+                self._obs[self._factory._obs_index_play_value_0_valid + card_value] = (
+                    0.0
+                )
                 continue
 
             count = self._obs[self._factory._obs_index_hand_cards + card_value]
@@ -239,7 +251,9 @@ class Observation:
         """Returns the number of cards in another player's hand. The index is
         the position of the other player in a list containing all players except for
         the agent."""
-        return self._obs[self._factory._obs_index_other_player_card_count + adj_player_index]
+        return self._obs[
+            self._factory._obs_index_other_player_card_count + adj_player_index
+        ]
 
     def get_starting_player(self):
         return self._obs[self._factory._obs_index_start_player]

@@ -1,4 +1,4 @@
-import gym
+import gymnasium
 import numpy as np
 from multiprocessing import RawArray
 
@@ -20,7 +20,7 @@ class QTable:
     q_raw_array: RawArray
     state_count_raw_array: RawArray
 
-    def __init__(self, env: gym.Env, **kwargs):
+    def __init__(self, env: gymnasium.Env, **kwargs):
         """Initialize the Q table.
         If kwargs is empty, create normal np.ndarrays
         If kwargs has shared=True, then create the np.ndarrays using RawArrays

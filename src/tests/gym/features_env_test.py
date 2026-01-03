@@ -1,32 +1,32 @@
-import pytest
 import random as random
-from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
-import CEO.cards.deck as deck
-from CEO.cards.hand import *
-import CEO.cards.round as rd
-from CEO.cards.simplebehavior import SimpleBehaviorBase
-import CEO.cards.player as player
-from gym_ceo.envs.features import WillWinTrick_AfterState
-from gym_ceo.envs.seat_ceo_features_env import (
-    SeatCEOFeaturesEnv,
-    TriplesUnderValueCount,
-    ValuesInRangeCount,
-    OtherPlayerHandCount,
-    HandCardCountRelative,
-    HighestCard,
-    SinglesUnderValueCountRelative,
-    DoublesUnderValueCountRelative,
-    TriplesUnderValueCountRelative,
-    WillWinTrick_AfterState,
-    HandSummary,
-)
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
-from gym_ceo.envs.observation import Observation, ObservationFactory
-from stable_baselines3.common.env_checker import check_env
-
-from gym_ceo.envs.actions import Actions, ActionEnum, ActionSpaceFactory
 
 import numpy as np
+import pytest
+from stable_baselines3.common.env_checker import check_env
+
+import CEO.cards.deck as deck
+import CEO.cards.player as player
+import CEO.cards.round as rd
+from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
+from CEO.cards.hand import *
+from CEO.cards.simplebehavior import SimpleBehaviorBase
+from gym_ceo.envs.actions import ActionEnum, Actions, ActionSpaceFactory
+from gym_ceo.envs.features import WillWinTrick_AfterState
+from gym_ceo.envs.observation import Observation, ObservationFactory
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.seat_ceo_features_env import (
+    DoublesUnderValueCountRelative,
+    HandCardCountRelative,
+    HandSummary,
+    HighestCard,
+    OtherPlayerHandCount,
+    SeatCEOFeaturesEnv,
+    SinglesUnderValueCountRelative,
+    TriplesUnderValueCount,
+    TriplesUnderValueCountRelative,
+    ValuesInRangeCount,
+    WillWinTrick_AfterState,
+)
 
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
@@ -41,7 +41,6 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
         return self.pass_singles(hand, count)
 
     def lead(self, player_position: int, hand: Hand, state) -> CardValue:
-
         if len(self.value_to_play) <= self.to_play_next_index:
             assert "No more values to play" != ""
 
@@ -59,7 +58,6 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
         cur_trick_count: int,
         state: rd.RoundState,
     ) -> CardValue:
-
         if len(self.value_to_play) <= self.to_play_next_index:
             assert "No more values to play" != ""
 
@@ -87,7 +85,7 @@ def create_ceo_env(
     )
     factory = ObservationFactory(env.num_players, env.seat_number)
 
-    observation_array = env.reset()
+    observation_array, _info = env.reset()
     observation = factory.create_observation(array=observation_array)
 
     return env, observation
@@ -195,7 +193,7 @@ def test_TriplesUnderValueCount():
 
     feature_calc = TriplesUnderValueCount(env, threshold=10)
 
-    observation_array = env.reset()
+    observation_array, _info = env.reset()
     observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
@@ -350,10 +348,18 @@ def test_SinglesUnderValueCountRelative():
 
     env, observation = create_ceo_env(hands)
 
-    feature_max2 = SinglesUnderValueCountRelative(env, relative_threshold=1, max_value=2)
-    feature_max3 = SinglesUnderValueCountRelative(env, relative_threshold=1, max_value=3)
-    feature_max4 = SinglesUnderValueCountRelative(env, relative_threshold=1, max_value=4)
-    feature_max5 = SinglesUnderValueCountRelative(env, relative_threshold=1, max_value=5)
+    feature_max2 = SinglesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=2
+    )
+    feature_max3 = SinglesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=3
+    )
+    feature_max4 = SinglesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=4
+    )
+    feature_max5 = SinglesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=5
+    )
 
     assert feature_max2.max_value == 2
     assert feature_max3.max_value == 3
@@ -521,10 +527,18 @@ def test_DoublesUnderValueCountRelative():
 
     env, observation = create_ceo_env(hands)
 
-    feature_max2 = DoublesUnderValueCountRelative(env, relative_threshold=1, max_value=2)
-    feature_max3 = DoublesUnderValueCountRelative(env, relative_threshold=1, max_value=3)
-    feature_max4 = DoublesUnderValueCountRelative(env, relative_threshold=1, max_value=4)
-    feature_max5 = DoublesUnderValueCountRelative(env, relative_threshold=1, max_value=5)
+    feature_max2 = DoublesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=2
+    )
+    feature_max3 = DoublesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=3
+    )
+    feature_max4 = DoublesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=4
+    )
+    feature_max5 = DoublesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=5
+    )
 
     assert feature_max2.max_value == 2
     assert feature_max3.max_value == 3
@@ -692,10 +706,18 @@ def test_TriplesUnderValueCountRelative():
 
     env, observation = create_ceo_env(hands)
 
-    feature_max2 = TriplesUnderValueCountRelative(env, relative_threshold=1, max_value=2)
-    feature_max3 = TriplesUnderValueCountRelative(env, relative_threshold=1, max_value=3)
-    feature_max4 = TriplesUnderValueCountRelative(env, relative_threshold=1, max_value=4)
-    feature_max5 = TriplesUnderValueCountRelative(env, relative_threshold=1, max_value=5)
+    feature_max2 = TriplesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=2
+    )
+    feature_max3 = TriplesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=3
+    )
+    feature_max4 = TriplesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=4
+    )
+    feature_max5 = TriplesUnderValueCountRelative(
+        env, relative_threshold=1, max_value=5
+    )
 
     assert feature_max2.max_value == 2
     assert feature_max3.max_value == 3
@@ -782,7 +804,7 @@ def test_ValuesInRangeCount():
     feature_calc_3_6 = ValuesInRangeCount(env, range_begin=3, range_end=6, max_value=3)
     feature_calc_4_6 = ValuesInRangeCount(env, range_begin=4, range_end=6, max_value=3)
 
-    observation_array = env.reset()
+    observation_array, _info = env.reset()
     observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
@@ -801,8 +823,12 @@ def test_ValuesInRangeCount():
     assert feature_array[0] == 0
 
     # Test max_value
-    feature_calc_max2 = ValuesInRangeCount(env, range_begin=0, range_end=12, max_value=2)
-    feature_calc_max3 = ValuesInRangeCount(env, range_begin=0, range_end=12, max_value=3)
+    feature_calc_max2 = ValuesInRangeCount(
+        env, range_begin=0, range_end=12, max_value=2
+    )
+    feature_calc_max3 = ValuesInRangeCount(
+        env, range_begin=0, range_end=12, max_value=3
+    )
 
     feature_calc_max2.calc(observation, feature_array, 0, info)
     assert feature_array[0] == 2
@@ -874,7 +900,7 @@ def test_OtherPlayerHandCount():
     feature_1 = OtherPlayerHandCount(env, other_player_index=1, max_value=5)
     feature_2 = OtherPlayerHandCount(env, other_player_index=2, max_value=5)
 
-    observation_array = env.reset()
+    observation_array, _info = env.reset()
     observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
@@ -894,7 +920,7 @@ def test_OtherPlayerHandCount():
     feature_1 = OtherPlayerHandCount(env, other_player_index=1, max_value=4)
     feature_2 = OtherPlayerHandCount(env, other_player_index=2, max_value=4)
 
-    observation_array = env.reset()
+    observation_array, _info = env.reset()
     observation = factory.create_observation(array=observation_array)
 
     feature_array = np.zeros(1)
@@ -1314,7 +1340,9 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
     feature_other_2 = OtherPlayerHandCount(env, other_player_index=2, max_value=5)
 
     feature_no_downstream.notify_other_features([feature_no_downstream])
-    feature_one_downstream.notify_other_features([feature_one_downstream, feature_other_1])
+    feature_one_downstream.notify_other_features(
+        [feature_one_downstream, feature_other_1]
+    )
     feature_two_downstream.notify_other_features(
         [feature_two_downstream, feature_other_1, feature_other_2]
     )

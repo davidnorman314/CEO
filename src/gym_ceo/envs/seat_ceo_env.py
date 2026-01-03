@@ -1,7 +1,7 @@
 from argparse import ArgumentError
-import gym
+import gymnasium
 import numpy as np
-from gym.spaces import Box
+from gymnasium.spaces import Box
 
 from gym_ceo.envs.actions import (
     ActionSpaceFactory,
@@ -23,7 +23,7 @@ from CEO.cards.player import Player, PlayerBehaviorInterface
 from CEO.cards.passcards import PassCards
 
 
-class SeatCEOEnv(gym.Env):
+class SeatCEOEnv(gymnasium.Env):
     """
     Environment for a player in the CEO seat. This environment's observations
     contains all the information available to a player.
@@ -131,7 +131,8 @@ class SeatCEOEnv(gym.Env):
 
         self._simple_behavior_base = SimpleBehaviorBase()
 
-    def reset(self, hands: list[Hand] = None):
+    def reset(self, *, seed=None, options=None, hands: list[Hand] = None):
+        super().reset(seed=seed)
         self._listener.start_round(self._players)
 
         # Deal the cards
@@ -162,7 +163,7 @@ class SeatCEOEnv(gym.Env):
             print("Obs space", self.observation_space)
             assert self.observation_space.contains(obs)
 
-        return obs
+        return obs, self._info
 
     def step_full_action(self, full_action):
         self.step(self.action_space.find_full_action(full_action))
@@ -196,7 +197,7 @@ class SeatCEOEnv(gym.Env):
             # The gym environment checker wants to have an np array for the observation here.
             obs = np.zeros(self._observation_dimension)
 
-            return obs, action_reward, True, self._info
+            return obs, action_reward, True, False, self._info
 
         if cv is None and self._cur_trick_value is None:
             print(
@@ -249,7 +250,7 @@ class SeatCEOEnv(gym.Env):
 
             self._hands = None
 
-        return obs, reward, done, self._info
+        return obs, reward, done, False, self._info
 
     def render(self, mode="human"):
         pass

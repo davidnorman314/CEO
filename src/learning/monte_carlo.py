@@ -4,7 +4,7 @@ The program can either train a new model or play games with a trained model.
 """
 
 from os import stat
-import gym
+import gymnasium
 import random
 import pickle
 import argparse
@@ -43,9 +43,9 @@ class SearchStatistics:
 
 class MonteCarloLearning(QTableLearningBase):
 
-    _base_env: gym.Env
+    _base_env: gymnasium.Env
 
-    def __init__(self, env: gym.Env, base_env: gym.Env, **kwargs):
+    def __init__(self, env: gymnasium.Env, base_env: gymnasium.Env, **kwargs):
         """Constructor for a learning object.
         The kwargs are passed to the QTable constructor so it can be initialized
         for multiprocessing.
@@ -54,7 +54,7 @@ class MonteCarloLearning(QTableLearningBase):
 
         self._base_env = base_env
 
-    def set_base_env(self, base_env: gym.Env):
+    def set_base_env(self, base_env: gymnasium.Env):
         self._base_env = base_env
 
     def _pick_action(

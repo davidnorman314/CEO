@@ -1,5 +1,5 @@
-import gym
-import gym.spaces
+import gymnasium
+import gymnasium.spaces
 import numpy as np
 from multiprocessing import RawArray
 
@@ -21,7 +21,7 @@ class ValueTable:
     v_raw_array: RawArray
     state_count_raw_array: RawArray
 
-    def __init__(self, observation_space: gym.spaces.Box, **kwargs):
+    def __init__(self, observation_space: gymnasium.spaces.Box, **kwargs):
         """Initialize the value table.
         If kwargs is empty, create normal np.ndarrays
         If kwargs has shared=True, then create the np.ndarrays using RawArrays
@@ -137,7 +137,7 @@ class ValueTable:
         return self.q_raw_array, self.state_count_raw_array
 
     def find_greedy_action(
-        self, env: gym.Env, obs_factory: FeatureObservationFactory, state: np.ndarray
+        self, env: gymnasium.Env, obs_factory: FeatureObservationFactory, state: np.ndarray
     ) -> tuple[int, float]:
         greedy_action = None
         greedy_reward = -1000000
@@ -174,7 +174,7 @@ class ValueTable:
         return greedy_action, greedy_reward, greedy_visit_count
 
     def afterstate_visit_count(
-        self, env: gym.Env, obs_factory: FeatureObservationFactory, state: np.ndarray
+        self, env: gymnasium.Env, obs_factory: FeatureObservationFactory, state: np.ndarray
     ) -> int:
         visit_count = 0
         info = dict()

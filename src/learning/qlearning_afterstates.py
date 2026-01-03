@@ -1,26 +1,24 @@
-import gym
-import numpy as np
 import argparse
-import random
-import math
-from azure_rl.azure_client import AzureClient
-from learning.learning_base import ValueTableLearningBase, EpisodeInfo
-from collections import deque
-
-from pstats import SortKey
-from enum import Enum
-
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
-from gym_ceo.envs.features import FeatureObservationFactory
-
-from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
-
 import cProfile
+import math
+import random
+from collections import deque
+from enum import Enum
+from pstats import SortKey
+
+import gymnasium
+import numpy as np
+
+from azure_rl.azure_client import AzureClient
+from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
+from gym_ceo.envs.features import FeatureObservationFactory
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from learning.learning_base import EpisodeInfo, ValueTableLearningBase
 
 
 class QLearningAfterstates(ValueTableLearningBase):
     """
-    Class implementing q-learning using afterstates for an OpenAI gym
+    Class implementing q-learning using afterstates for a Gymnasium environment
     """
 
     feature_defs: list
@@ -37,7 +35,9 @@ class QLearningAfterstates(ValueTableLearningBase):
 
     _train_episodes: int
 
-    def __init__(self, env: gym.Env, train_episodes=100000, feature_defs=None, **kwargs):
+    def __init__(
+        self, env: gymnasium.Env, train_episodes=100000, feature_defs=None, **kwargs
+    ):
         super().__init__("qlearning_afterstates", env, **kwargs)
         self._train_episodes = train_episodes
 
@@ -160,7 +160,7 @@ class QLearningAfterstates(ValueTableLearningBase):
         episode = 0
         while episode < self._train_episodes:
             # Reseting the environment to start the new episode.
-            state = self._env.reset()
+            state, info = self._env.reset()
 
             # Starting the tracker for the rewards
             episode_reward = 0
@@ -172,7 +172,9 @@ class QLearningAfterstates(ValueTableLearningBase):
 
             # Cutting down on exploration by reducing the epsilon
             if epsilon_type == self.EpsilonType.EPISODE_COUNT:
-                epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * (episode + 1))
+                epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(
+                    -decay * (episode + 1)
+                )
                 initial_state_visit_count = 0
             elif epsilon_type == self.EpsilonType.STATE_VISIT_COUNT:
                 initial_state_visit_count = self.afterstate_visit_count(state)
@@ -190,7 +192,9 @@ class QLearningAfterstates(ValueTableLearningBase):
 
                 if exp_exp_sample > epsilon:
                     # Exploit
-                    action, expected_value, afterstate_visit_count = self.find_greedy_action(state)
+                    action, expected_value, afterstate_visit_count = (
+                        self.find_greedy_action(state)
+                    )
                     action_type = "-------"
 
                     episode_exploit_count += 1
@@ -203,7 +207,9 @@ class QLearningAfterstates(ValueTableLearningBase):
 
                 afterstate = self.get_afterstate(state, action)
                 afterstate_tuple = tuple(afterstate.astype(int))
-                afterstate_visit_count = self._valuetable.state_visit_count(afterstate_tuple)
+                afterstate_visit_count = self._valuetable.state_visit_count(
+                    afterstate_tuple
+                )
 
                 # Skip this episode if we have visited its initial state too many times and we haven't
                 # already skipped too many times without doing an episode.
@@ -218,13 +224,14 @@ class QLearningAfterstates(ValueTableLearningBase):
                 start_episode = False
 
                 # Perform the action
-                new_state, reward, done, info = self._env.step(action)
+                new_state, reward, done, truncated, info = self._env.step(action)
+                assert not truncated
 
                 if new_state is not None:
                     # The estimated state value of new_state is the maximum expected
                     # value across all actions
-                    max_action, new_state_value, new_state_visit_count = self.find_greedy_action(
-                        new_state
+                    max_action, new_state_value, new_state_visit_count = (
+                        self.find_greedy_action(new_state)
                     )
                 else:
                     assert done
@@ -237,7 +244,9 @@ class QLearningAfterstates(ValueTableLearningBase):
                 episode_infos.append(episode_info)
 
                 episode_info.state = state
-                episode_info.value_before = self._valuetable.state_value(afterstate_tuple)
+                episode_info.value_before = self._valuetable.state_value(
+                    afterstate_tuple
+                )
 
                 self._valuetable.increment_state_visit_count(afterstate_tuple)
                 state_visit_count = self._valuetable.state_visit_count(afterstate_tuple)
@@ -249,23 +258,27 @@ class QLearningAfterstates(ValueTableLearningBase):
                     # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
                     # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
                     # They recommend 0.85.
-                    alpha = 1.0 / (state_visit_count ** alpha_exponent)
+                    alpha = 1.0 / (state_visit_count**alpha_exponent)
                 elif alpha_type == self.AlphaType.EPISODE_COUNT:
                     # Calculate the learning rate based on the state count.
                     # See Learning Rates for Q-learning, Even-Dar and Mansour, 2003
                     # https://www.jmlr.org/papers/volume5/evendar03a/evendar03a.pdf
                     # They recommend 0.85.
-                    alpha = 1.0 / (episode ** alpha_exponent)
+                    alpha = 1.0 / (episode**alpha_exponent)
                 elif alpha_type == self.AlphaType.CONSTANT:
                     alpha = alpha_constant
                 else:
                     raise ValueError("alpha_type is not defined")
 
                 state_value = self._valuetable.state_value(afterstate_tuple)
-                delta = alpha * (reward + discount_factor * new_state_value - state_value)
+                delta = alpha * (
+                    reward + discount_factor * new_state_value - state_value
+                )
                 self._valuetable.update_state_value(afterstate_tuple, delta)
 
-                episode_info.value_after = self._valuetable.state_value(afterstate_tuple)
+                episode_info.value_after = self._valuetable.state_value(
+                    afterstate_tuple
+                )
                 episode_info.action_type = action_type
                 episode_info.alpha = alpha
                 episode_info.state_visit_count = state_visit_count
@@ -308,9 +321,13 @@ class QLearningAfterstates(ValueTableLearningBase):
                 recent_epsilon.popleft()
                 recent_initial_state_visit_count.popleft()
 
-            if (episode > 0 and episode % 2000 == 0) or (episode == self._train_episodes):
+            if (episode > 0 and episode % 2000 == 0) or (
+                episode == self._train_episodes
+            ):
                 ave_training_rewards = total_training_reward / episode
-                recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
+                recent_rewards = sum(recent_episode_rewards) / len(
+                    recent_episode_rewards
+                )
                 recent_explore_rate = sum(recent_explore_counts) / (
                     sum(recent_exploit_counts) + sum(recent_explore_counts)
                 )
@@ -329,7 +346,7 @@ class QLearningAfterstates(ValueTableLearningBase):
                         skipped_episodes,
                         min_epsilon,
                         max_epsilon,
-                        avg_initial_state_visit_count
+                        avg_initial_state_visit_count,
                     )
                 )
 
@@ -357,7 +374,9 @@ class QLearningAfterstates(ValueTableLearningBase):
                 # Log the states for this episode
                 print("Episode info")
                 for info in episode_infos:
-                    max_visit_count = max(map(lambda info: info.state_visit_count, episode_infos))
+                    max_visit_count = max(
+                        map(lambda info: info.state_visit_count, episode_infos)
+                    )
                     visit_chars = math.ceil(math.log10(max_visit_count))
 
                     format_str = "{action:2} value {val_before:6.3f} -> {val_after:6.3f} visit {visit_count:#w#} -> {alpha:.3e} {hand}"
@@ -401,7 +420,9 @@ class QLearningAfterstates(ValueTableLearningBase):
     def get_afterstate(self, state: np.ndarray, action: int):
         """Returns the feature afterstate from the given action."""
         # Calculate the afterstate if this action is taken.
-        afterstate_full_observation, played_card = self._env.get_afterstate(state, action)
+        afterstate_full_observation, played_card = self._env.get_afterstate(
+            state, action
+        )
 
         # Calcualate features for the afterstate
         info = dict()
@@ -419,7 +440,9 @@ class QLearningAfterstates(ValueTableLearningBase):
     def afterstate_visit_count(self, state: np.ndarray) -> int:
         """Counts the number of visits for all possible afterstates."""
 
-        return self._valuetable.afterstate_visit_count(self._env, self._obs_factory, state)
+        return self._valuetable.afterstate_visit_count(
+            self._env, self._obs_factory, state
+        )
 
     def get_default_features(self, env: SeatCEOEnv):
         print("Using default parameters.")
@@ -547,4 +570,6 @@ if __name__ == "__main__":
         qlearning.train(params, do_log)
 
     # Save the agent in a pickle file.
-    qlearning.pickle("qlearning_afterstates.pickle", feature_defs=qlearning.feature_defs)
+    qlearning.pickle(
+        "qlearning_afterstates.pickle", feature_defs=qlearning.feature_defs
+    )

@@ -1,7 +1,7 @@
 """Play rounds using an agent based on a Q table.
 """
 
-import gym
+import gymnasium
 import random
 import pickle
 import argparse
@@ -39,12 +39,12 @@ import cloudpickle
 
 
 class QAgent:
-    _base_env: gym.Env
-    _env: gym.Env
+    _base_env: gymnasium.Env
+    _env: gymnasium.Env
 
     _qtable: QTable
 
-    def __init__(self, q: np.ndarray, state_count: np.ndarray, env: gym.Env, base_env: gym.Env):
+    def __init__(self, q: np.ndarray, state_count: np.ndarray, env: gymnasium.Env, base_env: gymnasium.Env):
         self._base_env = base_env
         self._env = env
         self._qtable = QTable(env, q=q, state_count=state_count)
@@ -139,13 +139,13 @@ class QAgent:
 
 
 class AfterstateAgent:
-    _env: gym.Env
+    _env: gymnasium.Env
     _obs_factory: FeatureObservationFactory
 
     _valuetable: ValueTable
 
     def __init__(
-        self, value_table: np.ndarray, state_count: np.ndarray, env: gym.Env, feature_defs
+        self, value_table: np.ndarray, state_count: np.ndarray, env: gymnasium.Env, feature_defs
     ):
         self._env = env
         self._valuetable = ValueTable(env.observation_space, v=value_table, state_count=state_count)

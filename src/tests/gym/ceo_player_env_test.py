@@ -1,15 +1,17 @@
-import pytest
 import random as random
-from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
+
+import pytest
+from stable_baselines3.common.env_checker import check_env
+
 import CEO.cards.deck as deck
+import CEO.cards.player as player
+import CEO.cards.round as rd
+from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 from CEO.cards.hand import *
 from CEO.cards.simplebehavior import SimpleBehaviorBase
-import CEO.cards.round as rd
-import CEO.cards.player as player
+from gym_ceo.envs.actions import ActionEnum, Actions, ActionSpaceFactory
 from gym_ceo.envs.ceo_player_env import CEOPlayerEnv
 from gym_ceo.envs.observation import Observation, ObservationFactory
-from gym_ceo.envs.actions import Actions, ActionEnum, ActionSpaceFactory
-from stable_baselines3.common.env_checker import check_env
 
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
@@ -25,7 +27,6 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
         return self.pass_singles(hand, count)
 
     def lead(self, player_position: int, hand: Hand, state) -> CardValue:
-
         if len(self.value_to_play) <= self.to_play_next_index:
             print(f"Not enough values to play")
             assert "No more values to play" != ""
@@ -44,7 +45,6 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
         cur_trick_count: int,
         state: rd.RoundState,
     ) -> CardValue:
-
         if len(self.value_to_play) <= self.to_play_next_index:
             assert "No more values to play" != ""
 
@@ -163,42 +163,60 @@ def test_CEOPlayerEnv_AllCardActionSpace_ValidActions_check_env():
     print("Checking CEOPlayerEnv all_card. Seed 0")
     random.seed(0)
     env = CEOPlayerEnv(
-        seat_number=0, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+        seat_number=0,
+        listener=listener,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
     )
     check_env(env, True, True)
 
     print("Checking CEOPlayerEnv all_card. Seed 1")
     random.seed(1)
     env = CEOPlayerEnv(
-        seat_number=0, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+        seat_number=0,
+        listener=listener,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
     )
     check_env(env, True, True)
 
     print("Checking CEOPlayerEnv all_card. Seed 2")
     random.seed(2)
     env = CEOPlayerEnv(
-        seat_number=5, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+        seat_number=5,
+        listener=listener,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
     )
     check_env(env, True, True)
 
     print("Checking CEOPlayerEnv all_card. Seed 3")
     random.seed(3)
     env = CEOPlayerEnv(
-        seat_number=5, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+        seat_number=5,
+        listener=listener,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
     )
     check_env(env, True, True)
 
     print("Checking CEOPlayerEnv all_card. Seed 4")
     random.seed(4)
     env = CEOPlayerEnv(
-        seat_number=2, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+        seat_number=2,
+        listener=listener,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
     )
     check_env(env, True, True)
 
     print("Checking CEOPlayerEnv all_card. Seed 5")
     random.seed(5)
     env = CEOPlayerEnv(
-        seat_number=4, listener=listener, action_space_type="all_card", obs_kwargs=obs_kwargs
+        seat_number=4,
+        listener=listener,
+        action_space_type="all_card",
+        obs_kwargs=obs_kwargs,
     )
     check_env(env, True, True)
 
@@ -266,7 +284,7 @@ def test_CEOPlayerEnv_Bottom_Stay():
     )
 
     # Trick 1
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 2
     assert observation.get_cur_trick_count() == 2
@@ -276,7 +294,7 @@ def test_CEOPlayerEnv_Bottom_Stay():
     assert observation.get_other_player_card_count(2) == 4
 
     action = 3
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -291,7 +309,7 @@ def test_CEOPlayerEnv_Bottom_Stay():
 
     # Trick 2 - Lead
     action = 4
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -306,7 +324,7 @@ def test_CEOPlayerEnv_Bottom_Stay():
 
     # Trick 3
     action = 9
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == None
@@ -314,7 +332,7 @@ def test_CEOPlayerEnv_Bottom_Stay():
 
     # Trick 4
     action = 0
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 0
@@ -384,13 +402,13 @@ def test_CEOPlayerEnv_Bottom_MoveUp():
     )
 
     # Trick 1
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 2
     assert observation.get_cur_trick_count() == 2
 
     action = 3
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -401,7 +419,7 @@ def test_CEOPlayerEnv_Bottom_MoveUp():
 
     # Trick 2 - Lead
     action = 4
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -412,7 +430,7 @@ def test_CEOPlayerEnv_Bottom_MoveUp():
 
     # Trick 3
     action = 9
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 1
@@ -486,13 +504,13 @@ def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
     )
 
     # Trick 1
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 2
     assert observation.get_cur_trick_count() == 2
 
     action = 3
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -503,7 +521,7 @@ def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
 
     # Trick 2 - Lead
     action = 4
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -514,7 +532,7 @@ def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
 
     # Trick 3
     action = 9
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -525,7 +543,7 @@ def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
 
     # Trick 4
     action = 10
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 1
@@ -599,13 +617,13 @@ def test_CEOPlayerEnv_ValidActions_Bottom_NeverPlay():
     )
 
     # Trick 1
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == None
     assert observation.get_cur_trick_count() == 0
 
     action = 0
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 0.0
@@ -665,14 +683,14 @@ def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTrick():
 
     action_space = env.action_space
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 2
     assert observation.get_cur_trick_count() == 1
 
     # Play on second trick
     action = 3
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 0.0
@@ -742,14 +760,14 @@ def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTwoTricks():
 
     action_space = env.action_space
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 2
     assert observation.get_cur_trick_count() == 1
 
     # Play on third trick
     action = 3
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 0.0
@@ -817,14 +835,14 @@ def test_CEOPlayerEnv_SecondPlayer_CEOAllCardsOnFirstTwoTricks():
         obs_kwargs=obs_kwargs,
     )
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 7
     assert observation.get_cur_trick_count() == 5
 
     # Play on first trick
     action = 8
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == None
     assert observation.get_cur_trick_count() == 0
@@ -834,7 +852,7 @@ def test_CEOPlayerEnv_SecondPlayer_CEOAllCardsOnFirstTwoTricks():
 
     # Lead on second trick
     action = 9
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == None
     assert observation.get_cur_trick_count() == 0
@@ -844,7 +862,7 @@ def test_CEOPlayerEnv_SecondPlayer_CEOAllCardsOnFirstTwoTricks():
 
     # Lead on third trick
     action = 0
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 0.0
@@ -909,7 +927,7 @@ def test_CEOPlayerEnv_ThirdPlayer_Stay():
     )
 
     # Trick 1
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 1
     assert observation.get_cur_trick_count() == 2
@@ -919,7 +937,7 @@ def test_CEOPlayerEnv_ThirdPlayer_Stay():
     assert observation.get_other_player_card_count(2) == 6
 
     action = 2
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -934,7 +952,7 @@ def test_CEOPlayerEnv_ThirdPlayer_Stay():
 
     # Trick 2
     action = 7
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -945,7 +963,7 @@ def test_CEOPlayerEnv_ThirdPlayer_Stay():
 
     # Trick 3 - Lead
     action = 8
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 0
@@ -1015,13 +1033,13 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveUp():
     )
 
     # Trick 1
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 1
     assert observation.get_cur_trick_count() == 2
 
     action = 2
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -1032,7 +1050,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveUp():
 
     # Trick 2
     action = 7
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -1043,7 +1061,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveUp():
 
     # Trick 3 - Lead
     action = 8
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 1
@@ -1112,13 +1130,13 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
     )
 
     # Trick 1
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 1
     assert observation.get_cur_trick_count() == 2
 
     action = 2
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -1129,7 +1147,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
 
     # Trick 2
     action = 7
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -1140,7 +1158,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
 
     # Trick 3 - Lead
     action = 8
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -1151,7 +1169,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
 
     # Trick 4 - Lead
     action = 0
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == -1
@@ -1222,14 +1240,14 @@ def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick():
     )
 
     # Trick 1 and trick 2
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     assert observation_array is not None
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 1
     assert observation.get_cur_trick_count() == 1
 
     action = 2
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -1240,7 +1258,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick():
 
     # Trick 3
     action = 6
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == -1
@@ -1311,13 +1329,13 @@ def test_CEOPlayerEnv_CEO_MoveDown():
     )
 
     # Trick 1
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == None
     assert observation.get_cur_trick_count() == 0
 
     action = 0
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -1327,7 +1345,7 @@ def test_CEOPlayerEnv_CEO_MoveDown():
     assert observation.get_cur_trick_count() == 2
 
     action = 5
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == -1.0
@@ -1422,13 +1440,13 @@ def test_CEOPlayerEnv_CEO_OnlyPlayPass():
 
     action_space = env.action_space
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == None
 
     # Lead
     action = 0
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -1438,7 +1456,7 @@ def test_CEOPlayerEnv_CEO_OnlyPlayPass():
 
     # Play cv3
     action = 3
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0
@@ -1448,7 +1466,7 @@ def test_CEOPlayerEnv_CEO_OnlyPlayPass():
 
     # Play cv2
     action = 2
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward == 1.0
@@ -1533,11 +1551,11 @@ def test_CEOPlayerEnv_CEO_AllCardActionSpace_NegativeReward_Lead():
         action_space_type="all_card",
     )
 
-    observation = env.reset()
+    observation, info = env.reset()
 
     # Do the pass action when we should lead.
     action = 13
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert done
     remaining_cards = 5.0
@@ -1623,25 +1641,25 @@ def test_CEOPlayerEnv_CEO_AllCardActionSpace_NegativeReward_InvalidCard():
         action_space_type="all_card",
     )
 
-    observation = env.reset()
+    observation, info = env.reset()
 
     # Lead highest
     action = 7
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
 
     # Lead lowest
     action = 0
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0
 
     # Lead a card that isn't in the hand.
     action = 12
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     remaining_cards = 2.0
     assert reward == pytest.approx(-(2.0 + 8.0 * remaining_cards / 13.0))
@@ -1732,7 +1750,7 @@ def test_CEOPlayerEnv_CEO_AllCardActionSpace_ActionOrderMatchesObservationOrder(
 
     action_space = env.action_space
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     valid_play_array = observation.get_valid_action_array()
 
@@ -1746,7 +1764,7 @@ def test_CEOPlayerEnv_CEO_AllCardActionSpace_ActionOrderMatchesObservationOrder(
 
     # Lead highest
     action = 7
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0.0
@@ -1764,7 +1782,7 @@ def test_CEOPlayerEnv_CEO_AllCardActionSpace_ActionOrderMatchesObservationOrder(
 
     # Lead lowest
     action = 0
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0
@@ -1843,7 +1861,7 @@ def test_CEOPlayerEnv_CEO_Passing():
         listener=PrintAllEventListener(),
     )
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
 
     assert observation.get_card_count(0) == 0
@@ -1917,20 +1935,20 @@ def test_CEOPlayerEnv_CEO_NoPassing():
         skip_passing=True,
     )
 
-    observation = env.reset()
+    observation, info = env.reset()
 
     assert env.action_space == ActionSpaceFactory.action_space_two_legal_lead
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert env.action_space == ActionSpaceFactory.action_space_one_legal_play
     assert not done
     assert reward == 0
 
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert reward > 0
     assert done
@@ -2009,14 +2027,14 @@ def test_CEOPlayerEnv_CEO_CEOLeadsAndNoOnePlays():
         skip_passing=True,
     )
 
-    observation = env.reset()
+    observation, info = env.reset()
 
     # Three possible cards to play
     assert env.action_space == ActionSpaceFactory.action_space_lead
 
     # Lead highest
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert env.action_space == ActionSpaceFactory.action_space_two_legal_lead
     assert not done
@@ -2024,14 +2042,14 @@ def test_CEOPlayerEnv_CEO_CEOLeadsAndNoOnePlays():
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert env.action_space == ActionSpaceFactory.action_space_one_legal_play
     assert not done
     assert reward == 0
 
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert reward > 0
     assert done
@@ -2111,7 +2129,7 @@ def test_CEOPlayerEnv_CEO_observation():
 
     observation_factory = env.observation_factory
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = observation_factory.create_observation(array=observation_array)
 
     assert observation.get_starting_player() == 0
@@ -2130,7 +2148,7 @@ def test_CEOPlayerEnv_CEO_observation():
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     observation = observation_factory.create_observation(array=observation_array)
 
@@ -2150,7 +2168,7 @@ def test_CEOPlayerEnv_CEO_observation():
 
     # Play lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     observation = observation_factory.create_observation(array=observation_array)
 
@@ -2251,7 +2269,7 @@ def test_CEOPlayerEnv_CEO_observation_valid_plays():
 
     observation_factory = env.observation_factory
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = observation_factory.create_observation(array=observation_array)
 
     assert observation.get_starting_player() == 0
@@ -2285,7 +2303,7 @@ def test_CEOPlayerEnv_CEO_observation_valid_plays():
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     observation = observation_factory.create_observation(array=observation_array)
 
@@ -2320,7 +2338,7 @@ def test_CEOPlayerEnv_CEO_observation_valid_plays():
 
     # Play lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     observation = observation_factory.create_observation(array=observation_array)
 
@@ -2414,11 +2432,11 @@ def test_CEOPlayerEnv_CEO_reward_cards_left():
 
     observation_factory = env.observation_factory
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     assert done
 
@@ -2497,13 +2515,13 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Play_SingleCard():
         skip_passing=True,
     )
 
-    observation = env.reset()
+    observation, info = env.reset()
 
     # Lead lowest
     assert env.action_space == ActionSpaceFactory.action_space_two_legal_lead
     action = 1
     assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0
@@ -2512,7 +2530,7 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Play_SingleCard():
     assert env.action_space.n == 2
     action = 0
     assert env.action_space.actions[action] != ActionEnum.PASS_ON_TRICK_NUM
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert reward > 0
     assert done
@@ -2595,13 +2613,13 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Play_TwoCards():
         skip_passing=True,
     )
 
-    observation = env.reset()
+    observation, info = env.reset()
 
     # Lead lowest
     assert env.action_space == ActionSpaceFactory.action_space_lead
     action = 2
     assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0
@@ -2611,7 +2629,7 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Play_TwoCards():
     assert env.action_space.n == 3
     action = 0
     assert env.action_space.actions[action] == ActionEnum.PLAY_HIGHEST_NUM
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0
@@ -2619,7 +2637,7 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Play_TwoCards():
     # Lead only card
     assert env.action_space == ActionSpaceFactory.action_space_one_legal_lead
     action = 0
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert reward > 0
     assert done
@@ -2711,13 +2729,13 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Lead_TwoCards():
         skip_passing=True,
     )
 
-    observation = env.reset()
+    observation, info = env.reset()
 
     # Lead lowest
     assert env.action_space == ActionSpaceFactory.action_space_lead
     action = 2
     assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0
@@ -2727,7 +2745,7 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Lead_TwoCards():
     assert env.action_space.n == 4
     action = 2
     assert env.action_space.actions[action] == ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0
@@ -2736,7 +2754,7 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Lead_TwoCards():
     assert env.action_space == ActionSpaceFactory.action_space_two_legal_lead
     action = 0
     assert env.action_space.actions[action] == ActionEnum.PLAY_HIGHEST_NUM
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert not done
     assert reward == 0
@@ -2744,7 +2762,7 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Lead_TwoCards():
     # Lead only card
     assert env.action_space == ActionSpaceFactory.action_space_one_legal_lead
     action = 0
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert reward > 0
     assert done
@@ -2819,11 +2837,11 @@ def test_CEOPlayerEnv_CEO_CanNotPlay_TwoTricks():
         skip_passing=True,
     )
 
-    observation = env.reset()
+    observation, info = env.reset()
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert reward < 0
     assert done
@@ -2905,11 +2923,11 @@ def test_CEOPlayerEnv_CEO_CanNotPlay_ThreeTricks():
         skip_passing=True,
     )
 
-    observation = env.reset()
+    observation, info = env.reset()
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation, reward, done, info = env.step(action)
+    observation, reward, done, truncated, info = env.step(action)
 
     assert done
     assert reward < 0
@@ -2984,7 +3002,7 @@ def test_CEOPlayerEnv_CEO_get_afterstate():
 
     observation_factory = env.observation_factory
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = observation_factory.create_observation(array=observation_array)
 
     assert observation.get_card_count(0) == 1
@@ -3022,7 +3040,7 @@ def test_CEOPlayerEnv_CEO_get_afterstate():
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
-    observation_array, reward, done, info = env.step(action)
+    observation_array, reward, done, truncated, info = env.step(action)
 
     observation = observation_factory.create_observation(array=observation_array)
 
@@ -3135,13 +3153,13 @@ def test_CEOPlayerEnv_CEO_CardActionSpace():
 
     observation_factory = env.observation_factory
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
 
     # Three possible cards to play
     assert env.action_space.n == 3
 
     # Lead highest
-    observation_array, reward, done, info = env.step(2)
+    observation_array, reward, done, truncated, info = env.step(2)
 
     assert env.action_space.n == 2
     assert not done
@@ -3157,7 +3175,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace():
     assert observation.get_card_count(5) == 0
 
     # Lead lowest
-    observation_array, reward, done, info = env.step(0)
+    observation_array, reward, done, truncated, info = env.step(0)
 
     assert env.action_space.n == 1 + 1
     assert not done
@@ -3173,7 +3191,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace():
     assert observation.get_card_count(5) == 0
 
     # Lead final card
-    observation_array, reward, done, info = env.step(0)
+    observation_array, reward, done, truncated, info = env.step(0)
 
     assert reward > 0
     assert done
@@ -3263,13 +3281,13 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_NotPlayable():
 
     observation_factory = env.observation_factory
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
 
     # Three possible cards to play
     assert env.action_space.n == 3
 
     # Lead lowest
-    observation_array, reward, done, info = env.step(0)
+    observation_array, reward, done, truncated, info = env.step(0)
 
     # Only one card can be played, since doubles were led.
     assert env.action_space.n == 1 + 1
@@ -3289,7 +3307,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_NotPlayable():
     assert observation.get_card_count(6) == 1
 
     # Lead the only card possible
-    observation_array, reward, done, info = env.step(0)
+    observation_array, reward, done, truncated, info = env.step(0)
 
     assert env.action_space.n == 2
     assert not done
@@ -3306,7 +3324,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_NotPlayable():
     assert observation.get_card_count(6) == 1
 
     # Lead final card
-    observation_array, reward, done, info = env.step(0)
+    observation_array, reward, done, truncated, info = env.step(0)
 
     assert reward > 0
     assert done
@@ -3394,13 +3412,13 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_PassOnTrick():
 
     observation_factory = env.observation_factory
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
 
     # Three possible cards to play
     assert env.action_space.n == 2
 
     # Lead lowest
-    observation_array, reward, done, info = env.step(0)
+    observation_array, reward, done, truncated, info = env.step(0)
 
     # Only one card can be played.
     assert env.action_space.n == 1 + 1
@@ -3420,7 +3438,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_PassOnTrick():
     assert observation.get_card_count(6) == 1
 
     # Pass
-    observation_array, reward, done, info = env.step(1)
+    observation_array, reward, done, truncated, info = env.step(1)
 
     assert env.action_space.n == 1 + 1
     assert not done
@@ -3437,7 +3455,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_PassOnTrick():
     assert observation.get_card_count(6) == 1
 
     # Lead final card
-    observation_array, reward, done, info = env.step(0)
+    observation_array, reward, done, truncated, info = env.step(0)
 
     assert reward > 0
     assert done
@@ -3513,7 +3531,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate():
 
     observation_factory = env.observation_factory
 
-    observation_array = env.reset()
+    observation_array, info = env.reset()
     observation = observation_factory.create_observation(array=observation_array)
 
     assert observation.get_card_count(0) == 1
@@ -3554,7 +3572,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate():
     assert afterstate.get_last_player() == 0
 
     # Lead lowest
-    observation_array, reward, done, info = env.step(0)
+    observation_array, reward, done, truncated, info = env.step(0)
 
     observation = observation_factory.create_observation(array=observation_array)
 
