@@ -40,6 +40,8 @@
 
 `python -m learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu --ppo-agents eval_log/BL_0_6_A`
 
+`python -m learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --activation-fn relu --device cpu --ppo-agents eval_log/BL_0_6_A`
+
 ### Continue training
 `python -m learning.ppo --continue-training --name PPOTest --device cpu --ppo-agents eval_log/BL_0_6_A`
 
