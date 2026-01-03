@@ -1,10 +1,8 @@
-import pytest
-import CEO.cards.round as rd
-import CEO.cards.player as player
-import CEO.cards.game as g
-import CEO.cards.eventlistener as el
+from unittest.mock import patch
 
-from unittest.mock import MagicMock, Mock, patch, call
+import CEO.cards.eventlistener as el
+import CEO.cards.game as g
+import CEO.cards.player as player
 
 
 def players_to_name_list(players: list[player.Player]):
@@ -14,17 +12,17 @@ def players_to_name_list(players: list[player.Player]):
 @patch("CEO.cards.game.random")
 @patch("CEO.cards.game.PassCards")
 @patch("CEO.cards.game.Round")
-def test_game_player_order(MockRoundClass, MockPassCards, MockRandom):
+def test_game_player_order(mockroundclass, mockpasscards, mockrandom):
     """
     Test that players have the correct order from round to round.
     """
 
     # Mock random.shuffle so that it doesn't do anything. This means we don't
     # randomly assign players to seats at the start of the round.
-    MockRandom.shuffe.return_value = None
+    mockrandom.shuffle.return_value = None
 
     # Set up the round results
-    instance = MockRoundClass.return_value
+    instance = mockroundclass.return_value
     instance.get_next_round_order.side_effect = [
         [3, 2, 1, 0],
         [1, 2, 3, 0],
@@ -44,7 +42,7 @@ def test_game_player_order(MockRoundClass, MockPassCards, MockRandom):
 
     # Check that the rounds were created with the correct players.
     # We need to filter the call list to get the constructor calls
-    mock_calls = MockRoundClass.mock_calls
+    mock_calls = mockroundclass.mock_calls
     ctr_calls = list(filter(lambda call: call[0] == "", mock_calls))
 
     index = 0

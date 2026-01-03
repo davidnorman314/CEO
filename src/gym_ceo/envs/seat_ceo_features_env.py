@@ -1,24 +1,15 @@
 import gymnasium
-import numpy as np
 from gymnasium.spaces import Box, Discrete
 
+from CEO.cards.hand import Hand
+from gym_ceo.envs.features import FeatureObservationFactory
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
-from gym_ceo.envs.actions import Actions
-from gym_ceo.envs.observation import ObservationFactory, Observation
-from gym_ceo.envs.features import *
-
-from CEO.cards.round import Round, RoundState
-from CEO.cards.eventlistener import EventListenerInterface
-from CEO.cards.deck import Deck
-from CEO.cards.hand import Hand, CardValue
-from CEO.cards.simplebehavior import BasicBehavior
-from CEO.cards.player import Player
 
 
 class SeatCEOFeaturesEnv(gymnasium.Env):
     """
-    Environment for a player in the CEO seat. This environment reduces the observation space
-    to a set of features.
+    Environment for a player in the CEO seat. This environment reduces
+    the observation space to a set of features.
     """
 
     metadata = {"render.modes": ["human"]}
@@ -103,7 +94,9 @@ class SeatCEOFeaturesEnv(gymnasium.Env):
         return self.feature_defs
 
     def reset(self, *, seed=None, options=None, hands: list[Hand] = None):
-        full_obs, full_info = self.full_env.reset(seed=seed, options=options, hands=hands)
+        full_obs, full_info = self.full_env.reset(
+            seed=seed, options=options, hands=hands
+        )
         self.action_space = self.full_env.action_space
 
         info = dict()

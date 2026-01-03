@@ -1,17 +1,15 @@
-"""Program that downloads reinforcement learning information from Azure blob storage
-"""
+"""Program that downloads reinforcement learning information from Azure blob storage"""
+
 import argparse
 import datetime
 import json
 import pickle
-import azure.core.exceptions
 
+import azure.core.exceptions
 import pandas as pd
-import numpy as np
+from dateutil import parser as dateparser
 
 from azure_rl.azure_client import AzureClient
-
-from dateutil import parser as dateparser
 
 
 def extract_trainings(client: AzureClient, *, earliest_start: datetime.datetime = None):
@@ -29,12 +27,15 @@ def extract_trainings(client: AzureClient, *, earliest_start: datetime.datetime 
         if training["record_type"] == "start_training":
             all_trainings[training_id] = dict()
             all_trainings[training_id]["start_training"] = training
-            all_trainings[training_id]["start"] = dateparser.parse(training["start_time"])
+            all_trainings[training_id]["start"] = dateparser.parse(
+                training["start_time"]
+            )
         elif training["record_type"] == "end_training":
             all_trainings[training_id]["end_training"] = training
-        elif training["record_type"] == "post_train_stats":
-            all_trainings[training_id]["post_train_test_stats"] = training
-        elif training["record_type"] == "post_train_test_stats":
+        elif (
+            training["record_type"] == "post_train_stats"
+            or training["record_type"] == "post_train_test_stats"
+        ):
             all_trainings[training_id]["post_train_test_stats"] = training
         elif training["record_type"] == "train_stats":
             if "train_stats" not in all_trainings[training_id]:
@@ -45,10 +46,12 @@ def extract_trainings(client: AzureClient, *, earliest_start: datetime.datetime 
             print("Found other", training)
 
     # Remove the trainings we don't want to process
-    all_trainings = {k: v for k, v in all_trainings.items() if earliest_start < v["start"]}
+    all_trainings = {
+        k: v for k, v in all_trainings.items() if earliest_start < v["start"]
+    }
 
     # Add information from the logs
-    for training_id, training_dict in all_trainings.items():
+    for _training_id, training_dict in all_trainings.items():
         start_training = training_dict["start_training"]
 
         final_pct_win = None
@@ -140,7 +143,6 @@ def get_training_progress(
     progress_rows_list = []
     features_and_stats = []
     for training_id, training_dict in all_trainings.items():
-
         start_training = training_dict["start_training"]
 
         # Add general information about the training
@@ -154,7 +156,9 @@ def get_training_progress(
         cols["start"] = pd.to_datetime(start_training["start_time"])
         cols["lambda"] = start_training["params"]["decay"]
         if "max_initial_visit_count" in start_training["params"]:
-            cols["max_initial_visit_count"] = start_training["params"]["max_initial_visit_count"]
+            cols["max_initial_visit_count"] = start_training["params"][
+                "max_initial_visit_count"
+            ]
         else:
             cols["max_initial_visit_count"] = None
         cols["discount"] = start_training["params"]["discount_factor"]
@@ -244,7 +248,9 @@ def get_training_progress(
         cols["last_pct_win"] = final_pct_win
         cols["max_pct_win"] = max_pct_win
 
-        features_and_stats.append((final_pct_win, max_pct_win, max_episode, start_training))
+        features_and_stats.append(
+            (final_pct_win, max_pct_win, max_episode, start_training)
+        )
 
     # Combine rows for the same episode
     progress_rows_list.sort(key=lambda row: (row["training_id"], row["episode"]))
@@ -309,7 +315,9 @@ def get_results(client: AzureClient, earliest_start: datetime = None):
             training_id = training["training_id"]
             all_trainings[training_id] = dict()
             all_trainings[training_id]["start_training"] = training
-            all_trainings[training_id]["start"] = dateparser.parse(training["start_time"])
+            all_trainings[training_id]["start"] = dateparser.parse(
+                training["start_time"]
+            )
         elif training["record_type"] == "post_train_stats":
             training_id = training["training_id"]
             all_trainings[training_id]["post_train_stats"] = training
@@ -322,7 +330,7 @@ def get_results(client: AzureClient, earliest_start: datetime = None):
         else:
             print("Unknown", training)
 
-    for training_id, training_dict in all_trainings.items():
+    for _training_id, training_dict in all_trainings.items():
         if earliest_start is not None and earliest_start > training_dict["start"]:
             continue
 

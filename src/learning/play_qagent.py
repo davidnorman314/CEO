@@ -1,41 +1,32 @@
-"""Play rounds using an agent based on a Q table.
-"""
+"""Play rounds using an agent based on a Q table."""
 
-import gymnasium
-import random
-import pickle
 import argparse
 import json
-import pathlib
-from typing import List, Tuple
-from copy import copy, deepcopy
-import numpy as np
-from statsmodels.stats.proportion import proportion_confint
-from collections import deque
+import pickle
+import random
+from copy import deepcopy
 from typing import NamedTuple
 
-from gym_ceo.envs.ceo_player_env import CEOPlayerEnv
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
-from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
-from gym_ceo.envs.features import FeatureObservationFactory
-from gym_ceo.envs.actions import ActionEnum
+import gymnasium
+import numpy as np
+from statsmodels.stats.proportion import proportion_confint
+
 from azure_rl.azure_client import AzureClient
+from CEO.cards.deck import Deck
 from CEO.cards.eventlistener import (
     EventListenerInterface,
     GameWatchListener,
     PrintAllEventListener,
 )
-from CEO.cards.deck import Deck
-from CEO.cards.hand import Hand, CardValue
+from CEO.cards.hand import Hand
+from gym_ceo.envs.actions import ActionEnum
+from gym_ceo.envs.ceo_player_env import CEOPlayerEnv
+from gym_ceo.envs.features import FeatureObservationFactory
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
+from learning.ppo_agents import PPOAgent, load_ppo
 from learning.qtable import QTable
 from learning.value_table import ValueTable
-
-from stable_baselines3 import PPO
-
-from learning.ppo_agents import PPOAgent, load_ppo
-
-import torch as th
-import cloudpickle
 
 
 class QAgent:
@@ -44,7 +35,13 @@ class QAgent:
 
     _qtable: QTable
 
-    def __init__(self, q: np.ndarray, state_count: np.ndarray, env: gymnasium.Env, base_env: gymnasium.Env):
+    def __init__(
+        self,
+        q: np.ndarray,
+        state_count: np.ndarray,
+        env: gymnasium.Env,
+        base_env: gymnasium.Env,
+    ):
         self._base_env = base_env
         self._env = env
         self._qtable = QTable(env, q=q, state_count=state_count)
@@ -55,8 +52,9 @@ class QAgent:
 
     def do_episode(
         self, hands: list[Hand] = None, log_state: bool = False
-    ) -> Tuple[List[tuple], List[int], float, dict]:
-        """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
+    ) -> tuple[list[tuple], list[int], float, dict]:
+        """Plays a hand. Returns a list of states visited, actions taken,
+        and the reward"""
         # Reseting the environment each time as per requirement
         state = self._env.reset(hands)
         info = dict()
@@ -83,8 +81,10 @@ class QAgent:
                 print("Action values")
                 for a in range(self._base_env.max_action_value):
                     full_action = ActionEnum(a)
-                    name = full_action.name if full_action in action_space.actions else ""
-                    selected = "selected" if full_action == selected_action else ""
+                    name = (
+                        full_action.name if full_action in action_space.actions else ""
+                    )
+                    _selected = "selected" if full_action == selected_action else ""
 
                     print(
                         "  action",
@@ -96,10 +96,12 @@ class QAgent:
                         name,
                     )
 
-            state_action_tuple = state_tuple + (selected_action,)
+            _state_action_tuple = state_tuple + (selected_action,)
 
             # Perform the action
-            selected_action_index = self._env.action_space.actions.index(selected_action)
+            selected_action_index = self._env.action_space.actions.index(
+                selected_action
+            )
             new_state, reward, done, info = self._env.step(selected_action_index)
 
             episode_states.append(state_tuple)
@@ -130,7 +132,7 @@ class QAgent:
             state_tuple = new_state_tuple
 
             # See if the episode is finished
-            if done == True:
+            if done:
                 # print("Reward", reward)
                 final_info = info
                 break
@@ -145,10 +147,16 @@ class AfterstateAgent:
     _valuetable: ValueTable
 
     def __init__(
-        self, value_table: np.ndarray, state_count: np.ndarray, env: gymnasium.Env, feature_defs
+        self,
+        value_table: np.ndarray,
+        state_count: np.ndarray,
+        env: gymnasium.Env,
+        feature_defs,
     ):
         self._env = env
-        self._valuetable = ValueTable(env.observation_space, v=value_table, state_count=state_count)
+        self._valuetable = ValueTable(
+            env.observation_space, v=value_table, state_count=state_count
+        )
 
         self._obs_factory = FeatureObservationFactory(env, feature_defs)
 
@@ -162,7 +170,8 @@ class AfterstateAgent:
     def do_episode(
         self, hands: list[Hand] = None, log_state: bool = False
     ) -> tuple[list[tuple], list[int], float, dict]:
-        """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
+        """Plays a hand. Returns a list of states visited, actions taken,
+        and the reward"""
         state = self._env.reset(hands)
         info = dict()
 
@@ -186,9 +195,13 @@ class AfterstateAgent:
                 )
                 # Needs to be fixed
                 for action in range(self._env.action_space.n):
-                    afterstate_observation, played_card = self._env.get_afterstate(state, action)
-                    afterstate_feature_observation = self._obs_factory.make_feature_observation(
-                        afterstate_observation, info
+                    afterstate_observation, played_card = self._env.get_afterstate(
+                        state, action
+                    )
+                    afterstate_feature_observation = (
+                        self._obs_factory.make_feature_observation(
+                            afterstate_observation, info
+                        )
                     )
 
                     # Get the estimated expected reward for the afterstate
@@ -200,10 +213,18 @@ class AfterstateAgent:
                     full_action = self._env.action_space.actions[action]
 
                     print(
-                        "action", action, "reward", reward, "visit count", visit_count, full_action
+                        "action",
+                        action,
+                        "reward",
+                        reward,
+                        "visit count",
+                        visit_count,
+                        full_action,
                     )
 
-                    self._obs_factory.log_feature_observation(afterstate_feature_observation, "  ")
+                    self._obs_factory.log_feature_observation(
+                        afterstate_feature_observation, "  "
+                    )
 
             # Perform the action
             new_state, reward, done, info = self._env.step(selected_action)
@@ -222,7 +243,7 @@ class AfterstateAgent:
             state = new_state
 
             # See if the episode is finished
-            if done == True:
+            if done:
                 # print("Reward", reward)
                 final_info = info
                 break
@@ -311,7 +332,9 @@ def create_agent(
 
             q_table = None
         else:
-            print("Error: Pickled data does not have V or Q element: " + str(info.keys()))
+            print(
+                "Error: Pickled data does not have V or Q element: " + str(info.keys())
+            )
 
     elif env:
         assert not local_file
@@ -338,7 +361,9 @@ class PlayStats(NamedTuple):
     pct_win: float
 
 
-def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> PlayStats:
+def play(
+    episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs
+) -> PlayStats:
     # Set up the environment
     if do_logging:
         listener = PrintAllEventListener()
@@ -411,19 +436,26 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
     )
 
     alpha = 0.05
-    l, r = proportion_confint(count=total_wins, nobs=episodes, alpha=alpha, method="normal")
-    print(f"{1-alpha} wins confidence interval ({l}, {r})")
+    ci_lower, ci_upper = proportion_confint(
+        count=total_wins, nobs=episodes, alpha=alpha, method="normal"
+    )
+    print(f"{1 - alpha} wins confidence interval ({ci_lower}, {ci_upper})")
 
     alpha = 0.01
-    l, r = proportion_confint(count=total_wins, nobs=episodes, alpha=alpha, method="normal")
-    print(f"{1-alpha} wins confidence interval ({l}, {r})")
+    ci_lower, ci_upper = proportion_confint(
+        count=total_wins, nobs=episodes, alpha=alpha, method="normal"
+    )
+    print(f"{1 - alpha} wins confidence interval ({ci_lower}, {ci_upper})")
 
     assert episodes == total_ceo_stay + total_ceo_to_bottom or (
         total_ceo_stay == 0 and total_ceo_to_bottom == 0
     )
 
     pct_ceo_stay = total_ceo_stay / episodes
-    print(f"CEO stay {total_ceo_stay} CEO to bottom {total_ceo_to_bottom} pct stay {pct_ceo_stay}")
+    print(
+        f"CEO stay {total_ceo_stay} CEO to bottom {total_ceo_to_bottom} "
+        f"pct stay {pct_ceo_stay}"
+    )
 
     return PlayStats(
         episodes=episodes,
@@ -434,7 +466,6 @@ def play(episodes: int, do_logging: bool, save_failed_hands: bool, **kwargs) -> 
 
 
 def play_round(hands: list[Hand], do_logging: bool, **kwargs):
-
     # Set up the environment
     if do_logging:
         listener = PrintAllEventListener()
@@ -496,7 +527,10 @@ def main():
         "--ppo-dir",
         dest="ppo_dir",
         type=str,
-        help="The zip file containing the PPO agent. The directory should have best_model.zip and params.json.",
+        help=(
+            "The zip file containing the PPO agent. "
+            "The directory should have best_model.zip and params.json."
+        ),
     )
 
     parser.add_argument(
@@ -584,7 +618,9 @@ def main():
 
         play_round(hands, args.do_logging, **agent_args)
     elif args.play:
-        stats = play(args.episodes, args.do_logging, args.save_failed_hands, **agent_args)
+        _stats = play(
+            args.episodes, args.do_logging, args.save_failed_hands, **agent_args
+        )
     else:
         parser.print_usage()
 

@@ -1,19 +1,19 @@
 import argparse
-import pickle
 import json
-from tkinter import W
+import pickle
+import random
 from copy import deepcopy
 from pathlib import Path
 
 from statsmodels.stats.proportion import proportion_confint
 
 import CEO.cards.game as g
-from CEO.cards.game import *
-from CEO.cards.player import *
-from CEO.cards.simplebehavior import *
+from CEO.cards.deck import Deck
+from CEO.cards.game import CardValue, EventListenerInterface, Hand, PassCards, Player
+from CEO.cards.player import PlayerBehaviorInterface
 from CEO.cards.round import Round, RoundState
-
-from learning.play_qagent import play_round, create_agent
+from CEO.cards.simplebehavior import BasicBehavior, SimpleBehaviorBase
+from learning.play_qagent import play_round
 
 
 class ConsoleListener(EventListenerInterface):
@@ -46,7 +46,6 @@ class ConsoleListener(EventListenerInterface):
         to_index: int,
         to_player: Player,
     ):
-
         if from_player.name != self._player_name or to_player.name != self._player_name:
             # The information is for another player's pass, so we can't see it.
             return
@@ -74,7 +73,6 @@ class ConsoleListener(EventListenerInterface):
         starting_player_index: int,
         cur_player: Player,
     ):
-
         self._played = [None] * len(self._players)
         self._played[starting_player_index] = cur_card_value
         self._cur_trick_size = cur_card_count
@@ -92,7 +90,6 @@ class ConsoleListener(EventListenerInterface):
         )
 
     def play_cards(self, card: CardValue, count: int, index: int, player: Player):
-
         self._played[index] = card
 
         plural = count > 1
@@ -121,10 +118,7 @@ class ConsoleListener(EventListenerInterface):
         print("")
 
         for cards_remaining in state.cards_remaining:
-            if cards_remaining > 0:
-                text = "- " + str(cards_remaining)
-            else:
-                text = "Out"
+            text = "- " + str(cards_remaining) if cards_remaining > 0 else "Out"
 
             print(text.ljust(width), end="")
 
@@ -136,7 +130,7 @@ class ConsoleListener(EventListenerInterface):
         width = self.print_cur_players(state)
 
         for played in self._played:
-            if played == None:
+            if played is None:
                 print("".ljust(width), end="")
             elif played is str:
                 print(played.ljust(width), end="")
@@ -165,7 +159,7 @@ class ConsoleBehavior(PlayerBehaviorInterface):
         for i in range(13):
             count = hand.count(CardValue(i))
 
-            for j in range(count):
+            for _ in range(count):
                 print(str(i), " ", end="")
 
             if count > 0:
@@ -175,16 +169,16 @@ class ConsoleBehavior(PlayerBehaviorInterface):
 
     def _get_card_to_pass(self, hand: Hand):
         while True:
-            valStr = input()
+            val_str = input()
 
-            if valStr == "pass":
+            if val_str == "pass":
                 return None
 
             try:
-                int_val = int(valStr)
+                int_val = int(val_str)
                 ret = CardValue(int_val)
             except ValueError:
-                print("Not an integer or invalid integer:", valStr)
+                print("Not an integer or invalid integer:", val_str)
                 continue
 
             if hand.count(ret) == 0:
@@ -193,11 +187,13 @@ class ConsoleBehavior(PlayerBehaviorInterface):
 
             return ret
 
-    def _get_card_to_play(self, hand: Hand, *, lead: bool, trick_value=None, trick_count=None):
+    def _get_card_to_play(
+        self, hand: Hand, *, lead: bool, trick_value=None, trick_count=None
+    ):
         while True:
-            valStr = input()
+            val_str = input()
 
-            if valStr == "pass":
+            if val_str == "pass":
                 if lead:
                     print("You must lead")
                     continue
@@ -205,10 +201,10 @@ class ConsoleBehavior(PlayerBehaviorInterface):
                 return None
 
             try:
-                int_val = int(valStr)
+                int_val = int(val_str)
                 ret = CardValue(int_val)
             except ValueError:
-                print("Not an integer or invalid integer:", valStr)
+                print("Not an integer or invalid integer:", val_str)
                 continue
 
             if hand.count(ret) == 0:
@@ -229,7 +225,6 @@ class ConsoleBehavior(PlayerBehaviorInterface):
             return ret
 
     def pass_cards(self, hand: Hand, count: int) -> list[CardValue]:
-
         pass_automatically = True
 
         if pass_automatically:
@@ -246,8 +241,9 @@ class ConsoleBehavior(PlayerBehaviorInterface):
 
         return ret
 
-    def lead(self, starting_player_index: int, hand: Hand, state: RoundState) -> CardValue:
-
+    def lead(
+        self, starting_player_index: int, hand: Hand, state: RoundState
+    ) -> CardValue:
         self._listener.print_cur_players(state)
 
         print("Lead:")
@@ -264,7 +260,6 @@ class ConsoleBehavior(PlayerBehaviorInterface):
         cur_trick_count: int,
         state: RoundState,
     ) -> CardValue:
-
         self._listener.print_cur_trick(state)
 
         print("Current trick:", str(cur_trick_count), "cards of", str(cur_trick_value))
@@ -272,10 +267,13 @@ class ConsoleBehavior(PlayerBehaviorInterface):
 
         while True:
             ret = self._get_card_to_play(
-                hand, lead=False, trick_value=cur_trick_value, trick_count=cur_trick_count
+                hand,
+                lead=False,
+                trick_value=cur_trick_value,
+                trick_count=cur_trick_count,
             )
 
-            if ret == None:
+            if ret is None:
                 return ret
             elif ret.value <= cur_trick_value.value:
                 print("Invalid lead", ret)
@@ -329,7 +327,8 @@ def play_ceo_rounds(agent_args: dict):
     while True:
         console_listener.start_round(players)
 
-        # Gym sets the random seed, so we need to re-seed or we always get the same deal.
+        # Gym sets the random seed, so we need to re-seed or we always get the same
+        # deal.
         random.seed()
 
         # Deal the cards
@@ -359,20 +358,27 @@ def play_ceo_rounds(agent_args: dict):
 
         # Log the history stats
         print(
-            f"Won {history.total_won} of {history.total_hands} or {history.total_won/history.total_hands}"
+            f"Won {history.total_won} of {history.total_hands} "
+            f"or {history.total_won / history.total_hands}"
         )
 
         alpha = 0.05
-        l, r = proportion_confint(
-            count=history.total_won, nobs=history.total_hands, alpha=alpha, method="normal"
+        ci_lower, ci_upper = proportion_confint(
+            count=history.total_won,
+            nobs=history.total_hands,
+            alpha=alpha,
+            method="normal",
         )
-        print(f"{1-alpha} confidence interval ({l}, {r})")
+        print(f"{1 - alpha} confidence interval ({ci_lower}, {ci_upper})")
 
         alpha = 0.01
-        l, r = proportion_confint(
-            count=history.total_won, nobs=history.total_hands, alpha=alpha, method="normal"
+        ci_lower, ci_upper = proportion_confint(
+            count=history.total_won,
+            nobs=history.total_hands,
+            alpha=alpha,
+            method="normal",
         )
-        print(f"{1-alpha} confidence interval ({l}, {r})")
+        print(f"{1 - alpha} confidence interval ({ci_lower}, {ci_upper})")
 
         # Log if there was a different result
         if player_won_round != agent_won_round:
@@ -418,7 +424,7 @@ class GameHistory:
 
         # Load the current history
         lines = 0
-        with open(self.history_file, "r") as f:
+        with open(self.history_file) as f:
             for line in f:
                 lines += 1
                 info = json.loads(line)

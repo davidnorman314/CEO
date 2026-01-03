@@ -1,0 +1,34 @@
+target-version = "py313"
+
+[lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+	#pep8-naming,
+    "N",
+    #pandas vet
+    "PD",
+    #NumPy-specific rules
+    "NPY",
+    # pyupgrade
+    "UP",
+    # use-pathlib
+    "PTH",
+    # if-expr-with-twisted-arms
+    "SIM212",
+]
+
+ignore = [
+    # Don't use builtin open
+    "PTH123",
+]

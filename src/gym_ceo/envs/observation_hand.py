@@ -1,7 +1,5 @@
-from CEO.cards.hand import HandInterface
+from CEO.cards.hand import CardValue, HandInterface, PlayedCards
 from gym_ceo.envs.observation import Observation
-
-from CEO.cards.deck import CardValue, PlayedCards
 
 
 class ObservationHand(HandInterface):

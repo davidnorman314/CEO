@@ -1,7 +1,7 @@
 import numpy as np
 import torch as th
 
-from CEO.cards.hand import CardValue, Hand, HandInterface, PlayedCards
+from CEO.cards.hand import CardValue, HandInterface, PlayedCards
 
 
 class ObservationFactory:
@@ -28,7 +28,8 @@ class ObservationFactory:
 
     def __init__(self, num_players: int, seat_number: int, include_valid_actions=False):
         # Thirteen dimensions for the cards in the hand.
-        # (num_players - 1) dimensions for the number of cards in the other player's hands
+        # (num_players - 1) dimensions for the number of cards
+        # in the other player's hands
         # One dimension for the current value of the trick
         # One dimension for the number of cards in the trick
         # One dimension for the starting player on the trick
@@ -97,8 +98,8 @@ class Observation:
         cur_card_count: The number of cards that must be played on the trick.
         state: RoundState object
 
-        To create an observation from another observation while updating the cards in the
-        hand:
+        To create an observation from another observation while updating
+        the cards in the hand:
         array: ndarray for the original observation
         update_hand: HandInterface object giving the hand
 
@@ -139,7 +140,7 @@ class Observation:
 
             # Add the cards in other players' hands. Don't include the agent's hand.
             seat_iter = [p1 for p1 in range(num_players) if p1 != seat_number]
-            for p, i in zip(seat_iter, range(0, num_players - 1)):
+            for p, i in zip(seat_iter, range(0, num_players - 1), strict=False):
                 self._obs[obs_index_other_player_card_count + i] = (
                     state.cards_remaining[p]
                 )
@@ -170,7 +171,7 @@ class Observation:
 
             # Add the cards in other players' hands. Don't include the agent's hand.
             seat_iter = [p1 for p1 in range(num_players) if p1 != seat_number]
-            for p, i in zip(seat_iter, range(0, num_players - 1)):
+            for p, i in zip(seat_iter, range(0, num_players - 1), strict=False):
                 self._obs[obs_index_other_player_card_count + i] = (
                     state.cards_remaining[p]
                 )
@@ -310,10 +311,9 @@ class Observation:
         return self._obs
 
     def get_valid_action_array(self):
-        return self._obs[
-            self._factory._obs_index_play_value_0_valid : self._factory._obs_index_play_value_0_valid
-            + 14
-        ]
+        start = self._factory._obs_index_play_value_0_valid
+        end = start + 14
+        return self._obs[start:end]
 
     def copy(self):
         return Observation(self._factory, array=self._obs.copy())

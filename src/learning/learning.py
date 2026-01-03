@@ -1,25 +1,22 @@
 """Program that trains an agent based on a JSON configuration file.
-   Example configuration files are in the data directory in the root of
-   the repository
-   """
+Example configuration files are in the data directory in the root of
+the repository
+"""
 
 import argparse
+import cProfile
 import json
 import random
-
-from learning.qlearning_afterstates import QLearningAfterstates
-from learning.qlearning_traces import QLearningTraces
-from learning.qlearning import QLearning
-from azure_rl.azure_client import AzureClient
-
-import learning.play_qagent as play_qagent
-
-import cProfile
 from pstats import SortKey
 
+import learning.play_qagent as play_qagent
+from azure_rl.azure_client import AzureClient
+from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
-from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
+from learning.qlearning import QLearning
+from learning.qlearning_afterstates import QLearningAfterstates
+from learning.qlearning_traces import QLearningTraces
 
 
 def do_learning(
@@ -100,7 +97,10 @@ def do_learning(
         locals = {"learning": learning, "params": params, "do_logging": do_logging}
         globals = {}
         cProfile.runctx(
-            "learning.train(params, do_logging)", locals, globals, sort=SortKey.CUMULATIVE
+            "learning.train(params, do_logging)",
+            locals,
+            globals,
+            sort=SortKey.CUMULATIVE,
         )
     else:
         final_search_statistics = learning.train(params, do_logging)
@@ -111,7 +111,9 @@ def do_learning(
 
     # Run a final test of the agent, if necessary
     if post_train_stats_episodes:
-        post_train_test_stats(learning, env, base_env, post_train_stats_episodes, azure_client)
+        post_train_test_stats(
+            learning, env, base_env, post_train_stats_episodes, azure_client
+        )
 
     return final_search_statistics
 
@@ -191,13 +193,13 @@ def main():
         "--post-train-stats-episodes",
         type=int,
         default=None,
-        help="How many episodes should be run when testing the trained agent after training.",
+        help="Number of episodes to run when testing after training.",
     )
     parser.add_argument(
         "--during-training-stats-episodes",
         type=int,
         default=None,
-        help="How many episodes should be run when testing the agent during training.",
+        help="Number of episodes to run for testing during training.",
     )
     parser.add_argument(
         "--during-training-stats-frequency",

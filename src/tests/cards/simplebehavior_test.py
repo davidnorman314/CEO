@@ -1,12 +1,9 @@
-import pytest
-import CEO.cards.deck as deck
-from CEO.cards.hand import *
-import CEO.cards.round as rd
-import CEO.cards.player as player
-from CEO.cards.simplebehavior import *
+from CEO.cards.hand import CardValue, Hand
+from CEO.cards.player import RoundState
+from CEO.cards.simplebehavior import SimpleBehaviorBase
 
 
-def test_SimpleBehaviorBase_pass_singles():
+def test_simplebehaviorbase_pass_singles():
     """
     Test the pass_singles method
     """
@@ -19,7 +16,7 @@ def test_SimpleBehaviorBase_pass_singles():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
-    cv7 = CardValue(7)
+    CardValue(7)
     cv8 = CardValue(8)
     cv9 = CardValue(9)
     cv10 = CardValue(10)
@@ -233,7 +230,7 @@ def test_SimpleBehaviorBase_pass_singles():
     assert behavior.pass_singles(hand, 3) == [cv3, cv3, cv9]
 
 
-def test_SimpleBehaviorBase_play_lowest_or_pass():
+def test_simplebehaviorbase_play_lowest_or_pass():
     """
     Test the play_lowest_or_pass method
     """
@@ -245,7 +242,7 @@ def test_SimpleBehaviorBase_play_lowest_or_pass():
     cv3 = CardValue(3)
     cv4 = CardValue(4)
     cv5 = CardValue(5)
-    cv6 = CardValue(6)
+    CardValue(6)
 
     # Create the object
     behavior = SimpleBehaviorBase()
@@ -263,8 +260,8 @@ def test_SimpleBehaviorBase_play_lowest_or_pass():
     assert behavior.play_lowest_or_pass(hand, cv1, 1, state) == cv2
     assert behavior.play_lowest_or_pass(hand, cv2, 1, state) == cv3
     assert behavior.play_lowest_or_pass(hand, cv3, 1, state) == cv4
-    assert behavior.play_lowest_or_pass(hand, cv4, 1, state) == None
-    assert behavior.play_lowest_or_pass(hand, cv5, 1, state) == None
+    assert behavior.play_lowest_or_pass(hand, cv4, 1, state) is None
+    assert behavior.play_lowest_or_pass(hand, cv5, 1, state) is None
 
     # Test playing a pair
     hand = Hand()
@@ -277,12 +274,12 @@ def test_SimpleBehaviorBase_play_lowest_or_pass():
     assert behavior.play_lowest_or_pass(hand, cv0, 2, state) == cv1
     assert behavior.play_lowest_or_pass(hand, cv1, 2, state) == cv3
     assert behavior.play_lowest_or_pass(hand, cv2, 2, state) == cv3
-    assert behavior.play_lowest_or_pass(hand, cv3, 2, state) == None
-    assert behavior.play_lowest_or_pass(hand, cv4, 2, state) == None
-    assert behavior.play_lowest_or_pass(hand, cv5, 2, state) == None
+    assert behavior.play_lowest_or_pass(hand, cv3, 2, state) is None
+    assert behavior.play_lowest_or_pass(hand, cv4, 2, state) is None
+    assert behavior.play_lowest_or_pass(hand, cv5, 2, state) is None
 
 
-def test_SimpleBehaviorBase_lead_lowest():
+def test_simplebehaviorbase_lead_lowest():
     """
     Test the lead_lowest method
     """
@@ -291,10 +288,10 @@ def test_SimpleBehaviorBase_lead_lowest():
     cv0 = CardValue(0)
     cv1 = CardValue(1)
     cv2 = CardValue(2)
-    cv3 = CardValue(3)
+    CardValue(3)
     cv4 = CardValue(4)
     cv5 = CardValue(5)
-    cv6 = CardValue(6)
+    CardValue(6)
 
     # Create the object
     behavior = SimpleBehaviorBase()

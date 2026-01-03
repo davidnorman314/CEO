@@ -1,6 +1,6 @@
-from CEO.cards.hand import *
-from CEO.cards.player import *
-from CEO.cards.eventlistener import *
+from CEO.cards.eventlistener import EventListenerInterface, RoundState
+from CEO.cards.hand import CardValue, Hand
+from CEO.cards.player import Player
 
 
 class Round:
@@ -8,7 +8,9 @@ class Round:
     Class representing on round in a game of CEO
     """
 
-    def __init__(self, players: list[Player], hands: list[Hand], listener: EventListenerInterface):
+    def __init__(
+        self, players: list[Player], hands: list[Hand], listener: EventListenerInterface
+    ):
         self._players = players
         self._hands = hands
         self._player_count = len(self._players)
@@ -41,8 +43,11 @@ class Round:
             # Validate and diagnostic logging.
             starting_hand = self._hands[starting_player]
             if starting_hand.is_empty():
-                print(f"Error: No cards in leader's hand. Starting player {starting_player}"
-                    f" trick number {trick_number}")
+                print(
+                    f"Error: No cards in leader's hand. "
+                    f"Starting player {starting_player}"
+                    f" trick number {trick_number}"
+                )
                 for hand in self._hands:
                     print(f"{hand.card_count()} = {hand}")
             assert not starting_hand.is_empty()
@@ -67,8 +72,13 @@ class Round:
 
         # Validate and diagnostic logging.
         if cur_hand.is_empty():
-            print(f"Error: No cards in leader's hand. Starting player {starting_player}")
-            print(f"cur_player.behavior.is_rl {cur_player.behavoir.is_reinforcement_learning}")
+            print(
+                f"Error: No cards in leader's hand. Starting player {starting_player}"
+            )
+            print(
+                "cur_player.behavior.is_rl "
+                f"{cur_player.behavoir.is_reinforcement_learning}"
+            )
             for hand in self._hands:
                 print(f"{hand.card_count()} = {hand}")
         assert not cur_hand.is_empty()
@@ -136,8 +146,8 @@ class Round:
                     state,
                 )
             else:
-                new_card_value = (
-                    yield "play",
+                new_card_value = yield (
+                    "play",
                     starting_player,
                     cur_index,
                     cur_hand,
@@ -168,7 +178,9 @@ class Round:
                 self._check_ceo_done()
 
             # print(cur_index, " ", cur_player, " plays ", new_card_value)
-            self._listener.play_cards(new_card_value, cur_card_count, cur_index, cur_player)
+            self._listener.play_cards(
+                new_card_value, cur_card_count, cur_index, cur_player
+            )
 
             cur_card_value = new_card_value
             last_index_to_play = cur_index
@@ -190,7 +202,8 @@ class Round:
         else:
             if self._hands[last_index_to_play].is_empty():
                 print(
-                    f"Error: next to play is empty {last_index_to_play} orig {orig_last_index_to_play} player count {self._player_count}"
+                    f"Error: next to play is empty {last_index_to_play} "
+                    f"orig {orig_last_index_to_play} player count {self._player_count}"
                 )
                 for hand in self._hands:
                     print(hand)
@@ -219,7 +232,6 @@ class Round:
 
     def get_next_round_order(self) -> list[int]:
         if len(self._next_round_order) == len(self._players):
-
             if self._next_round_order[0] == 0:
                 self._ceo_final_cards = 0
 
@@ -241,10 +253,10 @@ class Round:
         return self._ceo_final_cards
 
     def _play_cards(self, player_index: int, card_value: CardValue, count: int):
-        theHand = self._hands[player_index]
-        theHand.remove_cards(card_value, count)
+        the_hand = self._hands[player_index]
+        the_hand.remove_cards(card_value, count)
 
-        if theHand.is_empty():
+        if the_hand.is_empty():
             self._next_round_order.append(player_index)
 
     def _all_cards_played(self):

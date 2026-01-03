@@ -3,15 +3,14 @@ import random as random
 import pytest
 from stable_baselines3.common.env_checker import check_env
 
-import CEO.cards.deck as deck
 import CEO.cards.player as player
 import CEO.cards.round as rd
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
-from CEO.cards.hand import *
+from CEO.cards.hand import CardValue, Hand
 from CEO.cards.simplebehavior import SimpleBehaviorBase
-from gym_ceo.envs.actions import ActionEnum, Actions, ActionSpaceFactory
+from gym_ceo.envs.actions import ActionEnum, ActionSpaceFactory
 from gym_ceo.envs.ceo_player_env import CEOPlayerEnv
-from gym_ceo.envs.observation import Observation, ObservationFactory
+from gym_ceo.envs.observation import Observation
 
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
@@ -28,7 +27,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
 
     def lead(self, player_position: int, hand: Hand, state) -> CardValue:
         if len(self.value_to_play) <= self.to_play_next_index:
-            print(f"Not enough values to play")
+            print("Not enough values to play")
             assert "No more values to play" != ""
 
         ret = self.value_to_play[self.to_play_next_index]
@@ -67,7 +66,7 @@ def create_pass(behavior: MockPlayerBehavior):
     behavior.value_to_play.append(None)
 
 
-def test_CEOPlayerEnv_check_env():
+def test_ceo_player_env_check_env():
     """
     Test using the Gym check_env using the default action space.
     """
@@ -110,7 +109,7 @@ def test_CEOPlayerEnv_check_env():
         check_env(env, True, True)
 
 
-def test_CEOPlayerEnv_AllCardActionSpace_check_env():
+def test_ceo_player_env_all_card_action_space_check_env():
     """
     Test using the Gym check_env were the environment uses the AllCardActionSpace.
     """
@@ -149,7 +148,7 @@ def test_CEOPlayerEnv_AllCardActionSpace_check_env():
     check_env(env, True, True)
 
 
-def test_CEOPlayerEnv_AllCardActionSpace_ValidActions_check_env():
+def test_ceoplayerenv_allcardactionspace_validactions_check_env():
     """
     Test using the Gym check_env were the environment uses the AllCardActionSpace.
     The observation includes valid actions.
@@ -221,7 +220,7 @@ def test_CEOPlayerEnv_AllCardActionSpace_ValidActions_check_env():
     check_env(env, True, True)
 
 
-def test_CEOPlayerEnv_Bottom_Stay():
+def test_ceoplayerenv_bottom_stay():
     """
     Test when the player is in the bottom position and stays there.
     """
@@ -237,7 +236,6 @@ def test_CEOPlayerEnv_Bottom_Stay():
     cv7 = CardValue(7)
     cv8 = CardValue(8)
     cv9 = CardValue(9)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
@@ -300,7 +298,7 @@ def test_CEOPlayerEnv_Bottom_Stay():
     assert reward == 0.0
 
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     assert observation.get_other_player_card_count(0) == 1
@@ -327,7 +325,7 @@ def test_CEOPlayerEnv_Bottom_Stay():
     observation_array, reward, done, truncated, info = env.step(action)
 
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     # Trick 4
@@ -336,10 +334,10 @@ def test_CEOPlayerEnv_Bottom_Stay():
 
     assert done
     assert reward == 0
-    assert info["ceo_stay"] == True
+    assert info["ceo_stay"]
 
 
-def test_CEOPlayerEnv_Bottom_MoveUp():
+def test_ceoplayerenv_bottom_moveup():
     """
     Test when the player is in the bottom position and moves up.
     """
@@ -355,7 +353,6 @@ def test_CEOPlayerEnv_Bottom_MoveUp():
     cv7 = CardValue(7)
     cv8 = CardValue(8)
     cv9 = CardValue(9)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
@@ -414,7 +411,7 @@ def test_CEOPlayerEnv_Bottom_MoveUp():
     assert reward == 0.0
 
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     # Trick 2 - Lead
@@ -434,10 +431,10 @@ def test_CEOPlayerEnv_Bottom_MoveUp():
 
     assert done
     assert reward == 1
-    assert info["ceo_stay"] == True
+    assert info["ceo_stay"]
 
 
-def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
+def test_ceoplayerenv_bottom_moveupbecauseceodown():
     """
     Test when the player is in the bottom position and moves up because the CEO
     doesn't go out.
@@ -516,7 +513,7 @@ def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
     assert reward == 0.0
 
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     # Trick 2 - Lead
@@ -547,10 +544,10 @@ def test_CEOPlayerEnv_Bottom_MoveUpBecauseCEODown():
 
     assert done
     assert reward == 1
-    assert info["ceo_stay"] == False
+    assert not info["ceo_stay"]
 
 
-def test_CEOPlayerEnv_ValidActions_Bottom_NeverPlay():
+def test_ceoplayerenv_validactions_bottom_neverplay():
     """
     Test when the player is in the bottom position and is never able to play
     on a trick. This includes valid actions in the observation.
@@ -560,15 +557,11 @@ def test_CEOPlayerEnv_ValidActions_Bottom_NeverPlay():
     cv0 = CardValue(0)
     cv1 = CardValue(1)
     cv2 = CardValue(2)
-    cv3 = CardValue(3)
-    cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
     cv7 = CardValue(7)
     cv8 = CardValue(8)
     cv9 = CardValue(9)
-    cv10 = CardValue(10)
-    cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
     hand0 = Hand()
@@ -619,7 +612,7 @@ def test_CEOPlayerEnv_ValidActions_Bottom_NeverPlay():
     # Trick 1
     observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     action = 0
@@ -629,19 +622,15 @@ def test_CEOPlayerEnv_ValidActions_Bottom_NeverPlay():
     assert reward == 0.0
 
 
-def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTrick():
+def test_ceoplayerenv_bottom_ceoallcardsonfirsttrick():
     """
     Test when the the CEO and can play all their cards on the first trick.
     """
 
     # Create CardValue objects for ease of use later
-    cv0 = CardValue(0)
     cv1 = CardValue(1)
     cv2 = CardValue(2)
     cv3 = CardValue(3)
-    cv4 = CardValue(4)
-    cv5 = CardValue(5)
-    cv6 = CardValue(6)
     cv7 = CardValue(7)
 
     # Make the hands and players. Note that we disable passing below
@@ -681,8 +670,6 @@ def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTrick():
         obs_kwargs=obs_kwargs,
     )
 
-    action_space = env.action_space
-
     observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 2
@@ -696,24 +683,19 @@ def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTrick():
     assert reward == 0.0
 
 
-def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTwoTricks():
+def test_ceoplayerenv_bottom_ceoallcardsonfirsttwotricks():
     """
     Test when the the CEO and can play all their cards on the first two tricks.
     """
 
     # Create CardValue objects for ease of use later
-    cv0 = CardValue(0)
     cv1 = CardValue(1)
     cv2 = CardValue(2)
     cv3 = CardValue(3)
-    cv4 = CardValue(4)
-    cv5 = CardValue(5)
-    cv6 = CardValue(6)
     cv7 = CardValue(7)
     cv8 = CardValue(8)
     cv9 = CardValue(9)
     cv10 = CardValue(10)
-    cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
     hand0 = Hand()
@@ -758,8 +740,6 @@ def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTwoTricks():
         obs_kwargs=obs_kwargs,
     )
 
-    action_space = env.action_space
-
     observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
     assert observation.get_cur_trick_value() == 2
@@ -773,7 +753,7 @@ def test_CEOPlayerEnv_Bottom_CEOAllCardsOnFirstTwoTricks():
     assert reward == 0.0
 
 
-def test_CEOPlayerEnv_SecondPlayer_CEOAllCardsOnFirstTwoTricks():
+def test_ceoplayerenv_secondplayer_ceoallcardsonfirsttwotricks():
     """
     Test when the the CEO and can play all their cards on the first two tricks.
     """
@@ -782,15 +762,10 @@ def test_CEOPlayerEnv_SecondPlayer_CEOAllCardsOnFirstTwoTricks():
     cv0 = CardValue(0)
     cv1 = CardValue(1)
     cv2 = CardValue(2)
-    cv3 = CardValue(3)
-    cv4 = CardValue(4)
-    cv5 = CardValue(5)
-    cv6 = CardValue(6)
     cv7 = CardValue(7)
     cv8 = CardValue(8)
     cv9 = CardValue(9)
     cv10 = CardValue(10)
-    cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
     hand0 = Hand()
@@ -844,7 +819,7 @@ def test_CEOPlayerEnv_SecondPlayer_CEOAllCardsOnFirstTwoTricks():
     action = 8
     observation_array, reward, done, truncated, info = env.step(action)
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     assert not done
@@ -854,7 +829,7 @@ def test_CEOPlayerEnv_SecondPlayer_CEOAllCardsOnFirstTwoTricks():
     action = 9
     observation_array, reward, done, truncated, info = env.step(action)
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     assert not done
@@ -868,7 +843,7 @@ def test_CEOPlayerEnv_SecondPlayer_CEOAllCardsOnFirstTwoTricks():
     assert reward == 0.0
 
 
-def test_CEOPlayerEnv_ThirdPlayer_Stay():
+def test_ceoplayerenv_thirdplayer_stay():
     """
     Test when the player is in the third position and stays there.
     """
@@ -884,8 +859,6 @@ def test_CEOPlayerEnv_ThirdPlayer_Stay():
     cv7 = CardValue(7)
     cv8 = CardValue(8)
     cv9 = CardValue(9)
-    cv10 = CardValue(10)
-    cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
     hand0 = Hand()
@@ -958,7 +931,7 @@ def test_CEOPlayerEnv_ThirdPlayer_Stay():
     assert reward == 0.0
 
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     # Trick 3 - Lead
@@ -969,7 +942,7 @@ def test_CEOPlayerEnv_ThirdPlayer_Stay():
     assert reward == 0
 
 
-def test_CEOPlayerEnv_ThirdPlayer_MoveUp():
+def test_ceoplayerenv_thirdplayer_moveup():
     """
     Test when the player is in the third position and moves up.
     """
@@ -985,7 +958,6 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveUp():
     cv7 = CardValue(7)
     cv8 = CardValue(8)
     cv9 = CardValue(9)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
@@ -1056,7 +1028,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveUp():
     assert reward == 0.0
 
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     # Trick 3 - Lead
@@ -1067,7 +1039,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveUp():
     assert reward == 1
 
 
-def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
+def test_ceoplayerenv_thirdplayer_movedown():
     """
     Test when the player is in the third position and moves down.
     """
@@ -1083,7 +1055,6 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
     cv7 = CardValue(7)
     cv8 = CardValue(8)
     cv9 = CardValue(9)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
@@ -1153,7 +1124,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
     assert reward == 0.0
 
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     # Trick 3 - Lead
@@ -1164,7 +1135,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
     assert reward == 0.0
 
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     # Trick 4 - Lead
@@ -1175,7 +1146,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MoveDown():
     assert reward == -1
 
 
-def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick():
+def test_ceoplayerenv_thirdplayer_mustpassfirsttrick():
     """
     Test when the player is in the third position must pass on the first trick.
     Here we include valid actions in the observation, so that the environment can
@@ -1190,10 +1161,6 @@ def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
-    cv9 = CardValue(9)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
@@ -1264,7 +1231,7 @@ def test_CEOPlayerEnv_ThirdPlayer_MustPassFirstTrick():
     assert reward == -1
 
 
-def test_CEOPlayerEnv_CEO_MoveDown():
+def test_ceoplayerenv_ceo_movedown():
     """
     Test when the player is in the CEO position and doesn't go out first, so they drop
     to the bottom.
@@ -1282,7 +1249,6 @@ def test_CEOPlayerEnv_CEO_MoveDown():
     cv8 = CardValue(8)
     cv9 = CardValue(9)
     cv10 = CardValue(10)
-    cv11 = CardValue(11)
 
     # Make the hands and players. Note that we disable passing below
     hand0 = Hand()
@@ -1331,7 +1297,7 @@ def test_CEOPlayerEnv_CEO_MoveDown():
     # Trick 1
     observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_cur_trick_count() == 0
 
     action = 0
@@ -1349,10 +1315,10 @@ def test_CEOPlayerEnv_CEO_MoveDown():
 
     assert done
     assert reward == -1.0
-    assert info["ceo_stay"] == False
+    assert not info["ceo_stay"]
 
 
-def test_CEOPlayerEnv_CEO_OnlyPlayPass():
+def test_ceoplayerenv_ceo_onlyplaypass():
     """
     Test when the the agent's only valid play is to pass. The agent should
     not need to perform the action.
@@ -1366,7 +1332,6 @@ def test_CEOPlayerEnv_CEO_OnlyPlayPass():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
-    cv7 = CardValue(7)
 
     # Make the hands. Note that we disable passing below
     hand1 = Hand()
@@ -1438,11 +1403,9 @@ def test_CEOPlayerEnv_CEO_OnlyPlayPass():
         obs_kwargs=obs_kwargs,
     )
 
-    action_space = env.action_space
-
     observation_array, info = env.reset()
     observation = Observation(env.observation_factory, array=observation_array)
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
 
     # Lead
     action = 0
@@ -1472,7 +1435,7 @@ def test_CEOPlayerEnv_CEO_OnlyPlayPass():
     assert reward == 1.0
 
 
-def test_CEOPlayerEnv_CEO_AllCardActionSpace_NegativeReward_Lead():
+def test_ceoplayerenv_ceo_allcardactionspace_negativereward_lead():
     """
     Test when the action space returns a negative reward and ends the episode
     for invalid actions. Here the invalid action is passing when the agent
@@ -1562,7 +1525,7 @@ def test_CEOPlayerEnv_CEO_AllCardActionSpace_NegativeReward_Lead():
     assert reward == pytest.approx(-(2.0 + 8.0 * remaining_cards / 13.0))
 
 
-def test_CEOPlayerEnv_CEO_AllCardActionSpace_NegativeReward_InvalidCard():
+def test_ceoplayerenv_ceo_allcardactionspace_negativereward_invalidcard():
     """
     Test when the action space returns a negative reward and ends the episode
     for invalid actions. Here the agent's action is to lead an invalid card.
@@ -1666,7 +1629,7 @@ def test_CEOPlayerEnv_CEO_AllCardActionSpace_NegativeReward_InvalidCard():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_AllCardActionSpace_ActionOrderMatchesObservationOrder():
+def test_ceoplayerenv_ceo_allcardactionspace_actionordermatchesobservationorder():
     """
     Test that the order of actions in the AllCardActionSpace match the order of
     actions in the observation when the observation includes which actions are valid.
@@ -1804,11 +1767,11 @@ def test_CEOPlayerEnv_CEO_AllCardActionSpace_ActionOrderMatchesObservationOrder(
     assert valid_play_array[7] == 0.0
 
 
-def test_CEOPlayerEnv_CEO_Passing():
+def test_ceoplayerenv_ceo_passing():
     """
-    Test the environment that models a player in the the CEO seat. Here we test that passing
-    cards at the beginning of the round happens. For other tests, see below where passing is
-    disabled.
+    Test the environment that models a player in the the CEO seat. Here we test that
+    passing cards at the beginning of the round happens. For other tests, see below
+    where passing is disabled.
     """
 
     # Create CardValue objects for ease of use later
@@ -1869,10 +1832,10 @@ def test_CEOPlayerEnv_CEO_Passing():
     assert observation.get_card_count(7) == 2
 
 
-def test_CEOPlayerEnv_CEO_NoPassing():
+def test_ceoplayerenv_ceo_nopassing():
     """
-    Test the environment that models a player in the the CEO seat. Here we disable passing
-    to make the tests easier.
+    Test the environment that models a player in the the CEO seat. Here we disable
+    passing to make the tests easier.
     """
 
     # Create CardValue objects for ease of use later
@@ -1954,10 +1917,10 @@ def test_CEOPlayerEnv_CEO_NoPassing():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_CEOLeadsAndNoOnePlays():
+def test_ceoplayerenv_ceo_ceoleadsandnooneplays():
     """
-    Test the environment that models a player in the the CEO seat. Here we disable passing
-    to make the tests easier.
+    Test the environment that models a player in the the CEO seat. Here we disable
+    passing to make the tests easier.
     """
 
     # Create CardValue objects for ease of use later
@@ -2055,7 +2018,7 @@ def test_CEOPlayerEnv_CEO_CEOLeadsAndNoOnePlays():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_observation():
+def test_ceoplayerenv_ceo_observation():
     """
     Test the observation returned by SetCEOEnv.
     """
@@ -2065,7 +2028,6 @@ def test_CEOPlayerEnv_CEO_observation():
     cv1 = CardValue(1)
     cv2 = CardValue(2)
     cv3 = CardValue(3)
-    cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
     cv7 = CardValue(7)
@@ -2134,8 +2096,8 @@ def test_CEOPlayerEnv_CEO_observation():
 
     assert observation.get_starting_player() == 0
     assert observation.get_cur_trick_count() == 0
-    assert observation.get_cur_trick_value() == None
-    assert observation.get_last_player() == None
+    assert observation.get_cur_trick_value() is None
+    assert observation.get_last_player() is None
 
     assert observation.get_card_count(0) == 1
     assert observation.get_card_count(1) == 1
@@ -2187,7 +2149,7 @@ def test_CEOPlayerEnv_CEO_observation():
     assert observation.get_other_player_card_count(2) == 5
 
 
-def test_CEOPlayerEnv_CEO_observation_valid_plays():
+def test_ceoplayerenv_ceo_observation_valid_plays():
     """
     Test the observation returned by SetCEOEnv. Here the observation is configured to
     include which actions are valid.
@@ -2274,8 +2236,8 @@ def test_CEOPlayerEnv_CEO_observation_valid_plays():
 
     assert observation.get_starting_player() == 0
     assert observation.get_cur_trick_count() == 0
-    assert observation.get_cur_trick_value() == None
-    assert observation.get_last_player() == None
+    assert observation.get_cur_trick_value() is None
+    assert observation.get_last_player() is None
 
     assert observation.get_card_count(0) == 1
     assert observation.get_card_count(1) == 2
@@ -2288,18 +2250,18 @@ def test_CEOPlayerEnv_CEO_observation_valid_plays():
     assert observation.get_other_player_card_count(1) == 8
     assert observation.get_other_player_card_count(2) == 10
 
-    assert observation.get_pass_action_valid() == False
-    assert observation.get_play_card_action_valid(cv0.value) == True
-    assert observation.get_play_card_action_valid(cv1.value) == True
-    assert observation.get_play_card_action_valid(cv2.value) == True
-    assert observation.get_play_card_action_valid(cv3.value) == False
-    assert observation.get_play_card_action_valid(cv4.value) == True
-    assert observation.get_play_card_action_valid(cv5.value) == False
-    assert observation.get_play_card_action_valid(cv6.value) == False
-    assert observation.get_play_card_action_valid(cv7.value) == False
-    assert observation.get_play_card_action_valid(cv8.value) == True
-    assert observation.get_play_card_action_valid(cv9.value) == True
-    assert observation.get_play_card_action_valid(cv10.value) == False
+    assert not observation.get_pass_action_valid()
+    assert observation.get_play_card_action_valid(cv0.value)
+    assert observation.get_play_card_action_valid(cv1.value)
+    assert observation.get_play_card_action_valid(cv2.value)
+    assert not observation.get_play_card_action_valid(cv3.value)
+    assert observation.get_play_card_action_valid(cv4.value)
+    assert not observation.get_play_card_action_valid(cv5.value)
+    assert not observation.get_play_card_action_valid(cv6.value)
+    assert not observation.get_play_card_action_valid(cv7.value)
+    assert observation.get_play_card_action_valid(cv8.value)
+    assert observation.get_play_card_action_valid(cv9.value)
+    assert not observation.get_play_card_action_valid(cv10.value)
 
     # Lead lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
@@ -2323,18 +2285,18 @@ def test_CEOPlayerEnv_CEO_observation_valid_plays():
     assert observation.get_other_player_card_count(1) == 7
     assert observation.get_other_player_card_count(2) == 7
 
-    assert observation.get_pass_action_valid() == True
-    assert observation.get_play_card_action_valid(cv0.value) == False
-    assert observation.get_play_card_action_valid(cv1.value) == True
-    assert observation.get_play_card_action_valid(cv2.value) == True
-    assert observation.get_play_card_action_valid(cv3.value) == False
-    assert observation.get_play_card_action_valid(cv4.value) == True
-    assert observation.get_play_card_action_valid(cv5.value) == False
-    assert observation.get_play_card_action_valid(cv6.value) == False
-    assert observation.get_play_card_action_valid(cv7.value) == False
-    assert observation.get_play_card_action_valid(cv8.value) == True
-    assert observation.get_play_card_action_valid(cv9.value) == False
-    assert observation.get_play_card_action_valid(cv10.value) == False
+    assert observation.get_pass_action_valid()
+    assert not observation.get_play_card_action_valid(cv0.value)
+    assert observation.get_play_card_action_valid(cv1.value)
+    assert observation.get_play_card_action_valid(cv2.value)
+    assert not observation.get_play_card_action_valid(cv3.value)
+    assert observation.get_play_card_action_valid(cv4.value)
+    assert not observation.get_play_card_action_valid(cv5.value)
+    assert not observation.get_play_card_action_valid(cv6.value)
+    assert not observation.get_play_card_action_valid(cv7.value)
+    assert observation.get_play_card_action_valid(cv8.value)
+    assert not observation.get_play_card_action_valid(cv9.value)
+    assert not observation.get_play_card_action_valid(cv10.value)
 
     # Play lowest
     action = env.action_space.find_full_action(ActionEnum.PLAY_LOWEST_WITHOUT_BREAK_NUM)
@@ -2358,21 +2320,21 @@ def test_CEOPlayerEnv_CEO_observation_valid_plays():
     assert observation.get_other_player_card_count(1) == 3
     assert observation.get_other_player_card_count(2) == 5
 
-    assert observation.get_pass_action_valid() == True
-    assert observation.get_play_card_action_valid(cv0.value) == False
-    assert observation.get_play_card_action_valid(cv1.value) == False
-    assert observation.get_play_card_action_valid(cv2.value) == False
-    assert observation.get_play_card_action_valid(cv3.value) == False
-    assert observation.get_play_card_action_valid(cv4.value) == False
-    assert observation.get_play_card_action_valid(cv5.value) == False
-    assert observation.get_play_card_action_valid(cv6.value) == False
-    assert observation.get_play_card_action_valid(cv7.value) == False
-    assert observation.get_play_card_action_valid(cv8.value) == True
-    assert observation.get_play_card_action_valid(cv9.value) == False
-    assert observation.get_play_card_action_valid(cv10.value) == False
+    assert observation.get_pass_action_valid()
+    assert not observation.get_play_card_action_valid(cv0.value)
+    assert not observation.get_play_card_action_valid(cv1.value)
+    assert not observation.get_play_card_action_valid(cv2.value)
+    assert not observation.get_play_card_action_valid(cv3.value)
+    assert not observation.get_play_card_action_valid(cv4.value)
+    assert not observation.get_play_card_action_valid(cv5.value)
+    assert not observation.get_play_card_action_valid(cv6.value)
+    assert not observation.get_play_card_action_valid(cv7.value)
+    assert observation.get_play_card_action_valid(cv8.value)
+    assert not observation.get_play_card_action_valid(cv9.value)
+    assert not observation.get_play_card_action_valid(cv10.value)
 
 
-def test_CEOPlayerEnv_CEO_reward_cards_left():
+def test_ceoplayerenv_ceo_reward_cards_left():
     """
     Test the reward from losing when the environment is configured to
     include the cards left in the hand.
@@ -2383,13 +2345,6 @@ def test_CEOPlayerEnv_CEO_reward_cards_left():
     cv1 = CardValue(1)
     cv2 = CardValue(2)
     cv3 = CardValue(3)
-    cv4 = CardValue(4)
-    cv5 = CardValue(5)
-    cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
-    cv9 = CardValue(9)
-    cv10 = CardValue(10)
 
     # Make the hands
     hand1 = Hand()
@@ -2430,8 +2385,6 @@ def test_CEOPlayerEnv_CEO_reward_cards_left():
         reward_includes_cards_left=True,
     )
 
-    observation_factory = env.observation_factory
-
     observation_array, info = env.reset()
 
     # Lead lowest
@@ -2444,7 +2397,7 @@ def test_CEOPlayerEnv_CEO_reward_cards_left():
     assert reward == pytest.approx(-1.0 - cards_left / 13.0)
 
 
-def test_CEOPlayerEnv_CEO_ActionSpace_Play_SingleCard():
+def test_ceoplayerenv_ceo_actionspace_play_singlecard():
     """
     Test that the action space changes based on the cards available to play.
     Here we test where there is a single card value that can be played on
@@ -2459,9 +2412,6 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Play_SingleCard():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
-    cv9 = CardValue(9)
 
     # Test where there is a single card that can be played
     hand1 = Hand()
@@ -2536,7 +2486,7 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Play_SingleCard():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_ActionSpace_Play_TwoCards():
+def test_ceoplayerenv_ceo_actionspace_play_twocards():
     """
     Test that the action space changes based on the cards available to play.
     Here we test where there are two card values that can be played on
@@ -2551,8 +2501,6 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Play_TwoCards():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
     cv9 = CardValue(9)
 
     # Test where there are two cards that can be played
@@ -2643,7 +2591,7 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Play_TwoCards():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_ActionSpace_Lead_TwoCards():
+def test_ceoplayerenv_ceo_actionspace_lead_twocards():
     """
     Test that the action space changes based on the cards available to play.
     Here we test where there are two card values that can be lead.
@@ -2768,7 +2716,7 @@ def test_CEOPlayerEnv_CEO_ActionSpace_Lead_TwoCards():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_CanNotPlay_TwoTricks():
+def test_ceoplayerenv_ceo_cannotplay_twotricks():
     """
     Test the environment that models a player in the the CEO seat.
     Here CEO has low cards so can't play on the final two tricks.
@@ -2847,7 +2795,7 @@ def test_CEOPlayerEnv_CEO_CanNotPlay_TwoTricks():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_CanNotPlay_ThreeTricks():
+def test_ceoplayerenv_ceo_cannotplay_trickthree():
     """
     Test the environment that models a player in the the CEO seat.
     Here CEO has low cards so can't play on the final three tricks.
@@ -2933,7 +2881,7 @@ def test_CEOPlayerEnv_CEO_CanNotPlay_ThreeTricks():
     assert reward < 0
 
 
-def test_CEOPlayerEnv_CEO_get_afterstate():
+def test_ceoplayerenv_ceo_get_afterstate():
     """
     Test SetCEOEnv.get_afterstate(). This is an end-to-end test where the environment
     creates the observation.
@@ -3010,7 +2958,7 @@ def test_CEOPlayerEnv_CEO_get_afterstate():
     assert observation.get_card_count(2) == 3
     assert observation.get_card_count(3) == 4
 
-    assert observation.get_last_player() == None
+    assert observation.get_last_player() is None
 
     # Test afterstate after lead highest
     action = env.action_space.find_full_action(ActionEnum.PLAY_HIGHEST_NUM)
@@ -3077,10 +3025,10 @@ def test_CEOPlayerEnv_CEO_get_afterstate():
     assert afterstate.get_last_player() == 3
 
 
-def test_CEOPlayerEnv_CEO_CardActionSpace():
+def test_ceoplayerenv_ceo_cardactionspace():
     """
-    Test the environment that models a player in the the CEO seat. Test where the enviroment
-    uses an action space corresponding to the cards that can be played.
+    Test the environment that models a player in the the CEO seat. Test where the
+    enviroment uses an action space corresponding to the cards that can be played.
     """
 
     # Create CardValue objects for ease of use later
@@ -3197,11 +3145,11 @@ def test_CEOPlayerEnv_CEO_CardActionSpace():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_CardActionSpace_NotPlayable():
+def test_ceoplayerenv_ceo_cardactionspace_notplayable():
     """
-    Test the environment that models a player in the the CEO seat. Test where the enviroment
-    uses an action space corresponding to the cards that can be played. Here there are cards
-    in the hand that can't be played.
+    Test the environment that models a player in the the CEO seat. Test where the
+    enviroment uses an action space corresponding to the cards that can be played. Here
+    there are cards in the hand that can't be played.
     """
 
     # Create CardValue objects for ease of use later
@@ -3330,11 +3278,11 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_NotPlayable():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_CardActionSpace_PassOnTrick():
+def test_ceoplayerenv_ceo_cardactionspace_passontrick():
     """
-    Test the environment that models a player in the the CEO seat. Test where the enviroment
-    uses an action space corresponding to the cards that can be played. Here we test the pass
-    action."""
+    Test the environment that models a player in the the CEO seat. Test where the
+    enviroment uses an action space corresponding to the cards that can be played. Here
+    we test the pass action."""
 
     # Create CardValue objects for ease of use later
     cv0 = CardValue(0)
@@ -3342,7 +3290,6 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_PassOnTrick():
     cv2 = CardValue(2)
     cv3 = CardValue(3)
     cv4 = CardValue(4)
-    cv5 = CardValue(5)
     cv6 = CardValue(6)
     cv7 = CardValue(7)
     cv8 = CardValue(8)
@@ -3461,10 +3408,10 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_PassOnTrick():
     assert done
 
 
-def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate():
+def test_ceoplayerenv_ceo_cardactionspace_get_afterstate():
     """
-    Test SetCEOEnv.get_afterstate() when the environment is using card action spaces. This is an
-    end-to-end test where the environment creates the observation.
+    Test SetCEOEnv.get_afterstate() when the environment is using card action spaces.
+    This is an end-to-end test where the environment creates the observation.
     """
 
     # Create CardValue objects for ease of use later
@@ -3539,7 +3486,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate():
     assert observation.get_card_count(2) == 3
     assert observation.get_card_count(3) == 4
 
-    assert observation.get_last_player() == None
+    assert observation.get_last_player() is None
 
     # Test afterstate after lead highest
     action = env.action_space.n - 1
@@ -3617,10 +3564,10 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate():
     assert afterstate.get_last_player() == 3
 
 
-def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate_TrickState():
+def test_ceoplayerenv_ceo_cardactionspace_get_afterstate_trickstate():
     """
-    Test SetCEOEnv.get_afterstate() when the environment is using card action spaces. Test
-    that the trick information is correctly updated.
+    Test SetCEOEnv.get_afterstate() when the environment is using card action spaces.
+    Test that the trick information is correctly updated.
     """
 
     # Create CardValue objects for ease of use later
@@ -3628,11 +3575,6 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate_TrickState():
     cv1 = CardValue(1)
     cv2 = CardValue(2)
     cv3 = CardValue(3)
-    cv4 = CardValue(4)
-    cv5 = CardValue(5)
-    cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
 
     # Set up the environment.
     hand1 = Hand()
@@ -3688,7 +3630,7 @@ def test_CEOPlayerEnv_CEO_CardActionSpace_get_afterstate_TrickState():
     assert observation.get_card_count(3) == 4
 
     assert observation.get_cur_trick_count() == 0
-    assert observation.get_cur_trick_value() == None
+    assert observation.get_cur_trick_value() is None
     assert observation.get_starting_player() == 0
 
     # Test afterstate after lead highest

@@ -1,7 +1,8 @@
+import array
 from abc import ABC, abstractmethod
-from CEO.cards.hand import *
+from collections.abc import MutableSequence
 
-from typing import MutableSequence
+from CEO.cards.hand import CardValue, Hand
 
 
 class RoundState:

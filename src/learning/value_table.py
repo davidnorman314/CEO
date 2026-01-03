@@ -1,7 +1,8 @@
+from multiprocessing import RawArray
+
 import gymnasium
 import gymnasium.spaces
 import numpy as np
-from multiprocessing import RawArray
 
 from gym_ceo.envs.features import FeatureObservationFactory
 
@@ -137,7 +138,10 @@ class ValueTable:
         return self.q_raw_array, self.state_count_raw_array
 
     def find_greedy_action(
-        self, env: gymnasium.Env, obs_factory: FeatureObservationFactory, state: np.ndarray
+        self,
+        env: gymnasium.Env,
+        obs_factory: FeatureObservationFactory,
+        state: np.ndarray,
     ) -> tuple[int, float]:
         greedy_action = None
         greedy_reward = -1000000
@@ -174,7 +178,10 @@ class ValueTable:
         return greedy_action, greedy_reward, greedy_visit_count
 
     def afterstate_visit_count(
-        self, env: gymnasium.Env, obs_factory: FeatureObservationFactory, state: np.ndarray
+        self,
+        env: gymnasium.Env,
+        obs_factory: FeatureObservationFactory,
+        state: np.ndarray,
     ) -> int:
         visit_count = 0
         info = dict()

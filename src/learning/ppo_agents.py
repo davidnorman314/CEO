@@ -1,27 +1,27 @@
 """Agents that use trained PPO models to play CEO."""
 
-import pathlib
 import json
-import numpy as np
-import torch as th
-
-from CEO.cards.hand import Hand, CardValue
-from CEO.cards.player import PlayerBehaviorInterface
-from CEO.cards.simplebehavior import SimpleBehaviorBase
-from CEO.cards.round import RoundState
-
-from gym_ceo.envs.observation import Observation, ObservationFactory
-
-from stable_baselines3 import PPO
+import pathlib
 
 import gymnasium
+import numpy as np
+import torch as th
+from stable_baselines3 import PPO
+
+from CEO.cards.hand import CardValue, Hand
+from CEO.cards.player import PlayerBehaviorInterface
+from CEO.cards.round import RoundState
+from CEO.cards.simplebehavior import SimpleBehaviorBase
+from gym_ceo.envs.observation import Observation, ObservationFactory
 
 
 def load_ppo(ppo_dir: str, device: str) -> tuple[PPO, dict]:
     if device is None:
         raise Exception("No device specified.")
 
-    ppo = PPO.load(pathlib.Path(ppo_dir, "best_model.zip"), device=device, print_system_info=True)
+    ppo = PPO.load(
+        pathlib.Path(ppo_dir, "best_model.zip"), device=device, print_system_info=True
+    )
 
     with open(pathlib.Path(ppo_dir, "params.json"), "rb") as f:
         params = json.load(f)
@@ -40,7 +40,9 @@ class PPOBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
     source: str
     """The directory the ppo agent was loaded from."""
 
-    def __init__(self, seat_num: int, num_players: int, ppo: PPO, params: dict, device: str):
+    def __init__(
+        self, seat_num: int, num_players: int, ppo: PPO, params: dict, device: str
+    ):
         self.is_reinforcement_learning = False
         self._seat_num = seat_num
         self._num_players = num_players
@@ -100,7 +102,8 @@ class PPOBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):
 
 
 class PPOAgent:
-    """Class that uses a trained PPO agent to play a CEO game given by a Gymnasium environment."""
+    """Class that uses a trained PPO agent to play a CEO game given by a
+    Gymnasium environment."""
 
     _env: gymnasium.Env
 
@@ -116,7 +119,8 @@ class PPOAgent:
     def do_episode(
         self, hands: list[Hand] = None, log_state: bool = False
     ) -> tuple[list[tuple], list[int], float]:
-        """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
+        """Plays a hand. Returns a list of states visited, actions taken,
+        and the reward"""
         # Reseting the environment each time as per requirement
         obs = self._env.reset(hands)
         info = dict()
@@ -135,7 +139,9 @@ class PPOAgent:
             obs_tensor_array = th.tensor(nparr, device=self._device)
 
             predicted_value = self._ppo.policy.predict_values(obs_tensor_array)[0][0]
-            distribution = self._ppo.policy.get_distribution(obs_tensor_array).distribution.probs[0]
+            distribution = self._ppo.policy.get_distribution(
+                obs_tensor_array
+            ).distribution.probs[0]
 
             if log_state:
                 print("Obs", obs)
@@ -151,14 +157,16 @@ class PPOAgent:
             new_obs, reward, done, info = self._env.step(selected_action)
 
             episode_states.append(f"value {predicted_value}")
-            episode_actions.append(f"{selected_action} prob {distribution[selected_action]}")
+            episode_actions.append(
+                f"{selected_action} prob {distribution[selected_action]}"
+            )
 
             # Increasing our total reward and updating the state
             episode_reward += reward
             obs = new_obs
 
             # See if the episode is finished
-            if done == True:
+            if done:
                 # print("Reward", reward)
                 final_info = info
                 break
@@ -166,9 +174,12 @@ class PPOAgent:
         return episode_states, episode_actions, episode_reward, final_info
 
 
-def process_ppo_agents(ppo_agents: list[str], device: str, num_players: int) -> tuple[dict, dict]:
-    """Takes as input a list of directories containing a saved PPO agent, e.g., eval_log/BL_0_7_A,
-    loads them, and returns an dict mapping seat number to the RLBehavior."""
+def process_ppo_agents(
+    ppo_agents: list[str], device: str, num_players: int
+) -> tuple[dict, dict]:
+    """Takes as input a list of directories containing a saved PPO agent,
+    e.g., eval_log/BL_0_7_A, loads them, and returns an dict mapping seat number to the
+    RLBehavior."""
     if not ppo_agents:
         return None, None
 
@@ -182,14 +193,16 @@ def process_ppo_agents(ppo_agents: list[str], device: str, num_players: int) -> 
 
         if num_players != agent_num_players:
             raise Exception(
-                (
-                    f"The agent {ppo_dir} is for a game with {agent_num_players} players, "
-                    f"but the game has {num_players} players."
-                )
+                f"The agent {ppo_dir} is for a game with {agent_num_players} players, "
+                f"but the game has {num_players} players."
             )
 
         behavior = PPOBehavior(
-            seat_num=seat_num, num_players=num_players, ppo=ppo, params=params, device=device
+            seat_num=seat_num,
+            num_players=num_players,
+            ppo=ppo,
+            params=params,
+            device=device,
         )
 
         agents[seat_num] = behavior

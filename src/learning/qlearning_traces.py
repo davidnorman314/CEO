@@ -1,5 +1,4 @@
 import argparse
-import copy
 import cProfile
 import math
 import random
@@ -7,7 +6,6 @@ from collections import deque
 from pstats import SortKey
 
 import gymnasium
-import matplotlib.pyplot as plt
 import numpy as np
 
 from azure_rl.azure_client import AzureClient
@@ -20,13 +18,14 @@ from learning.learning_base import EpisodeInfo, QTableLearningBase
 
 class QLearningTraces(QTableLearningBase):
     """
-    Class implementing Watkins Q(\lambda) with eligibility traces for a Gymnasium environment.
+    Class implementing Watkins Q(\lambda) with eligibility traces for a Gymnasium
+    environment.
     See:
         1. Sutton and Barto 312 and the
         2. The screenshot from an earlier version of Sutton and Barto in
             https://stackoverflow.com/questions/40862578/how-to-understand-watkinss-q%CE%BB-learning-algorithm-in-suttonbartos-rl-book
         3. https://towardsdatascience.com/eligibility-traces-in-reinforcement-learning-a6b458c019d6 and
-    """
+    """  # noqa: E501
 
     _train_episodes: int
 
@@ -188,6 +187,7 @@ class QLearningTraces(QTableLearningBase):
                             "count",
                             self._qtable.state_visit_count((*state_tuple, full_action)),
                             name,
+                            selected,
                         )
 
                 # Save state information
@@ -309,11 +309,10 @@ class QLearningTraces(QTableLearningBase):
                 alpha = 1.0 / (state_visit_count**alpha_exponent)
 
                 # Update Q and the traces
-                for update_tuple in eligibility_traces.keys():
+                for update_tuple in eligibility_traces:
                     value_before = self._qtable.state_action_value(update_tuple)
                     update = alpha * delta * eligibility_traces[update_tuple]
                     self._qtable.update_state_visit_value(update_tuple, update)
-                    # self._Q[update_tuple] += alpha * delta * eligibility_traces[update_tuple]
                     if action_prime == action_star:
                         eligibility_traces[update_tuple] *= discount_factor * lambda_val
                     else:
@@ -353,7 +352,7 @@ class QLearningTraces(QTableLearningBase):
                 episode_reward += reward
 
                 # See if the episode is finished
-                if done == True:
+                if done:
                     break
 
             # Cutting down on exploration by reducing the epsilon
@@ -383,13 +382,10 @@ class QLearningTraces(QTableLearningBase):
                 )
 
                 print(
-                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} Explore rate {:.3f} States visited {}".format(
-                        episode,
-                        ave_training_rewards,
-                        recent_rewards,
-                        recent_explore_rate,
-                        states_visited,
-                    )
+                    f"Episode {episode} Ave rewards {ave_training_rewards:.3f} "
+                    f"Recent rewards {recent_rewards:.3f} "
+                    f"Explore rate {recent_explore_rate:.3f} "
+                    f"States visited {states_visited}"
                 )
 
                 self.add_search_statistics(
@@ -410,7 +406,7 @@ class QLearningTraces(QTableLearningBase):
             ):
                 self.do_play_test(episode)
 
-            if False and episode > 0 and episode % 5000 == 0:
+            if False and episode > 0 and episode % 5000 == 0:  # noqa: SIM223
                 # Log the states for this episode
                 print("Episode info")
                 for info in episode_infos:
@@ -419,7 +415,10 @@ class QLearningTraces(QTableLearningBase):
                     )
                     visit_chars = math.ceil(math.log10(max_visit_count))
 
-                    format_str = "{action:2} value {val_before:6.3f} -> {val_after:6.3f} visit {visit_count:#w#} alpha {alpha:.3e}"
+                    format_str = (
+                        "{action:2} value {val_before:6.3f} -> {val_after:6.3f} "
+                        "visit {visit_count:#w#} alpha {alpha:.3e}"
+                    )
                     format_str = format_str.replace("#w#", str(visit_chars))
 
                     print(
@@ -433,11 +432,11 @@ class QLearningTraces(QTableLearningBase):
                         )
                     )
                 print("Reward", episode_reward)
-                print("Epsilon {:.5f}".format(epsilon))
+                print(f"Epsilon {epsilon:.5f}")
 
-            if False and episode > 0 and episode % 100000 == 0:
-                # Iterate over the entire Q array and count the number of each type of element.
-                # This is very slow.
+            if False and episode > 0 and episode % 100000 == 0:  # noqa: SIM223
+                # Iterate over the entire Q array and count the number of each type of
+                # element. This is very slow.
                 zero_count = 0
                 pos_count = 0
                 neg_count = 0

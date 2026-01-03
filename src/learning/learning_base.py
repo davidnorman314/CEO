@@ -1,13 +1,13 @@
+import datetime
+import pickle
+
 import gymnasium
 import numpy as np
-import pickle
-import datetime
 
+import learning.play_qagent as play_qagent
 from azure_rl.azure_client import AzureClient
-
 from learning.qtable import QTable
 from learning.value_table import ValueTable
-import learning.play_qagent as play_qagent
 
 
 class EpisodeInfo:
@@ -49,8 +49,13 @@ class LearningBase:
         self._disable_agent_testing = kwargs["disable_agent_testing"]
         del kwargs["disable_agent_testing"]
 
-        if "during_training_stats_episodes" in kwargs and kwargs["during_training_stats_episodes"]:
-            self._during_training_stats_episodes = kwargs["during_training_stats_episodes"]
+        if (
+            "during_training_stats_episodes" in kwargs
+            and kwargs["during_training_stats_episodes"]
+        ):
+            self._during_training_stats_episodes = kwargs[
+                "during_training_stats_episodes"
+            ]
             del kwargs["during_training_stats_episodes"]
         else:
             self._during_training_stats_episodes = 100000
@@ -59,7 +64,9 @@ class LearningBase:
             "during_training_stats_frequency" in kwargs
             and kwargs["during_training_stats_frequency"]
         ):
-            self._during_training_stats_frequency = kwargs["during_training_stats_frequency"]
+            self._during_training_stats_frequency = kwargs[
+                "during_training_stats_frequency"
+            ]
             del kwargs["during_training_stats_frequency"]
         else:
             self._during_training_stats_frequency = 100000
@@ -111,12 +118,14 @@ class LearningBase:
 
             self._last_backup_pickle_time = now
 
-        if self._azure_client:
-            # if now - self._last_azure_log_time > datetime.timedelta(seconds=10):
-            if now - self._last_azure_log_time > datetime.timedelta(minutes=5):
-                self._azure_client.log(stats)
+        # Log to Azure periodically if the client exists
+        if (
+            self._azure_client
+            and now - self._last_azure_log_time > datetime.timedelta(minutes=5)
+        ):
+            self._azure_client.log(stats)
 
-                self._last_azure_log_time = now
+            self._last_azure_log_time = now
 
     def pickle(self, filename: str, feature_defs=None):
         pickle_dict = dict()
@@ -149,7 +158,9 @@ class LearningBase:
 class QTableLearningBase(LearningBase):
     _qtable: QTable
 
-    def __init__(self, type: str, env: gymnasium.Env, base_env: gymnasium.Env, **kwargs):
+    def __init__(
+        self, type: str, env: gymnasium.Env, base_env: gymnasium.Env, **kwargs
+    ):
         """Constructor for a learning base class object that uses a Q table.
         The kwargs are passed to the QTable constructor so it can be initialized
         for multiprocessing.
@@ -184,7 +195,7 @@ class QTableLearningBase(LearningBase):
             base_env=self._base_env,
             q_table=q_table,
             state_count=state_count,
-            **kwargs
+            **kwargs,
         )
 
         if self._azure_client:

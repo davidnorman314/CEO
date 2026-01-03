@@ -1,7 +1,7 @@
-from CEO.cards.player import Player, PlayerBehaviorInterface
-from CEO.cards.simplebehavior import BasicBehavior, SimpleBehaviorBase
-from CEO.cards.hand import Hand, CardValue, PlayedCards
-from CEO.cards.round import Round, RoundState
+from CEO.cards.hand import CardValue, Hand
+from CEO.cards.player import PlayerBehaviorInterface
+from CEO.cards.round import RoundState
+from CEO.cards.simplebehavior import SimpleBehaviorBase
 
 
 class RLBehavior(PlayerBehaviorInterface, SimpleBehaviorBase):

@@ -2,8 +2,7 @@ from enum import Enum
 
 from gymnasium.spaces import Discrete
 
-from CEO.cards.hand import HandInterface
-from CEO.cards.player import *
+from CEO.cards.hand import CardValue, HandInterface
 from CEO.cards.simplebehavior import SimpleBehaviorBase
 
 
@@ -111,8 +110,8 @@ class Actions(SimpleBehaviorBase):
         self, hand: HandInterface, cur_trick_value: CardValue, cur_trick_count: int
     ) -> CardValue:
         """
-        Play the second lowest card without breaking up any sets. If there is a single value
-        that can be played, then play it.
+        Play the second lowest card without breaking up any sets.
+        If there is a single value that can be played, then play it.
         """
 
         if cur_trick_value is None:
@@ -168,7 +167,7 @@ class CEOActionSpace(Discrete):
     _actions_obj: Actions
 
     def __init__(self, actions: list[int]):
-        super(CEOActionSpace, self).__init__(len(actions))
+        super().__init__(len(actions))
 
         self.actions = actions
         self._actions_obj = Actions()
@@ -190,7 +189,7 @@ class CEOActionSpace(Discrete):
         return cv
 
     def __eq__(self, other):
-        if not super(CEOActionSpace, self).__eq__(other):
+        if not super().__eq__(other):
             return False
 
         return self.actions == other.actions
@@ -294,7 +293,7 @@ class ActionSpaceFactory(SimpleBehaviorBase):
 
 class CardActionSpace(Discrete):
     def __init__(self, card_count: int):
-        super(CardActionSpace, self).__init__(card_count)
+        super().__init__(card_count)
 
     def card_to_play(
         self,
@@ -325,15 +324,15 @@ class CardActionSpace(Discrete):
             return playable_cards[action].cv
 
     def __eq__(self, other):
-        if not super(CardActionSpace, self).__eq__(other):
+        if not super().__eq__(other):
             return False
 
         return self.n == other.n
 
 
 class CardActionSpaceFactory(SimpleBehaviorBase):
-    """Class that calculates the correct card action space based on the hand and trick. Here
-    the action space corresponds to playing a given card in the hand"""
+    """Class that calculates the correct card action space based on the hand
+    and trick. Here the action space corresponds to playing a given card in the hand"""
 
     _spaces: list[CardActionSpace]
 
@@ -376,7 +375,7 @@ class AllCardActionSpace(Discrete):
     _pass_action = 13
 
     def __init__(self):
-        super(AllCardActionSpace, self).__init__(14)
+        super().__init__(14)
 
     def _find_largest_card(self, hand: HandInterface):
         for cv in reversed(range(13)):
@@ -432,14 +431,15 @@ class AllCardActionSpace(Discrete):
             return cv
 
     def __eq__(self, other):
-        if not super(AllCardActionSpace, self).__eq__(other):
+        if not super().__eq__(other):
             return False
 
         return self.n == other.n
 
 
 class AllCardActionSpaceFactory(SimpleBehaviorBase):
-    """Action space factory for the AllCardActionSpace. It always returns the same space."""
+    """Action space factory for the AllCardActionSpace.
+    It always returns the same space."""
 
     _space: AllCardActionSpace
 

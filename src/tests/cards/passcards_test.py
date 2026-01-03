@@ -1,10 +1,9 @@
-import pytest
 import CEO.cards.deck as deck
-import CEO.cards.hand as hand
-import CEO.cards.player as player
-import CEO.cards.passcards as pc
-import CEO.cards.round as rd
 import CEO.cards.eventlistener as el
+import CEO.cards.hand as hand
+import CEO.cards.passcards as pc
+import CEO.cards.player as player
+import CEO.cards.round as rd
 
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface):
@@ -32,7 +31,7 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         pass
 
 
-def test_FivePlayers():
+def test_fiveplayers():
     """
     Test passing cards with five players
     """
@@ -111,7 +110,7 @@ def test_FivePlayers():
     assert hand5.to_dict() == {0: 1, 1: 1, 3: 1}
 
 
-def test_FourPlayers():
+def test_fourplayers():
     """
     Test passing cards with four players
     """

@@ -1,8 +1,9 @@
 import pytest
+
 import CEO.cards.hand as hand
 
 
-def test_CardValue():
+def test_cardvalue():
     cv = hand.CardValue(1)
     assert cv.value == 1
 
@@ -33,112 +34,112 @@ def test_CardValue():
     assert cv2 == cv2
 
 
-def test_PlayedCards():
+def test_playedcards():
     pc = hand.PlayedCards(hand.CardValue(1), 3)
     assert pc.value == hand.CardValue(1)
     assert pc.count == 3
 
     with pytest.raises(AssertionError):
-        cv = hand.PlayedCards(hand.CardValue(1), 0)
+        hand.PlayedCards(hand.CardValue(1), 0)
 
 
-def test_PlayCardsFromHand():
-    theHand = hand.Hand()
+def test_playcardsfromhand():
+    the_hand = hand.Hand()
 
-    theHand.add_cards(hand.CardValue(0), 3)
+    the_hand.add_cards(hand.CardValue(0), 3)
     pc = hand.PlayedCards(hand.CardValue(0), 1)
-    theHand.play_cards(pc)
-    assert theHand.to_dict() == {0: 2}
+    the_hand.play_cards(pc)
+    assert the_hand.to_dict() == {0: 2}
 
     pc = hand.PlayedCards(hand.CardValue(0), 1)
-    theHand.play_cards(pc)
-    assert theHand.to_dict() == {0: 1}
+    the_hand.play_cards(pc)
+    assert the_hand.to_dict() == {0: 1}
 
-    theHand.add_cards(hand.CardValue(1), 5)
+    the_hand.add_cards(hand.CardValue(1), 5)
     pc = hand.PlayedCards(hand.CardValue(1), 3)
-    theHand.play_cards(pc)
-    assert theHand.to_dict() == {0: 1, 1: 2}
+    the_hand.play_cards(pc)
+    assert the_hand.to_dict() == {0: 1, 1: 2}
 
     with pytest.raises(AssertionError):
         pc = hand.PlayedCards(hand.CardValue(0), 2)
-        theHand.play_cards(pc)
+        the_hand.play_cards(pc)
 
     with pytest.raises(AssertionError):
         pc = hand.PlayedCards(hand.CardValue(0), 3)
-        theHand.play_cards(pc)
+        the_hand.play_cards(pc)
 
     with pytest.raises(AssertionError):
         pc = hand.PlayedCards(hand.CardValue(1), 3)
-        theHand.play_cards(pc)
+        the_hand.play_cards(pc)
 
     pc = hand.PlayedCards(hand.CardValue(0), 1)
-    theHand.play_cards(pc)
-    assert theHand.to_dict() == {1: 2}
+    the_hand.play_cards(pc)
+    assert the_hand.to_dict() == {1: 2}
 
 
-def test_GetCardValues():
-    theHand = hand.Hand()
+def test_getcardvalues():
+    the_hand = hand.Hand()
 
     cv0 = hand.CardValue(0)
     cv3 = hand.CardValue(3)
     cv5 = hand.CardValue(5)
-    cv7 = hand.CardValue(7)
+    hand.CardValue(7)
 
-    theHand.add_cards(cv0, 3)
-    assert theHand.get_card_values() == [(cv0, 3)]
+    the_hand.add_cards(cv0, 3)
+    assert the_hand.get_card_values() == [(cv0, 3)]
 
-    theHand.add_cards(cv3, 5)
-    assert theHand.get_card_values() == [(cv0, 3), (cv3, 5)]
+    the_hand.add_cards(cv3, 5)
+    assert the_hand.get_card_values() == [(cv0, 3), (cv3, 5)]
 
-    theHand.add_cards(cv5, 2)
-    assert theHand.get_card_values() == [(cv0, 3), (cv3, 5), (cv5, 2)]
+    the_hand.add_cards(cv5, 2)
+    assert the_hand.get_card_values() == [(cv0, 3), (cv3, 5), (cv5, 2)]
 
 
-def test_HandCardCount():
-    theHand = hand.Hand()
+def test_handcardcount():
+    the_hand = hand.Hand()
 
     cv0 = hand.CardValue(0)
     cv3 = hand.CardValue(3)
 
-    theHand.add_cards(cv0, 3)
-    theHand.add_cards(cv3, 5)
+    the_hand.add_cards(cv0, 3)
+    the_hand.add_cards(cv3, 5)
 
-    assert theHand.count(cv0) == 3
-    assert theHand.count(cv3) == 5
+    assert the_hand.count(cv0) == 3
+    assert the_hand.count(cv3) == 5
 
 
-def test_MaxCardValue():
-    theHand = hand.Hand()
+def test_maxcardvalue():
+    the_hand = hand.Hand()
 
     cv0 = hand.CardValue(0)
     cv3 = hand.CardValue(3)
     cv11 = hand.CardValue(11)
     cv12 = hand.CardValue(12)
 
-    theHand.add_cards(cv0, 3)
-    theHand.add_cards(cv3, 5)
-    assert theHand.max_card_value() == cv3
+    the_hand.add_cards(cv0, 3)
+    the_hand.add_cards(cv3, 5)
+    assert the_hand.max_card_value() == cv3
 
-    theHand.add_cards(cv11, 2)
-    assert theHand.max_card_value() == cv11
+    the_hand.add_cards(cv11, 2)
+    assert the_hand.max_card_value() == cv11
 
-    theHand.add_cards(cv12, 2)
-    assert theHand.max_card_value() == cv12
+    the_hand.add_cards(cv12, 2)
+    assert the_hand.max_card_value() == cv12
 
 
-def test_Hand_cards_equal():
-    theHand = hand.Hand()
-    theHand.add_cards(hand.CardValue(0), 3)
-    theHand.add_cards(hand.CardValue(1), 2)
-    theHand.add_cards(hand.CardValue(4), 1)
+def test_handcardsequal():
+    the_hand = hand.Hand()
+    the_hand.add_cards(hand.CardValue(0), 3)
+    the_hand.add_cards(hand.CardValue(1), 2)
+    the_hand.add_cards(hand.CardValue(4), 1)
 
-    assert theHand.cards_equal({0: 3, 1: 2, 4: 1})
-    assert not theHand.cards_equal({0: 3, 1: 2, 4: 1, 5: 1})
-    assert not theHand.cards_equal({0: 3, 1: 2})
-    assert not theHand.cards_equal({0: 3, 1: 2, 4: 2})
+    assert the_hand.cards_equal({0: 3, 1: 2, 4: 1})
+    assert not the_hand.cards_equal({0: 3, 1: 2, 4: 1, 5: 1})
+    assert not the_hand.cards_equal({0: 3, 1: 2})
+    assert not the_hand.cards_equal({0: 3, 1: 2, 4: 2})
 
-    assert theHand.to_dict() == {0: 3, 1: 2, 4: 1}
+    assert the_hand.to_dict() == {0: 3, 1: 2, 4: 1}
 
-    theHand.add_cards(hand.CardValue(12), 5)
+    the_hand.add_cards(hand.CardValue(12), 5)
 
-    assert theHand.to_dict() == {0: 3, 1: 2, 4: 1, 12: 5}
+    assert the_hand.to_dict() == {0: 3, 1: 2, 4: 1, 12: 5}

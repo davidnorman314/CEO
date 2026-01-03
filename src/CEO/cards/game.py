@@ -1,11 +1,10 @@
-from CEO.cards.player import *
-from CEO.cards.hand import *
-from CEO.cards.eventlistener import *
-from CEO.cards.passcards import *
-from CEO.cards.round import *
-from CEO.cards.eventlistener import *
-
 import random
+
+from CEO.cards.deck import Deck
+from CEO.cards.eventlistener import EventListenerInterface
+from CEO.cards.passcards import PassCards
+from CEO.cards.player import Player
+from CEO.cards.round import Round
 
 
 class Game:
@@ -23,7 +22,13 @@ class Game:
         self._players = players
         self._player_count = len(players)
 
-    def play(self, *, round_count: int = 500, do_shuffle: bool = True, reorder_seats: bool = True):
+    def play(
+        self,
+        *,
+        round_count: int = 500,
+        do_shuffle: bool = True,
+        reorder_seats: bool = True,
+    ):
         """
         Play a game with a given number of rounds
         """

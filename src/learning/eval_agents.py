@@ -1,19 +1,17 @@
 """Code to play rounds with various agents and evaluate their performance."""
-import json
+
 import argparse
-from CEO.cards.game import Game
-from CEO.cards.deck import CardValue
-from CEO.cards.hand import Hand
-from CEO.cards.player import RoundState
-from CEO.cards.simplebehavior import BasicBehavior
-from CEO.cards.winlossstatistics import WinLossStatisticsCollector
+
 from CEO.cards.eventlistener import (
-    PrintAllEventListener,
     EventListenerInterface,
     MultiEventListener,
+    PrintAllEventListener,
 )
-from CEO.cards.player import Player
-
+from CEO.cards.game import Game
+from CEO.cards.hand import CardValue, Hand
+from CEO.cards.player import Player, RoundState
+from CEO.cards.simplebehavior import BasicBehavior
+from CEO.cards.winlossstatistics import WinLossStatisticsCollector
 from learning.ppo_agents import process_ppo_agents
 
 
@@ -105,7 +103,10 @@ def main():
         type=str,
         nargs="*",
         default=[],
-        help="Specifies directories containing trained PPO agents to include in the games.",
+        help=(
+            "Specifies directories containing trained PPO agents "
+            "to include in the games."
+        ),
     )
     parser.add_argument(
         "--basic-agent-seats",
@@ -149,10 +150,10 @@ def main():
 
     listeners = []
     if args.print:
-        doStats = False
+        do_stats = False
         listeners.append(PrintAllEventListener())
     else:
-        doStats = True
+        do_stats = True
         win_loss_listener = WinLossStatisticsCollector(players)
         listeners.append(win_loss_listener)
 
@@ -169,7 +170,7 @@ def main():
     format2 = "{:5.2f}"
     format2a = "{:5.0f}"
 
-    if not doStats:
+    if not do_stats:
         exit(1)
 
     # Print win/loss statistics
@@ -179,7 +180,9 @@ def main():
 
         print(format1.format("Percent in seat:"), end="")
         for i in range(num_players):
-            pct = (stats.end_position_count[i] / stats.players_with_behavior_count) / num_rounds
+            pct = (
+                stats.end_position_count[i] / stats.players_with_behavior_count
+            ) / num_rounds
 
             print(format2.format(pct), end="")
 
@@ -241,7 +244,9 @@ def main():
 
         # Bottom half stats
         move_up_count = stats.bottom_half_move_up / stats.players_with_behavior_count
-        move_down_count = stats.bottom_half_move_down / stats.players_with_behavior_count
+        move_down_count = (
+            stats.bottom_half_move_down / stats.players_with_behavior_count
+        )
         stay_count = stats.bottom_half_stay / stats.players_with_behavior_count
         bottom_half_count = move_up_count + move_down_count + stay_count
 
@@ -281,7 +286,9 @@ def main():
     for seat in range(num_players):
         name = players[seat].name
         lead_lowest_count = heuristic_monitor.stats[seat].lead_lowest_count
-        lead_second_lowest_count = heuristic_monitor.stats[seat].lead_second_lowest_count
+        lead_second_lowest_count = heuristic_monitor.stats[
+            seat
+        ].lead_second_lowest_count
 
         total = lead_lowest_count + lead_second_lowest_count
         if total == 0:
@@ -295,7 +302,9 @@ def main():
     for seat in range(num_players):
         name = players[seat].name
         lead_lowest_count = heuristic_monitor.stats[seat].lead_lowest_lgdiff_count
-        lead_second_lowest_count = heuristic_monitor.stats[seat].lead_second_lgdiff_lowest_count
+        lead_second_lowest_count = heuristic_monitor.stats[
+            seat
+        ].lead_second_lgdiff_lowest_count
 
         total = lead_lowest_count + lead_second_lowest_count
         if total == 0:
@@ -303,7 +312,9 @@ def main():
 
         pct_lead_lowest = lead_lowest_count / total
 
-        print(f"{name:20} lead lowest large diff pct {pct_lead_lowest:5.2f} total {total}")
+        print(
+            f"{name:20} lead lowest large diff pct {pct_lead_lowest:5.2f} total {total}"
+        )
 
     print("")
 

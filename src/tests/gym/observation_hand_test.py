@@ -1,15 +1,10 @@
 import random as random
 
-import numpy as np
-import pytest
-from stable_baselines3.common.env_checker import check_env
-
 import CEO.cards.player as player
 import CEO.cards.round as rd
 from CEO.cards.eventlistener import PrintAllEventListener
-from CEO.cards.hand import *
+from CEO.cards.hand import CardValue, Hand, PlayedCards
 from CEO.cards.simplebehavior import SimpleBehaviorBase
-from gym_ceo.envs.actions import Actions
 from gym_ceo.envs.observation import Observation, ObservationFactory
 from gym_ceo.envs.observation_hand import ObservationHand
 from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
@@ -75,23 +70,18 @@ def create_ceo_env(hand1: Hand) -> tuple[SeatCEOEnv, Observation]:
     return env, observation
 
 
-def test_ObservationHand():
+def test_observationhand():
     """
     Test ObservationHand
     """
 
     # Create CardValue objects for ease of use later
     cv0 = CardValue(0)
-    cv1 = CardValue(1)
     cv2 = CardValue(2)
     cv3 = CardValue(3)
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
-    cv9 = CardValue(9)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
     cv12 = CardValue(12)
 

@@ -1,14 +1,14 @@
 import numpy as np
-
 from gymnasium.spaces import Box
 
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.observation import Observation
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 
 
 class BottomHalfTableMinCards:
     """
-    Feature giving the minimum number of cards for players in the bottom half of the table.
+    Feature giving the minimum number of cards for players in the bottom half
+    of the table.
     """
 
     dim = 1
@@ -34,7 +34,7 @@ class BottomHalfTableMinCards:
     ):
         feature_value = self.max_value
         for i in range(self._start_check_index, self._end_check_index):
-            card_count = full_obs.get_other_player_card_count(i)
+            _card_count = full_obs.get_other_player_card_count(i)
             feature_value = min(feature_value, full_obs[i])
 
         # If another player is out, then CEO goes to the bottom of the table
@@ -45,9 +45,9 @@ class BottomHalfTableMinCards:
 
 
 class HighestCard:
-    """Feature giving the value of highest card in the hand. The feature value is zero if
-    the highest value in the hand equals min_card_value. The maximum possible value
-    is 12 - min_card_value.
+    """Feature giving the value of highest card in the hand. The feature value
+    is zero if the highest value in the hand equals min_card_value.
+    The maximum possible value is 12 - min_card_value.
     """
 
     dim = 1
@@ -122,7 +122,8 @@ class HandCardCountRelative:
 
     def __init__(self, full_env: SeatCEOEnv, *, relative_card_value: int, max_value):
         """Creates a feature giving the number of cards with value highest_value +
-        relative_card_value. The argument relative_card_value must be zero or negative."""
+        relative_card_value. The argument relative_card_value must be zero or
+        negative."""
 
         assert relative_card_value <= 0
 
@@ -146,15 +147,15 @@ class HandCardCountRelative:
 
         value = highest_value + self.relative_card_value
 
-        if value >= 0:
-            card_count = full_obs.get_card_count(value)
-        else:
-            card_count = 0
+        card_count = full_obs.get_card_count(value) if value >= 0 else 0
 
         feature_value = min(card_count, self.max_value)
         dest_obs[dest_start_index] = feature_value
         info[
-            f"HandCardCountRelative(relative={self.relative_card_value}, value={value}, highest={highest_value})"
+            (
+                f"HandCardCountRelative(relative={self.relative_card_value}, "
+                f"value={value}, highest={highest_value})"
+            )
         ] = feature_value
 
 
@@ -168,7 +169,9 @@ class OtherPlayerHandCount:
     other_player_index: int
     max_value: int
 
-    def __init__(self, full_env: SeatCEOEnv, *, other_player_index: int, max_value: int):
+    def __init__(
+        self, full_env: SeatCEOEnv, *, other_player_index: int, max_value: int
+    ):
         self.other_player_index = other_player_index
         self.max_value = max_value
 
@@ -182,7 +185,9 @@ class OtherPlayerHandCount:
         dest_start_index: int,
         info: dict,
     ):
-        other_player_card_count = full_obs.get_other_player_card_count(self.other_player_index)
+        other_player_card_count = full_obs.get_other_player_card_count(
+            self.other_player_index
+        )
         feature_value = min(other_player_card_count, self.max_value)
         dest_obs[dest_start_index] = feature_value
         info["OtherPlayerHandCount " + str(self.other_player_index)] = feature_value
@@ -263,7 +268,8 @@ class DoublesUnderValueCount:
 
 class TriplesUnderValueCount:
     """
-    Feature giving the number of triples and larger groups in the hand below a certain card value.
+    Feature giving the number of triples and larger groups in the hand
+    below a certain card value.
     """
 
     dim = 1
@@ -295,8 +301,8 @@ class TriplesUnderValueCount:
 
 
 class SinglesUnderValueCountRelative:
-    """Feature giving the number of singles in the hand below a certain card value that is relative
-    to the highest card in the hand.
+    """Feature giving the number of singles in the hand below a certain card value
+    that is relative to the highest card in the hand.
     """
 
     dim = 1
@@ -304,7 +310,9 @@ class SinglesUnderValueCountRelative:
 
     _relative_threshold: int
 
-    def __init__(self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int):
+    def __init__(
+        self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int
+    ):
         self._relative_threshold = relative_threshold
         self.max_value = max_value
 
@@ -344,7 +352,9 @@ class DoublesUnderValueCountRelative:
 
     _relative_threshold: int
 
-    def __init__(self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int):
+    def __init__(
+        self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int
+    ):
         self._relative_threshold = relative_threshold
         self.max_value = max_value
 
@@ -375,8 +385,8 @@ class DoublesUnderValueCountRelative:
 
 
 class TriplesUnderValueCountRelative:
-    """Feature giving the number of triples and larger groups in the hand below a certain card value
-    that is relative to the highest card in the hand.
+    """Feature giving the number of triples and larger groups in the hand
+    below a certain card value that is relative to the highest card in the hand.
     """
 
     dim = 1
@@ -384,7 +394,9 @@ class TriplesUnderValueCountRelative:
 
     _relative_threshold: int
 
-    def __init__(self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int):
+    def __init__(
+        self, full_env: SeatCEOEnv, *, relative_threshold: int, max_value: int
+    ):
         self._relative_threshold = relative_threshold
         self.max_value = max_value
 
@@ -416,7 +428,8 @@ class TriplesUnderValueCountRelative:
 
 class ValuesInRangeCount:
     """
-    Feature giving the number of values in the hand in the range [range_begin, range_end)
+    Feature giving the number of values in the hand
+    in the range [range_begin, range_end)
     """
 
     dim = 1
@@ -425,7 +438,9 @@ class ValuesInRangeCount:
     _range_begin: int
     _range_end: int
 
-    def __init__(self, full_env: SeatCEOEnv, *, range_begin: int, range_end: int, max_value: int):
+    def __init__(
+        self, full_env: SeatCEOEnv, *, range_begin: int, range_end: int, max_value: int
+    ):
         assert range_begin < range_end
 
         self._range_begin = range_begin
@@ -449,9 +464,9 @@ class ValuesInRangeCount:
                 count += 1
 
         dest_obs[dest_start_index] = min(count, self.max_value)
-        info["ValuesInRange({self._range_begin},{self._range_end},{self.max_value})"] = dest_obs[
-            dest_start_index
-        ]
+        info[
+            "ValuesInRange({self._range_begin},{self._range_end},{self.max_value})"
+        ] = dest_obs[dest_start_index]
 
 
 class HandSummary:
@@ -466,8 +481,8 @@ class HandSummary:
     _high_card_value_index: int
     """The index of value of the highest card in the hand"""
     _high_card_value_offset: int
-    """The offest for the highest card in the hand. The value of the highest card is the observation
-    plus this offset"""
+    """The offest for the highest card in the hand. The value of the highest card
+    is the observation plus this offset"""
 
     _high_card_index_start: int
     _bucket_index_start: int
@@ -521,7 +536,8 @@ class HandSummary:
     ):
         """Returns the highest card in the hand."""
         return int(
-            obs[self._high_card_value_index + dest_start_index] + self._high_card_value_offset
+            obs[self._high_card_value_index + dest_start_index]
+            + self._high_card_value_offset
         )
 
     def get_high_card_count(self, obs: np.array, dest_start_index: int, i: int):
@@ -574,13 +590,20 @@ class HandSummary:
 
         assert i == self._bucket_count
 
-        print(prefix, "Hand card count ", self.get_hand_card_count(obs, dest_start_index), sep="")
+        print(
+            prefix,
+            "Hand card count ",
+            self.get_hand_card_count(obs, dest_start_index),
+            sep="",
+        )
 
     def _get_buckets(self, highest_value: int) -> tuple[int, int]:
         # Calculate the bucket parameters
         max_bucket_card_value = highest_value - self._high_card_exact_count
         base_bucket_width = (max_bucket_card_value + 1) // self._bucket_count
-        extra_values = (max_bucket_card_value + 1) - base_bucket_width * self._bucket_count
+        extra_values = (
+            max_bucket_card_value + 1
+        ) - base_bucket_width * self._bucket_count
 
         bucket_start = 0
         for i in range(self._bucket_count):
@@ -606,9 +629,9 @@ class HandSummary:
             if full_obs.get_card_count(highest_value) > 0:
                 break
 
-        # Save the highest value as a feature. The minimum value for the feature is zero, which
-        # corresponds to a highest value where there is one card value for each exact card count
-        # and each bucket (of size one).
+        # Save the highest value as a feature. The minimum value for the feature
+        # is zero, which corresponds to a highest value where there is one card value
+        # for each exact card count and each bucket (of size one).
         if highest_value < self._high_card_value_offset:
             highest_value = self._high_card_value_offset
         feature_value = highest_value - self._high_card_value_offset
@@ -738,7 +761,9 @@ class CurTrickValue:
                     found_lowest = True
                     if i >= cur_trick_value and count == cur_trick_count:
                         dest_obs[dest_start_index] = 0
-                        info["CurTrickValue"] = "below all and play lowest without breaking"
+                        info["CurTrickValue"] = (
+                            "below all and play lowest without breaking"
+                        )
                         return
 
                 if cur_trick_value >= i:
@@ -802,10 +827,10 @@ class CurTrickCount:
         info["CurTrickCount"] = obs
 
 
-class WillWinTrick_AfterState:
+class WillWinTrickAfterState:
     """
-    Boolean-valued feature that is true if and only if the agent must win the trick. This only
-    works if the state is an afterstate.
+    Boolean-valued feature that is true if and only if the agent must win the trick.
+    This only works if the state is an afterstate.
     """
 
     _notify_called: bool
@@ -868,8 +893,8 @@ class WillWinTrick_AfterState:
             return
 
         # If we played on the trick and if we have features for the players yet to play,
-        # we can check their hand counts. Note that this assumes that the feature has values large
-        # enough to differentiate the current trick size.
+        # we can check their hand counts. Note that this assumes that the feature
+        # has values large enough to differentiate the current trick size.
         if (
             trick_start_player != 0
             and trick_last_player == 0
@@ -877,16 +902,19 @@ class WillWinTrick_AfterState:
         ):
             all_hands_small = True
             for other_player_index in range(1, trick_start_player):
-                other_card_count = full_obs.get_other_player_card_count(other_player_index - 1)
+                other_card_count = full_obs.get_other_player_card_count(
+                    other_player_index - 1
+                )
                 if other_card_count >= trick_size:
                     all_hands_small = False
                     break
 
             if all_hands_small:
                 dest_obs[dest_start_index] = 1
-                info[
-                    "WillWinTrick"
-                ] = f"all small start_player={trick_start_player} max_watch={self._max_watch_other}"
+                info["WillWinTrick"] = (
+                    f"all small start_player={trick_start_player} "
+                    f"max_watch={self._max_watch_other}"
+                )
 
                 return
 
@@ -943,7 +971,9 @@ class FeatureObservationFactory:
                 obs_space_low.append(0.0)
                 obs_space_high.append(np.float64(max_value))
 
-                self.obs_space_possible_values = self.obs_space_possible_values * (max_value + 1)
+                self.obs_space_possible_values = self.obs_space_possible_values * (
+                    max_value + 1
+                )
             elif isinstance(max_value, list):
                 assert calculator.dim == len(max_value)
                 for max_value_single in max_value:
@@ -954,7 +984,7 @@ class FeatureObservationFactory:
                         max_value_single + 1
                     )
             else:
-                raise ArgumentError("Unknown max_value type: ", type(max_value))
+                raise ValueError("Unknown max_value type: ", type(max_value))
 
             print(
                 "Calculator",

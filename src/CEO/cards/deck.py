@@ -4,8 +4,9 @@
 # import .hand as hand
 # import hand as hand
 # from hand import *
-from CEO.cards.hand import *
 import random as random
+
+from CEO.cards.hand import CardValue, Hand
 
 
 class Deck:
@@ -23,7 +24,7 @@ class Deck:
 
         # Create the deck
         cards = []
-        for i in range(self._suit_count):
+        for _ in range(self._suit_count):
             cards.extend([CardValue(index) for index in range(13)])
 
         # Shuffle
@@ -31,10 +32,10 @@ class Deck:
 
         # Create the hands
         next = 0
-        for i in range(self._suit_count):
+        for _ in range(self._suit_count):
             hand = Hand()
 
-            for i in range(13):
+            for _ in range(13):
                 hand.add_cards(cards[next], 1)
                 next += 1
 

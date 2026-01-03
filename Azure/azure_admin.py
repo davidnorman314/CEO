@@ -14,35 +14,31 @@
    environment variable AZURE_BATCH_KEY.
 """
 import argparse
+import datetime
+import io
 import json
 import os
-import io
 import time
-import datetime
 
-from azure.identity import AzureCliCredential, EnvironmentCredential
-from azure.common.credentials import ServicePrincipalCredentials
-from azure.mgmt import network
-
-from azure.mgmt.resource import ResourceManagementClient
-from azure.mgmt.network import NetworkManagementClient
-from azure.mgmt.compute import ComputeManagementClient
-from azure.mgmt.compute.models import (
-    Image,
-    SubResource,
-    GalleryImage,
-    GalleryArtifactVersionSource,
-    GalleryImageIdentifier,
-    GalleryImageVersion,
-    GalleryImageVersionStorageProfile,
-    OperatingSystemStateTypes,
-    OperatingSystemTypes,
-)
-
-from azure.batch import BatchServiceClient
 import azure.batch.batch_auth as batchauth
 import azure.batch.models as batchmodels
 import azure.core.exceptions
+from azure.batch import BatchServiceClient
+from azure.common.credentials import ServicePrincipalCredentials
+from azure.identity import EnvironmentCredential
+from azure.mgmt.compute import ComputeManagementClient
+from azure.mgmt.compute.models import (
+    GalleryArtifactVersionSource,
+    GalleryImage,
+    GalleryImageIdentifier,
+    GalleryImageVersion,
+    GalleryImageVersionStorageProfile,
+    Image,
+    OperatingSystemStateTypes,
+    OperatingSystemTypes,
+    SubResource,
+)
+from azure.mgmt.network import NetworkManagementClient
 
 AUTOSCALE_FORMULA = """
     maxNumberOfVMs = {maxVMs};
@@ -222,7 +218,7 @@ def provision_vm(
                     "ssh": {
                         "public_keys": [
                             {
-                                "path": "/home/{}/.ssh/authorized_keys".format(ssh_username),
+                                "path": f"/home/{ssh_username}/.ssh/authorized_keys",
                                 "key_data": ssh_user_publickey,
                             }
                         ]
@@ -581,7 +577,7 @@ def do_training(
     )
 
     # Load the learning configuration
-    with open(config_file, "r") as file:
+    with open(config_file) as file:
         learning_config = json.load(file)
 
     if isinstance(learning_config, dict):
@@ -669,8 +665,8 @@ def do_training(
     stderr_file_name = "stderr.txt"
     for task in job_tasks:
         node_id = batch_client.task.get(job_id, task.id).node_info.node_id
-        print("Task: {}".format(task.id))
-        print("Node: {}".format(node_id))
+        print(f"Task: {task.id}")
+        print(f"Node: {node_id}")
 
         stream = batch_client.file.get_from_task(job_id, task.id, out_file_name)
 
@@ -809,8 +805,8 @@ def run_test_job(
     stderr_file_name = "stderr.txt"
     for task in job_tasks:
         node_id = batch_client.task.get(job_id, task.id).node_info.node_id
-        print("Task: {}".format(task.id))
-        print("Node: {}".format(node_id))
+        print(f"Task: {task.id}")
+        print(f"Node: {node_id}")
 
         stream = batch_client.file.get_from_task(job_id, task.id, out_file_name)
 

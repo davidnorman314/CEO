@@ -1,5 +1,5 @@
-from CEO.cards.player import *
-from CEO.cards.hand import *
+from CEO.cards.hand import CardValue, Hand, PlayableCard
+from CEO.cards.player import PlayerBehaviorInterface, RoundState
 
 
 class SimpleBehaviorBase:
@@ -119,8 +119,8 @@ class SimpleBehaviorBase:
 
             return ret
 
-        # We don't have enough singles and don't have a pair, so we need to pass the singles and
-        # cards from the lowest other group.
+        # We don't have enough singles and don't have a pair, so we need to pass the
+        # singles and cards from the lowest other group.
         if single_count < count and pair_count == 0:
             seen_lowest_large_group = False
             ret = []

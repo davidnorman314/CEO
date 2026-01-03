@@ -1,5 +1,5 @@
-from CEO.cards.hand import *
-from CEO.cards.player import *
+from CEO.cards.hand import CardValue, Hand
+from CEO.cards.player import Player, RoundState
 
 
 class EventListenerInterface:
@@ -50,8 +50,8 @@ class EventListenerInterface:
 
 class MultiEventListener:
     """
-    Class that implements the listener interface and passes messages on to a specified list
-    of other listeners
+    Class that implements the listener interface and passes messages
+    on to a specified list of other listeners
     """
 
     _listeners: list[EventListenerInterface]
@@ -112,7 +112,6 @@ class PrintAllEventListener(EventListenerInterface):
         to_index: int,
         to_player: Player,
     ):
-
         card_str_list = [card.to_display() for card in cards]
         cards_str = " ".join(card_str_list)
 
@@ -133,7 +132,6 @@ class PrintAllEventListener(EventListenerInterface):
         print(player.name, "leads on a trick. Hand", hand)
 
     def lead(self, card: CardValue, count: int, index: int, player: Player):
-
         plural = count > 1
 
         print(
@@ -159,7 +157,6 @@ class PrintAllEventListener(EventListenerInterface):
         print(player.name, "plays on a trick. Hand", hand)
 
     def play_cards(self, card: CardValue, count: int, index: int, player: Player):
-
         plural = count > 1
 
         print(
@@ -213,7 +210,10 @@ class GameWatchListener(EventListenerInterface):
         to_index: int,
         to_player: Player,
     ):
-        if from_player.name != self._player_name and to_player.name != self._player_name:
+        if (
+            from_player.name != self._player_name
+            and to_player.name != self._player_name
+        ):
             # The information is for another player's pass, so we can't see it.
             return
 
@@ -242,7 +242,6 @@ class GameWatchListener(EventListenerInterface):
         self.print_hand(hand)
 
     def lead(self, card: CardValue, count: int, index: int, player: Player):
-
         self._played = [None] * len(self._players)
         self._played[index] = card
         self._cur_trick_size = count
@@ -278,7 +277,6 @@ class GameWatchListener(EventListenerInterface):
         self.print_hand(hand)
 
     def play_cards(self, card: CardValue, count: int, index: int, player: Player):
-
         self._played[index] = card
 
         plural = count > 1
@@ -307,10 +305,7 @@ class GameWatchListener(EventListenerInterface):
         print("")
 
         for cards_remaining in state.cards_remaining:
-            if cards_remaining > 0:
-                text = "- " + str(cards_remaining)
-            else:
-                text = "Out"
+            text = "- " + str(cards_remaining) if cards_remaining > 0 else "Out"
 
             print(text.ljust(width), end="")
 
@@ -322,7 +317,7 @@ class GameWatchListener(EventListenerInterface):
         width = self.print_cur_players(state)
 
         for played in self._played:
-            if played == None:
+            if played is None:
                 print("".ljust(width), end="")
             elif played is str:
                 print(played.ljust(width), end="")
@@ -337,7 +332,7 @@ class GameWatchListener(EventListenerInterface):
         for i in range(13):
             count = hand.count(CardValue(i))
 
-            for j in range(count):
+            for _ in range(count):
                 print(str(i), " ", end="")
 
         print("")

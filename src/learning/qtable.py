@@ -1,6 +1,7 @@
+from multiprocessing import RawArray
+
 import gymnasium
 import numpy as np
-from multiprocessing import RawArray
 
 from gym_ceo.envs.actions import ActionEnum
 from gym_ceo.envs.seat_ceo_env import CEOActionSpace
@@ -114,30 +115,44 @@ class QTable:
 
     def visit_count(self, state_tuple: tuple, action_space: CEOActionSpace):
         return sum(
-            self._state_count[(*state_tuple, action.value)] for action in action_space.actions
+            self._state_count[(*state_tuple, action.value)]
+            for action in action_space.actions
         )
 
     def state_visit_count(self, state_action_tuple: tuple):
-        return self._state_count[(*state_action_tuple[:-1], state_action_tuple[-1].value)]
+        return self._state_count[
+            (*state_action_tuple[:-1], state_action_tuple[-1].value)
+        ]
 
     def state_action_value(self, state_action_tuple: tuple):
         return (
-            self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)] / self._qtable_denom
+            self._Q[(*state_action_tuple[:-1], state_action_tuple[-1].value)]
+            / self._qtable_denom
         )
 
     def min_max_value(self, state_tuple: tuple, action_space: CEOActionSpace):
-        max_value = max(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
-        min_value = min(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
+        max_value = max(
+            self._Q[(*state_tuple, action.value)] for action in action_space.actions
+        )
+        min_value = min(
+            self._Q[(*state_tuple, action.value)] for action in action_space.actions
+        )
 
         return (min_value / self._qtable_denom, max_value / self._qtable_denom)
 
-    def greedy_action(self, state_tuple: tuple, action_space: CEOActionSpace) -> ActionEnum:
-        lookup_value = lambda action: self._Q[(*state_tuple, action.value)]
+    def greedy_action(
+        self, state_tuple: tuple, action_space: CEOActionSpace
+    ) -> ActionEnum:
+        def lookup_value(action):
+            return self._Q[(*state_tuple, action.value)]
+
         return max(action_space.actions, key=lookup_value)
 
     def state_value(self, state_tuple: tuple, action_space: CEOActionSpace):
         return (
-            max(self._Q[(*state_tuple, action.value)] for action in action_space.actions)
+            max(
+                self._Q[(*state_tuple, action.value)] for action in action_space.actions
+            )
             / self._qtable_denom
         )
 

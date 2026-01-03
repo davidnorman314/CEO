@@ -1,12 +1,12 @@
-import json
 import argparse
+import json
+
 import CEO.cards.game as g
-from CEO.cards.game import *
-from CEO.cards.player import *
-from CEO.cards.simplebehavior import *
-from CEO.cards.heuristicbehavior import *
-from CEO.cards.winlossstatistics import *
-from CEO.cards.eventlistener import GameWatchListener
+from CEO.cards.eventlistener import GameWatchListener, PrintAllEventListener
+from CEO.cards.game import Player
+from CEO.cards.heuristicbehavior import HeuristicBehavior  # noqa: F401
+from CEO.cards.simplebehavior import BasicBehavior  # noqa: F401
+from CEO.cards.winlossstatistics import WinLossStatisticsCollector
 
 
 def main():
@@ -35,26 +35,26 @@ def main():
         data = json.load(f)
 
     players = []
-    playersData = data["players"]
-    for data in playersData:
+    players_data = data["players"]
+    for data in players_data:
         name = data["name"]
-        behaviorClassName = data["behavior"]
-        behaviorClass = globals()[behaviorClassName]
-        behavior = behaviorClass()
+        behavior_class_name = data["behavior"]
+        behavior_class = globals()[behavior_class_name]
+        behavior = behavior_class()
         players.append(Player(name, behavior))
 
         if data["behavior"] == "HeuristicBehavior":
             console_log_player = data["name"]
 
-    player_count = len(playersData)
+    player_count = len(players_data)
 
     if args.print:
-        doStats = False
+        do_stats = False
         listener = PrintAllEventListener()
         listener = GameWatchListener(console_log_player)
         print("Logging information for", console_log_player)
     else:
-        doStats = True
+        do_stats = True
         listener = WinLossStatisticsCollector(players)
 
     round_count = args.count
@@ -65,7 +65,7 @@ def main():
     format2 = "{:5.2f}"
     format2a = "{:5.0f}"
 
-    if not doStats:
+    if not do_stats:
         exit(1)
 
     # Print statistics
@@ -75,7 +75,9 @@ def main():
 
         print(format1.format("Percent in seat:"), end="")
         for i in range(player_count):
-            pct = (stats.end_position_count[i] / stats.players_with_behavior_count) / round_count
+            pct = (
+                stats.end_position_count[i] / stats.players_with_behavior_count
+            ) / round_count
 
             print(format2.format(pct), end="")
 
@@ -134,7 +136,9 @@ def main():
 
         # Bottom half stats
         move_up_count = stats.bottom_half_move_up / stats.players_with_behavior_count
-        move_down_count = stats.bottom_half_move_down / stats.players_with_behavior_count
+        move_down_count = (
+            stats.bottom_half_move_down / stats.players_with_behavior_count
+        )
         stay_count = stats.bottom_half_stay / stats.players_with_behavior_count
         bottom_half_count = move_up_count + move_down_count + stay_count
 

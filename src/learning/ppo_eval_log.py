@@ -1,8 +1,9 @@
 """File for evaluating parsing the PPO eval_log."""
 
 import argparse
-import pathlib
 import json
+import pathlib
+
 import numpy as np
 import pandas as pd
 import tabulate
@@ -39,7 +40,10 @@ def load_eval(eval_dir: str):
     print(" Losses", loss_count)
     print("Invalid", invalid_action_count)
     print(" ")
-    print("   Pct win (overall)", win_count / (win_count + loss_count + invalid_action_count))
+    print(
+        "   Pct win (overall)",
+        win_count / (win_count + loss_count + invalid_action_count),
+    )
     print("Pct win (only valid)", win_count / (win_count + loss_count))
     print(" ")
 
@@ -65,7 +69,7 @@ def load_all_eval(eval_dirs: list[str]):
             param_file = subdir / "params.json"
 
             if param_file.exists():
-                with open(param_file, "r") as data_file:
+                with open(param_file) as data_file:
                     params = json.load(data_file)
 
                 this_num_players = params["env_args"]["num_players"]
@@ -74,8 +78,8 @@ def load_all_eval(eval_dirs: list[str]):
                 this_num_players = 6
                 this_seat_number = 0
 
-            # Take the average of the last 10 evaluations, assuming that the agent training has
-            # reached steady state
+            # Take the average of the last 10 evaluations, assuming that the agent
+            # training has reached steady state
             eval_reward = []
             for eval in evaluations["results"][-11:-1]:
                 eval_reward.append(np.average(eval))
@@ -94,8 +98,9 @@ def load_all_eval(eval_dirs: list[str]):
         },
         index=name,
     )
-    df.sort_values(
-        by=["Num Players", "Seat Number", "Avg Reward"], ascending=[True, True, False], inplace=True
+    df = df.sort_values(
+        by=["Num Players", "Seat Number", "Avg Reward"],
+        ascending=[True, True, False],
     )
 
     print(tabulate.tabulate(df, headers="keys", tablefmt="github"))

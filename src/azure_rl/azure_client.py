@@ -1,19 +1,18 @@
-import os
-import uuid
 import datetime
 import json
+import os
+import uuid
+
 from azure.storage.blob import (
+    BlobClient,
     BlobProperties,
     BlobServiceClient,
-    BlobClient,
-    ContainerClient,
     BlobType,
-    __version__,
+    ContainerClient,
 )
 
 
 class AzureClient:
-
     connection_env_var = "AZURE_STORAGE_CONNECTION_STRING"
     rl_trainings_blob_name = "rl_trainings"
     container_name = "ceorl"
@@ -32,7 +31,9 @@ class AzureClient:
     def __init__(self):
         self.connect_str = os.getenv(self.connection_env_var)
         if not self.connect_str:
-            raise Exception("Environment variable", self.connection_env_var, "is not set.")
+            raise Exception(
+                "Environment variable", self.connection_env_var, "is not set."
+            )
 
         self.log_blob_name = "log_" + str(uuid.uuid4())
         self.pickle_blob_name = "pkl_" + str(uuid.uuid4())
@@ -41,8 +42,12 @@ class AzureClient:
         print("Pickle blob", self.pickle_blob_name)
 
         # Connect to Azure
-        self.blob_service_client = BlobServiceClient.from_connection_string(self.connect_str)
-        self.container_client = self.blob_service_client.get_container_client(self.container_name)
+        self.blob_service_client = BlobServiceClient.from_connection_string(
+            self.connect_str
+        )
+        self.container_client = self.blob_service_client.get_container_client(
+            self.container_name
+        )
 
     def start_training(
         self,
@@ -92,7 +97,9 @@ class AzureClient:
         blob_properties = BlobProperties(
             name=self.rl_trainings_blob_name, blob_type=BlobType.AppendBlob
         )
-        rl_trainings_blob_client = self.container_client.get_blob_client(blob_properties)
+        rl_trainings_blob_client = self.container_client.get_blob_client(
+            blob_properties
+        )
 
         if not rl_trainings_blob_client.exists():
             rl_trainings_blob_client.create_append_blob()

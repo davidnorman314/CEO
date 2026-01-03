@@ -1,5 +1,5 @@
-from CEO.cards.player import *
-from CEO.cards.hand import *
+from CEO.cards.hand import CardValue, Hand
+from CEO.cards.player import PlayerBehaviorInterface, RoundState
 from CEO.cards.simplebehavior import SimpleBehaviorBase
 
 
@@ -23,7 +23,6 @@ class HeuristicBehavior(SimpleBehaviorBase, PlayerBehaviorInterface):
         cur_trick_count: int,
         state: RoundState,
     ) -> CardValue:
-
         playable_list = self.get_playable_cards(hand, cur_trick_value, cur_trick_count)
 
         # Remove playable cards that would break up a set and that aren't aces.
@@ -36,19 +35,24 @@ class HeuristicBehavior(SimpleBehaviorBase, PlayerBehaviorInterface):
         # group.
         lowest_can_play = playable_list[0].cv.value
 
-        higher_players_left = starting_position > 0 and starting_position < player_position
+        higher_players_left = (
+            starting_position > 0 and starting_position < player_position
+        )
 
         # The number of groups of cards that can't be played on the trick
-        groups_lower = sum(map(lambda i: hand.count(CardValue(i)) > 0, range(lowest_can_play)))
+        groups_lower = sum(
+            map(lambda i: hand.count(CardValue(i)) > 0, range(lowest_can_play))
+        )
 
         # The number of groups of cards that can be played on the trick
-        groups_higher = sum(map(lambda i: hand.count(CardValue(i)) > 0, range(lowest_can_play, 13)))
+        groups_higher = sum(
+            map(lambda i: hand.count(CardValue(i)) > 0, range(lowest_can_play, 13))
+        )
 
         if higher_players_left:
             if groups_lower >= groups_higher and lowest_can_play < 12:
                 return None
             else:
-                # return self.play_lowest_or_pass(hand, cur_trick_value, cur_trick_count, state)
                 return CardValue(lowest_can_play)
 
         # See if we should play an ace
@@ -73,9 +77,6 @@ class HeuristicBehavior(SimpleBehaviorBase, PlayerBehaviorInterface):
         # Don't break up groups, with some exceptions
         if hand_count > cur_trick_count:
             # Do break up aces to play on singles
-            if cvi == 12 and cur_trick_count == 1:
-                return True
-
-            return False
+            return bool(cvi == 12 and cur_trick_count == 1)
 
         return True

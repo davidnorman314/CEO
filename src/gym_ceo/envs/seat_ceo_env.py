@@ -1,26 +1,26 @@
 from argparse import ArgumentError
+
 import gymnasium
 import numpy as np
 from gymnasium.spaces import Box
 
+from CEO.cards.deck import Deck
+from CEO.cards.eventlistener import EventListenerInterface
+from CEO.cards.hand import CardValue, Hand, PlayedCards
+from CEO.cards.passcards import PassCards
+from CEO.cards.player import Player
+from CEO.cards.round import Round
+from CEO.cards.simplebehavior import BasicBehavior, SimpleBehaviorBase
 from gym_ceo.envs.actions import (
+    ActionEnum,
     ActionSpaceFactory,
     AllCardActionSpaceFactory,
-    CEOActionSpace,
     CardActionSpaceFactory,
-    ActionEnum,
+    CEOActionSpace,
 )
 from gym_ceo.envs.observation import Observation, ObservationFactory
 from gym_ceo.envs.observation_hand import ObservationHand
 from gym_ceo.envs.rl_behavior import RLBehavior
-
-from CEO.cards.round import Round, RoundState
-from CEO.cards.eventlistener import EventListenerInterface
-from CEO.cards.deck import Deck
-from CEO.cards.hand import Hand, CardValue, PlayedCards
-from CEO.cards.simplebehavior import BasicBehavior, SimpleBehaviorBase
-from CEO.cards.player import Player, PlayerBehaviorInterface
-from CEO.cards.passcards import PassCards
 
 
 class SeatCEOEnv(gymnasium.Env):
@@ -64,9 +64,9 @@ class SeatCEOEnv(gymnasium.Env):
     def __init__(
         self,
         num_players=6,
-        behaviors=[],
-        hands=[],
-        listener=EventListenerInterface(),
+        behaviors=None,
+        hands=None,
+        listener=None,
         skip_passing=False,
         *,
         action_space_type="ceo",
@@ -77,6 +77,12 @@ class SeatCEOEnv(gymnasium.Env):
         self.seat_number = 0
         self._skip_passing = skip_passing
         self._reward_includes_cards_left = reward_includes_cards_left
+
+        # Initialize defaults inside the function to avoid mutable/default-call issues
+        if behaviors is None:
+            behaviors = []
+        if hands is None:
+            hands = []
 
         if listener is None:
             self._listener = EventListenerInterface()
@@ -98,7 +104,9 @@ class SeatCEOEnv(gymnasium.Env):
         if obs_kwargs is None:
             obs_kwargs = dict()
 
-        self.observation_factory = ObservationFactory(num_players, seat_number=0, **obs_kwargs)
+        self.observation_factory = ObservationFactory(
+            num_players, seat_number=0, **obs_kwargs
+        )
         self._observation_dimension = self.observation_factory.observation_dimension
 
         self.observation_space = Box(
@@ -169,9 +177,7 @@ class SeatCEOEnv(gymnasium.Env):
         self.step(self.action_space.find_full_action(full_action))
 
     def step(self, action):
-        assert (
-            isinstance(action, int) or isinstance(action, np.int32) or isinstance(action, np.int64)
-        )
+        assert isinstance(action, (int, np.int32, np.int64))
 
         assert action < self.action_space.n
 
@@ -194,7 +200,8 @@ class SeatCEOEnv(gymnasium.Env):
         if action_reward != 0:
             self._hands = None
 
-            # The gym environment checker wants to have an np array for the observation here.
+            # The gym environment checker wants to have an np array
+            # for the observation here.
             obs = np.zeros(self._observation_dimension)
 
             return obs, action_reward, True, False, self._info
@@ -222,8 +229,8 @@ class SeatCEOEnv(gymnasium.Env):
                     cv = None
                     continue
 
-                obsObj = self.observation_factory.create_observation(array=obs)
-                if not obsObj.has_playable_card_action():
+                obs_obj = self.observation_factory.create_observation(array=obs)
+                if not obs_obj.has_playable_card_action():
                     # There aren't any playable cards
                     cv = None
                     continue
@@ -310,7 +317,7 @@ class SeatCEOEnv(gymnasium.Env):
         self.action_space = self._action_space_factory.create_play(
             cur_hand, cur_card_value, cur_card_count
         )
-        if self.action_space == None:
+        if self.action_space is None:
             return None
 
         return Observation(
@@ -324,12 +331,16 @@ class SeatCEOEnv(gymnasium.Env):
             state=state,
         )
 
-    def get_afterstate(self, observation_array: np.ndarray, action) -> tuple[np.ndarray, CardValue]:
+    def get_afterstate(
+        self, observation_array: np.ndarray, action
+    ) -> tuple[np.ndarray, CardValue]:
         """Creates the afterstate from taking the given action from the state
         given by the observation."""
 
         # Create an observation and a hand from the array
-        observation = self.observation_factory.create_observation(array=observation_array)
+        observation = self.observation_factory.create_observation(
+            array=observation_array
+        )
         hand = ObservationHand(observation)
 
         cur_trick_count = observation.get_cur_trick_count()

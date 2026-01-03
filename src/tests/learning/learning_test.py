@@ -1,11 +1,5 @@
-import pytest
-import random as random
-from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
-
-import pytest
 import random as random
 
-from gym_ceo.envs.observation_hand import ObservationHand
 from learning.learning import do_learning
 
 
@@ -36,7 +30,14 @@ def test_qlearning(pytestconfig):
     pickle_file = None
 
     search_statistics = do_learning(
-        configfile, do_azure, do_logging, random_seed, do_profile, pickle_file, False, None
+        configfile,
+        do_azure,
+        do_logging,
+        random_seed,
+        do_profile,
+        pickle_file,
+        False,
+        None,
     )
 
     assert search_statistics["episode"] == 1000
@@ -55,7 +56,14 @@ def test_qlearning_traces(pytestconfig):
     pickle_file = None
 
     search_statistics = do_learning(
-        configfile, do_azure, do_logging, random_seed, do_profile, pickle_file, False, None
+        configfile,
+        do_azure,
+        do_logging,
+        random_seed,
+        do_profile,
+        pickle_file,
+        False,
+        None,
     )
 
     assert search_statistics["episode"] == 1000
@@ -74,7 +82,14 @@ def test_qlearning_afterstates(pytestconfig):
     pickle_file = None
 
     search_statistics = do_learning(
-        configfile, do_azure, do_logging, random_seed, do_profile, pickle_file, False, None
+        configfile,
+        do_azure,
+        do_logging,
+        random_seed,
+        do_profile,
+        pickle_file,
+        False,
+        None,
     )
 
     assert search_statistics["episode"] == 1000
@@ -93,7 +108,14 @@ def test_qlearning_afterstates_handsummary(pytestconfig):
     pickle_file = None
 
     search_statistics = do_learning(
-        configfile, do_azure, do_logging, random_seed, do_profile, pickle_file, False, None
+        configfile,
+        do_azure,
+        do_logging,
+        random_seed,
+        do_profile,
+        pickle_file,
+        False,
+        None,
     )
 
     assert search_statistics["episode"] == 1000

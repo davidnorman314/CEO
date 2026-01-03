@@ -1,5 +1,4 @@
 import argparse
-import copy
 import cProfile
 import math
 import random
@@ -8,13 +7,11 @@ from enum import Enum
 from pstats import SortKey
 
 import gymnasium
-import matplotlib.pyplot as plt
 import numpy as np
 
 from azure_rl.azure_client import AzureClient
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
-from gym_ceo.envs.actions import ActionEnum
-from gym_ceo.envs.seat_ceo_env import CEOActionSpace, SeatCEOEnv
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 from learning.learning_base import EpisodeInfo, QTableLearningBase
 
@@ -239,7 +236,7 @@ class QLearning(QTableLearningBase):
                 state_tuple = new_state_tuple
 
                 # See if the episode is finished
-                if done == True:
+                if done:
                     break
 
             # Cutting down on exploration by reducing the epsilon
@@ -269,13 +266,10 @@ class QLearning(QTableLearningBase):
                 )
 
                 print(
-                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} Explore rate {:.3f} States visited {}".format(
-                        episode,
-                        ave_training_rewards,
-                        recent_rewards,
-                        recent_explore_rate,
-                        states_visited,
-                    )
+                    f"Episode {episode} Ave rewards {ave_training_rewards:.3f} "
+                    f"Recent rewards {recent_rewards:.3f} "
+                    f"Explore rate {recent_explore_rate:.3f} "
+                    f"States visited {states_visited}"
                 )
 
                 self.add_search_statistics(
@@ -296,7 +290,7 @@ class QLearning(QTableLearningBase):
             ):
                 self.do_play_test(episode)
 
-            if False and episode > 0 and episode % 20000 == 0:
+            if False and episode > 0 and episode % 20000 == 0:  # noqa: SIM223
                 # Log the states for this episode
                 print("Episode info")
                 for info in episode_infos:
@@ -305,7 +299,10 @@ class QLearning(QTableLearningBase):
                     )
                     visit_chars = math.ceil(math.log10(max_visit_count))
 
-                    format_str = "{action:2} value {val_before:6.3f} -> {val_after:6.3f} visit {visit_count:#w#} -> {alpha:.3e} {hand}"
+                    format_str = (
+                        "{action:2} value {val_before:6.3f} -> {val_after:6.3f} "
+                        "visit {visit_count:#w#} -> {alpha:.3e} {hand}"
+                    )
                     format_str = format_str.replace("#w#", str(visit_chars))
 
                     print(
@@ -320,11 +317,11 @@ class QLearning(QTableLearningBase):
                         )
                     )
                 print("Reward", episode_reward)
-                print("Epsilon {:.5f}".format(epsilon))
+                print(f"Epsilon {epsilon:.5f}")
 
-            if False and episode > 0 and episode % 100000 == 0:
-                # Iterate over the entire Q array and count the number of each type of element.
-                # This is very slow.
+            if False and episode > 0 and episode % 100000 == 0:  # noqa: SIM223
+                # Iterate over the entire Q array and count the number of each type of
+                # element. This is very slow.
                 zero_count = 0
                 pos_count = 0
                 neg_count = 0

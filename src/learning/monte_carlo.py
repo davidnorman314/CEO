@@ -3,29 +3,22 @@
 The program can either train a new model or play games with a trained model.
 """
 
-from os import stat
-import gymnasium
-import random
-import pickle
 import argparse
-from typing import List, Tuple
-from copy import copy, deepcopy
-import numpy as np
-from numpy.lib.arraysetops import isin
-from learning.learning_base import QTableLearningBase
+import random
 from collections import deque
-from multiprocessing import RawArray, Pool
+from copy import deepcopy
+from multiprocessing import Pool, RawArray
 
+import gymnasium
+
+from CEO.cards.eventlistener import (
+    EventListenerInterface,
+    PrintAllEventListener,
+)
 from gym_ceo.envs.actions import ActionEnum
 from gym_ceo.envs.seat_ceo_env import CEOActionSpace, SeatCEOEnv
 from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
-from CEO.cards.eventlistener import (
-    EventListenerInterface,
-    GameWatchListener,
-    PrintAllEventListener,
-)
-from CEO.cards.deck import Deck
-from CEO.cards.hand import Hand, CardValue
+from learning.learning_base import QTableLearningBase
 
 
 class SearchStatistics:
@@ -42,7 +35,6 @@ class SearchStatistics:
 
 
 class MonteCarloLearning(QTableLearningBase):
-
     _base_env: gymnasium.Env
 
     def __init__(self, env: gymnasium.Env, base_env: gymnasium.Env, **kwargs):
@@ -75,7 +67,8 @@ class MonteCarloLearning(QTableLearningBase):
         epsilon = n_state / (100 + n_state)
         rand = random.uniform(0, 1)
 
-        # Pick the greedy choice if the random number is small and the q values are different.
+        # Pick the greedy choice if the random number is small and the q values
+        # are different.
         do_greedy = rand <= epsilon and max_value != min_value
 
         # print(n_state, epsilon, rand, do_greedy)
@@ -97,8 +90,9 @@ class MonteCarloLearning(QTableLearningBase):
 
     def do_episode(
         self, log_state: bool = False
-    ) -> Tuple[List[tuple], List[int], float, SearchStatistics]:
-        """Plays a hand. Returns a list of states visited, actions taken, and the reward"""
+    ) -> tuple[list[tuple], list[int], float, SearchStatistics]:
+        """Plays a hand. Returns a list of states visited, actions taken,
+        and the reward"""
 
         statistics = SearchStatistics()
 
@@ -108,8 +102,8 @@ class MonteCarloLearning(QTableLearningBase):
 
         # Starting the tracker for the rewards
         episode_reward = 0
-        episode_explore_count = 0
-        episode_exploit_count = 0
+        _episode_explore_count = 0
+        _episode_exploit_count = 0
 
         episode_states = []
         episode_actions = []
@@ -132,7 +126,7 @@ class MonteCarloLearning(QTableLearningBase):
                         self._state_count[(*state_tuple, a)],
                     )
 
-            state_action_tuple = state_tuple + (action,)
+            _state_action_tuple = state_tuple + (action,)
 
             # Perform the action
             action_index = self._env.action_space.actions.index(action)
@@ -148,14 +142,16 @@ class MonteCarloLearning(QTableLearningBase):
 
             if new_state is not None:
                 new_state_tuple = tuple(new_state.astype(int))
-                new_state_value = self._qtable.state_value(new_state_tuple, self._env.action_space)
+                _new_state_value = self._qtable.state_value(
+                    new_state_tuple, self._env.action_space
+                )
                 # new_state_value = np.max(self._Q[(*new_state_tuple, slice(None))])
             else:
                 assert done
                 assert reward != 0
 
                 new_state_tuple = None
-                new_state_value = 0
+                _new_state_value = 0
 
             # print("hand 2", info["hand"])
             # print("New q", type(self._Q[state_action_tuple]))
@@ -169,7 +165,7 @@ class MonteCarloLearning(QTableLearningBase):
             state_tuple = new_state_tuple
 
             # See if the episode is finished
-            if done == True:
+            if done:
                 # print("Reward", reward)
                 break
 
@@ -203,7 +199,6 @@ class MonteCarloLearning(QTableLearningBase):
             )
 
         while episode_count < episodes:
-
             episode_results = []
 
             if process_count == 1:
@@ -212,7 +207,9 @@ class MonteCarloLearning(QTableLearningBase):
                 episode_results.append((states, actions, reward, statistics))
             else:
                 # Do many episodes in child processes
-                results = pool.map(worker_func, [episodes_per_work_task] * process_count)
+                results = pool.map(
+                    worker_func, [episodes_per_work_task] * process_count
+                )
                 for result in results:
                     episode_results.extend(result)
 
@@ -227,19 +224,22 @@ class MonteCarloLearning(QTableLearningBase):
 
                     state_action_tuple = state + (action,)
 
-                    state_action_count = self._qtable.state_visit_count(state_action_tuple)
+                    state_action_count = self._qtable.state_visit_count(
+                        state_action_tuple
+                    )
                     if state_action_count == 0:
                         states_visited += 1
 
                     self._qtable.increment_state_visit_count(state_action_tuple)
                     state_action_count += 1
 
-                    state_action_value = self._qtable.state_action_value(state_action_tuple)
+                    state_action_value = self._qtable.state_action_value(
+                        state_action_tuple
+                    )
                     alpha = 1.0 / state_action_count
                     self._qtable.update_state_visit_value(
                         state_action_tuple, alpha * (reward - state_action_value)
                     )
-                    # self._Q[state_action_tuple] += alpha * (reward - self._Q[state_action_tuple])
 
                 # Update the search status
                 total_training_reward += reward
@@ -251,7 +251,9 @@ class MonteCarloLearning(QTableLearningBase):
             if episode_count - last_status_log >= 2000:
                 last_status_log = episode_count
                 ave_training_rewards = total_training_reward / (episode_count + 1)
-                recent_rewards = sum(recent_episode_rewards) / len(recent_episode_rewards)
+                recent_rewards = sum(recent_episode_rewards) / len(
+                    recent_episode_rewards
+                )
                 recent_explore_count = statistics.explore_count - last_explore
                 recent_greedy_count = statistics.greedy_count - last_greedy
                 explore_fraction = 0
@@ -261,19 +263,20 @@ class MonteCarloLearning(QTableLearningBase):
                     )
 
                 print(
-                    "Episode {} Ave rewards {:.3f} Recent rewards {:.3f} States visited {} Explore fraction {:.3f}".format(
-                        episode_count,
-                        ave_training_rewards,
-                        recent_rewards,
-                        states_visited,
-                        explore_fraction,
-                    )
+                    f"Episode {episode_count} Ave rewards {ave_training_rewards:.3f} "
+                    f"Recent rewards {recent_rewards:.3f} "
+                    f"States visited {states_visited} "
+                    f"Explore fraction {explore_fraction:.3f}"
                 )
 
                 last_explore = statistics.explore_count
                 last_greedy = statistics.greedy_count
 
-            if prev_qtable is not None and episode_count > 0 and episode_count % 5000 == 0:
+            if (
+                prev_qtable is not None
+                and episode_count > 0
+                and episode_count % 5000 == 0
+            ):
                 err = self.mean_squared_difference(prev_qtable)
                 prev_qtable = deepcopy(self._Q)
 
@@ -350,7 +353,7 @@ def worker_func(episode_count: int):
     assert worker_learning is not None
     episode_results = []
 
-    for episode in range(episode_count):
+    for _episode in range(episode_count):
         states, actions, reward, statistics = worker_learning.do_episode()
         episode_results.append((states, actions, reward, statistics))
 

@@ -1,7 +1,7 @@
 import array
-from CEO.cards.hand import *
-from CEO.cards.player import *
+
 from CEO.cards.eventlistener import EventListenerInterface
+from CEO.cards.player import Player
 
 
 class WinLossStatistics:
@@ -102,6 +102,8 @@ class WinLossStatisticsCollector(EventListenerInterface):
             behavior_name = player.behavoir.__class__.__name__
             behavior_stats = self.stats[behavior_name]
 
-            end_position = [i for i in range(count) if next_round_players[i].name == player.name][0]
+            end_position = [
+                i for i in range(count) if next_round_players[i].name == player.name
+            ][0]
 
             behavior_stats.add_round_result(start_position, end_position)

@@ -1,9 +1,7 @@
-import pytest
-import CEO.cards.deck as deck
-import CEO.cards.hand as hand
-import CEO.cards.round as rd
-import CEO.cards.player as player
 import CEO.cards.eventlistener as el
+import CEO.cards.hand as hand
+import CEO.cards.player as player
+import CEO.cards.round as rd
 
 
 class StateBase:
@@ -56,7 +54,13 @@ class TrickState(StateBase):
         return NotImplemented
 
     def __str__(self):
-        return "(TrickState " + str(self.cur_trick_value) + " " + str(self.cur_trick_count) + ")"
+        return (
+            "(TrickState "
+            + str(self.cur_trick_value)
+            + " "
+            + str(self.cur_trick_count)
+            + ")"
+        )
 
     def __repr__(self):
         return str(self)
@@ -77,13 +81,15 @@ class MockPlayerBehavior(player.PlayerBehaviorInterface):
         self.is_reinforcement_learning = False
 
     def pass_cards(self, hand: hand.Hand, count: int) -> list[hand.CardValue]:
-        raise NotImplemented
+        raise NotImplementedError
 
-    def lead(self, player_position: int, hand: hand.Hand, state: rd.RoundState) -> hand.CardValue:
+    def lead(
+        self, player_position: int, hand: hand.Hand, state: rd.RoundState
+    ) -> hand.CardValue:
         self.trick_states.append(LeadState(player_position))
         self.cards_remaining.append(list(state.cards_remaining))
 
-        assert state.last_player_to_play_index == None
+        assert state.last_player_to_play_index is None
 
         if len(self.value_to_play) <= self.to_play_next_index:
             assert "No more values to play" != ""
@@ -134,10 +140,12 @@ class MockAsyncBehavior(player.PlayerBehaviorInterface):
         self.to_pass = []
 
     def pass_cards(self, hand: hand.Hand, count: int) -> list[hand.CardValue]:
-        ret = self.to_pass[0]
+        self.to_pass[0]
         self.to_pass.pop(0)
 
-    def lead(self, player_position: int, hand: hand.Hand, state: rd.RoundState) -> hand.CardValue:
+    def lead(
+        self, player_position: int, hand: hand.Hand, state: rd.RoundState
+    ) -> hand.CardValue:
         assert not "This should not be called"
 
     def play_on_trick(
@@ -152,7 +160,7 @@ class MockAsyncBehavior(player.PlayerBehaviorInterface):
         assert not "This should not be called"
 
 
-def test_SimpleRound():
+def test_simpleround():
     """
     Test playing a quick round of CEO
     """
@@ -212,7 +220,9 @@ def test_SimpleRound():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -270,7 +280,7 @@ def test_SimpleRound():
     assert len(cards_remaining) == 3
 
 
-def test_Passing():
+def test_passing():
     """
     Test playing a round of CEO with passing
     """
@@ -329,7 +339,9 @@ def test_Passing():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -363,7 +375,7 @@ def test_Passing():
     assert round.get_final_ceo_card_count() == 0
 
 
-def test_SkipEmptyHand():
+def test_skipemptyhand():
     """
     Test playing a round of CEO where a player doesn't have cards
     """
@@ -372,9 +384,9 @@ def test_SkipEmptyHand():
     cv0 = hand.CardValue(0)
     cv1 = hand.CardValue(1)
     cv2 = hand.CardValue(2)
-    cv3 = hand.CardValue(3)
-    cv4 = hand.CardValue(4)
-    cv5 = hand.CardValue(5)
+    hand.CardValue(3)
+    hand.CardValue(4)
+    hand.CardValue(5)
 
     # Make the hands
     hand1 = hand.Hand()
@@ -407,7 +419,9 @@ def test_SkipEmptyHand():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -427,7 +441,7 @@ def test_SkipEmptyHand():
     assert hand4.to_dict() == {}
 
 
-def test_LeadAfterPlayerGoesOut_NotCEO():
+def test_leadafterplayergoesoutnotceo():
     """
     Test that the game correctly determines who leads after a
     player goes out as the last player who plays on a trick.
@@ -441,7 +455,7 @@ def test_LeadAfterPlayerGoesOut_NotCEO():
     cv2 = hand.CardValue(2)
     cv3 = hand.CardValue(3)
     cv4 = hand.CardValue(4)
-    cv5 = hand.CardValue(5)
+    hand.CardValue(5)
 
     # Make the hands
     hand1 = hand.Hand()
@@ -479,7 +493,9 @@ def test_LeadAfterPlayerGoesOut_NotCEO():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -507,7 +523,7 @@ def test_LeadAfterPlayerGoesOut_NotCEO():
     assert round.get_final_ceo_card_count() == 2
 
 
-def test_LeadAfterPlayerGoesOut_CEO():
+def test_leadafterplayergoesoutceo():
     """
     Test that the game correctly determines who leads after a
     player goes out as the last player who plays on a trick.
@@ -515,11 +531,11 @@ def test_LeadAfterPlayerGoesOut_CEO():
     """
 
     # Create CardValue objects for ease of use later
-    cv0 = hand.CardValue(0)
+    hand.CardValue(0)
     cv1 = hand.CardValue(1)
     cv2 = hand.CardValue(2)
     cv3 = hand.CardValue(3)
-    cv4 = hand.CardValue(4)
+    hand.CardValue(4)
     cv5 = hand.CardValue(5)
 
     # Make the hands
@@ -557,7 +573,9 @@ def test_LeadAfterPlayerGoesOut_CEO():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -586,7 +604,7 @@ def test_LeadAfterPlayerGoesOut_CEO():
     assert round.get_final_ceo_card_count() == 0
 
 
-def test_LeadAfterPlayerGoesOut2():
+def test_leadafterplayergoesout2():
     """
     Test that the game correctly determines who leads after a
     player goes out as the last player who plays on a trick.
@@ -599,7 +617,7 @@ def test_LeadAfterPlayerGoesOut2():
     cv2 = hand.CardValue(2)
     cv3 = hand.CardValue(3)
     cv4 = hand.CardValue(4)
-    cv5 = hand.CardValue(5)
+    hand.CardValue(5)
 
     # Make the hands
     hand1 = hand.Hand()
@@ -636,7 +654,9 @@ def test_LeadAfterPlayerGoesOut2():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -664,7 +684,7 @@ def test_LeadAfterPlayerGoesOut2():
     assert round.get_final_ceo_card_count() == 0
 
 
-def test_NoOnePlaysOnTrick():
+def test_nooneplaysontrick():
     """
     Test where a player leads and then no one else plays on the trick
     """
@@ -673,7 +693,7 @@ def test_NoOnePlaysOnTrick():
     cv0 = hand.CardValue(0)
     cv1 = hand.CardValue(1)
     cv2 = hand.CardValue(2)
-    cv3 = hand.CardValue(3)
+    hand.CardValue(3)
     cv4 = hand.CardValue(4)
     cv5 = hand.CardValue(5)
 
@@ -714,7 +734,9 @@ def test_NoOnePlaysOnTrick():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -744,7 +766,7 @@ def test_NoOnePlaysOnTrick():
     assert round.get_final_ceo_card_count() == 0
 
 
-def test_CEODoesNotGoOutFirst_Middle():
+def test_ceodoesnotgooutfirstmiddle():
     """
     Test when someone goes out before the CEO.
     Here the player goes out in the middle of a trick
@@ -795,7 +817,9 @@ def test_CEODoesNotGoOutFirst_Middle():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -823,7 +847,7 @@ def test_CEODoesNotGoOutFirst_Middle():
     assert round.get_final_ceo_card_count() == 1
 
 
-def test_CEODoesNotGoOutFirst_Lead():
+def test_ceodoesnotgooutfirst_lead():
     """
     Test when someone goes out before the CEO.
     Here the player goes out by leading
@@ -882,7 +906,9 @@ def test_CEODoesNotGoOutFirst_Lead():
 
     # Play the round
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     round.play()
 
     # Check that the behavior objects were correctly called
@@ -914,9 +940,10 @@ def test_CEODoesNotGoOutFirst_Lead():
     assert round.get_final_ceo_card_count() == 1
 
 
-def test_AsyncRound():
+def test_asyncround():
     """
-    Test playing a quick round of CEO using the generator interface for a player behavior.
+    Test playing a quick round of CEO using the generator interface for a player
+    behavior.
     """
 
     # Create CardValue objects for ease of use later
@@ -979,7 +1006,9 @@ def test_AsyncRound():
 
     # Play the round. Player 4 is asynchronous
     listener = el.PrintAllEventListener()
-    round = rd.Round([player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener)
+    round = rd.Round(
+        [player1, player2, player3, player4], [hand1, hand2, hand3, hand4], listener
+    )
     gen = round.play_generator()
 
     try:

@@ -163,7 +163,7 @@ class Hand(HandInterface):
             if self._cards[i] > 0:
                 return CardValue(i)
 
-        assert False
+        raise AssertionError()
 
     def get_card_values(self) -> list[tuple[CardValue, int]]:
         """Returns a list of tuples (card value, cound of cards with that value)

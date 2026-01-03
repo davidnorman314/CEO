@@ -211,8 +211,9 @@ class QLearningAfterstates(ValueTableLearningBase):
                     afterstate_tuple
                 )
 
-                # Skip this episode if we have visited its initial state too many times and we haven't
-                # already skipped too many times without doing an episode.
+                # Skip this episode if we have visited its initial state too many times
+                # and we haven't # already skipped too many times without doing an
+                # episode.
                 if (
                     start_episode
                     and afterstate_visit_count > max_initial_visit_count
@@ -288,7 +289,7 @@ class QLearningAfterstates(ValueTableLearningBase):
                 state = new_state
 
                 # See if the episode is finished
-                if done == True:
+                if done:
                     break
 
             if skip_episode:
@@ -337,17 +338,12 @@ class QLearningAfterstates(ValueTableLearningBase):
                 avg_initial_state_visit_count = max(recent_initial_state_visit_count)
 
                 print(
-                    "Episode {} Ave rwd {:.3f} Recent rwd {:.3f} Explore rate {:.3f} Visited {} Skipped {} Epsilon {:.3f},{:.3f} I Visit {}".format(
-                        episode,
-                        ave_training_rewards,
-                        recent_rewards,
-                        recent_explore_rate,
-                        states_visited,
-                        skipped_episodes,
-                        min_epsilon,
-                        max_epsilon,
-                        avg_initial_state_visit_count,
-                    )
+                    f"Episode {episode} Ave rwd {ave_training_rewards:.3f} "
+                    f"Recent rwd {recent_rewards:.3f} "
+                    f"Explore rate {recent_explore_rate:.3f} "
+                    f"Visited {states_visited} Skipped {skipped_episodes} "
+                    f"Epsilon {min_epsilon:.3f},{max_epsilon:.3f} "
+                    f"I Visit {avg_initial_state_visit_count}"
                 )
 
                 self.add_search_statistics(
@@ -370,7 +366,7 @@ class QLearningAfterstates(ValueTableLearningBase):
             ):
                 self.do_play_test(episode, self.feature_defs)
 
-            if False and episode > 0 and episode % 20000 == 0:
+            if False and episode > 0 and episode % 20000 == 0:  # noqa: SIM223
                 # Log the states for this episode
                 print("Episode info")
                 for info in episode_infos:
@@ -379,7 +375,10 @@ class QLearningAfterstates(ValueTableLearningBase):
                     )
                     visit_chars = math.ceil(math.log10(max_visit_count))
 
-                    format_str = "{action:2} value {val_before:6.3f} -> {val_after:6.3f} visit {visit_count:#w#} -> {alpha:.3e} {hand}"
+                    format_str = (
+                        "{action:2} value {val_before:6.3f} -> {val_after:6.3f} "
+                        "visit {visit_count:#w#} -> {alpha:.3e} {hand}"
+                    )
                     format_str = format_str.replace("#w#", str(visit_chars))
 
                     print(
@@ -394,11 +393,11 @@ class QLearningAfterstates(ValueTableLearningBase):
                         )
                     )
                 print("Reward", episode_reward)
-                print("Epsilon {:.5f}".format(epsilon))
+                print(f"Epsilon {epsilon:.5f}")
 
-            if False and episode > 0 and episode % 100000 == 0:
-                # Iterate over the entire Q array and count the number of each type of element.
-                # This is very slow.
+            if False and episode > 0 and episode % 100000 == 0:  # noqa: SIM223
+                # Iterate over the entire Q array and count the number of each type of
+                # element. This is very slow.
                 zero_count = 0
                 pos_count = 0
                 neg_count = 0
@@ -455,7 +454,7 @@ class QLearningAfterstates(ValueTableLearningBase):
             self.feature_defs.append(("OtherPlayerHandCount", feature_params))
 
         feature_params = dict()
-        self.feature_defs.append(("WillWinTrick_AfterState", feature_params))
+        self.feature_defs.append(("WillWinTrickAfterState", feature_params))
 
         min_card_exact_feature = 9
         for i in range(min_card_exact_feature, 13):
@@ -481,14 +480,15 @@ class QLearningAfterstates(ValueTableLearningBase):
         if False:
             # This isn't useful as-is for afterstates, since the feature information
             # is relative to cards in the hand. One possible replacement feature
-            # would be one that told whether later players could play on the trick, i.e.,
-            # if the number of cards in their hand is larger or smaller than the trick count.
+            # would be one that told whether later players could play on the trick,
+            # i.e., # if the number of cards in their hand is larger or smaller than
+            # the trick count.
             feature_params = dict()
             self.feature_defs.append(("CurTrickValue", feature_params))
 
-            # Also probably not useful, since it just gives a litte information about whether
-            # later players will be able to play on the trick. Instead of using it, let's try
-            # to add the information to WillWinTrick_AfterState
+            # Also probably not useful, since it just gives a litte information about
+            # whether # later players will be able to play on the trick. Instead of
+            # using it, let's try # to add the information to WillWinTrickAfterState
             feature_params = dict()
             self.feature_defs.append(("CurTrickCount", feature_params))
 

@@ -1,7 +1,6 @@
-from CEO.cards.deck import *
-from CEO.cards.hand import *
-from CEO.cards.player import *
-from CEO.cards.eventlistener import *
+from CEO.cards.eventlistener import EventListenerInterface
+from CEO.cards.hand import Hand
+from CEO.cards.player import Player
 
 
 class PassCards:
@@ -9,7 +8,9 @@ class PassCards:
     Class that handles passing cards after the deal and before the first trick.
     """
 
-    def __init__(self, players: list[Player], hands: list[Hand], listener: EventListenerInterface):
+    def __init__(
+        self, players: list[Player], hands: list[Hand], listener: EventListenerInterface
+    ):
         self._listener = listener
         self._players = players
         self._hands = hands
@@ -32,11 +33,8 @@ class PassCards:
 
             cards_to_pass = pass_count - i
 
-            # print("Passing cards from ", from_index, " ", self._players[from_index].name,
-            #    " to ", to_index, " ", self._players[to_index].name)
-
             cards = []
-            for j in range(cards_to_pass):
+            for _ in range(cards_to_pass):
                 cv = from_hand.max_card_value()
                 from_hand.remove_cards(cv, 1)
                 to_hand.add_cards(cv, 1)
@@ -59,9 +57,6 @@ class PassCards:
             orig_from_hand_str = str(from_hand)
 
             cards_to_pass = pass_count - i
-
-            # print("Passing cards from ", from_index, " ", self._players[from_index].name,
-            #    " to ", to_index, " ", self._players[to_index].name)
 
             values = self._players[from_index].behavoir.pass_cards(
                 self._hands[from_index], cards_to_pass

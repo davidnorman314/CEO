@@ -1,32 +1,29 @@
 import random as random
 
 import numpy as np
-import pytest
 from stable_baselines3.common.env_checker import check_env
 
-import CEO.cards.deck as deck
 import CEO.cards.player as player
 import CEO.cards.round as rd
 from CEO.cards.eventlistener import EventListenerInterface, PrintAllEventListener
-from CEO.cards.hand import *
+from CEO.cards.hand import CardValue, Hand
 from CEO.cards.simplebehavior import SimpleBehaviorBase
-from gym_ceo.envs.actions import ActionEnum, Actions, ActionSpaceFactory
-from gym_ceo.envs.features import WillWinTrick_AfterState
-from gym_ceo.envs.observation import Observation, ObservationFactory
-from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
-from gym_ceo.envs.seat_ceo_features_env import (
+from gym_ceo.envs.actions import ActionEnum
+from gym_ceo.envs.features import (
     DoublesUnderValueCountRelative,
     HandCardCountRelative,
     HandSummary,
     HighestCard,
     OtherPlayerHandCount,
-    SeatCEOFeaturesEnv,
     SinglesUnderValueCountRelative,
     TriplesUnderValueCount,
     TriplesUnderValueCountRelative,
     ValuesInRangeCount,
-    WillWinTrick_AfterState,
+    WillWinTrickAfterState,
 )
+from gym_ceo.envs.observation import Observation, ObservationFactory
+from gym_ceo.envs.seat_ceo_env import SeatCEOEnv
+from gym_ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
 
 
 class MockPlayerBehavior(player.PlayerBehaviorInterface, SimpleBehaviorBase):
@@ -72,7 +69,7 @@ def create_ceo_env(
 ) -> tuple[SeatCEOEnv, Observation]:
     # Make the players
     behaviors = []
-    for i in range(num_players - 1):
+    for _ in range(num_players - 1):
         behaviors.append(MockPlayerBehavior())
 
     env = SeatCEOEnv(
@@ -91,7 +88,7 @@ def create_ceo_env(
     return env, observation
 
 
-def test_SeatCEOFeaturesEnv_check_env():
+def test_seatceofeaturesenv_check_env():
     """
     Test SeatCEOFeaturesEnv using the Gym check_env
     """
@@ -118,7 +115,7 @@ def test_SeatCEOFeaturesEnv_check_env():
     check_env(env, True, True)
 
 
-def test_TriplesUnderValueCount():
+def test_triplesundervaluecount():
     """
     Test the TriplesUnderValueCount feature
     """
@@ -130,11 +127,6 @@ def test_TriplesUnderValueCount():
     cv3 = CardValue(3)
     cv4 = CardValue(4)
     cv5 = CardValue(5)
-    cv6 = CardValue(5)
-    cv7 = CardValue(5)
-    cv8 = CardValue(5)
-    cv9 = CardValue(5)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
     cv12 = CardValue(12)
 
@@ -203,7 +195,7 @@ def test_TriplesUnderValueCount():
     assert feature_array[0] == 1
 
 
-def test_SinglesUnderValueCountRelative():
+def test_singlesundervaluecountrelative():
     """
     Test the SinglesUnderValueCountRelative feature
     """
@@ -216,10 +208,6 @@ def test_SinglesUnderValueCountRelative():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
-    cv9 = CardValue(9)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
     cv12 = CardValue(12)
 
@@ -382,7 +370,7 @@ def test_SinglesUnderValueCountRelative():
     assert feature_array[0] == 4
 
 
-def test_DoublesUnderValueCountRelative():
+def test_doublesundervaluecountrelative():
     """
     Test the DoublesUnderValueCountRelative feature
     """
@@ -395,10 +383,6 @@ def test_DoublesUnderValueCountRelative():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
-    cv9 = CardValue(9)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
     cv12 = CardValue(12)
 
@@ -561,7 +545,7 @@ def test_DoublesUnderValueCountRelative():
     assert feature_array[0] == 4
 
 
-def test_TriplesUnderValueCountRelative():
+def test_triplesundervaluecountrelative():
     """
     Test the TriplesUnderValueCountRelative feature
     """
@@ -574,10 +558,6 @@ def test_TriplesUnderValueCountRelative():
     cv4 = CardValue(4)
     cv5 = CardValue(5)
     cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
-    cv9 = CardValue(9)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
     cv12 = CardValue(12)
 
@@ -740,7 +720,7 @@ def test_TriplesUnderValueCountRelative():
     assert feature_array[0] == 4
 
 
-def test_ValuesInRangeCount():
+def test_valuesinrangecount():
     """
     Test the ValuesInRangeCount feature
     """
@@ -752,11 +732,6 @@ def test_ValuesInRangeCount():
     cv3 = CardValue(3)
     cv4 = CardValue(4)
     cv5 = CardValue(5)
-    cv6 = CardValue(5)
-    cv7 = CardValue(5)
-    cv8 = CardValue(5)
-    cv9 = CardValue(5)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
     cv12 = CardValue(12)
 
@@ -837,7 +812,7 @@ def test_ValuesInRangeCount():
     assert feature_array[0] == 3
 
 
-def test_OtherPlayerHandCount():
+def test_otherplayerhandcount():
     """
     Test the OtherPlayerHandCount feature
     """
@@ -849,11 +824,6 @@ def test_OtherPlayerHandCount():
     cv3 = CardValue(3)
     cv4 = CardValue(4)
     cv5 = CardValue(5)
-    cv6 = CardValue(5)
-    cv7 = CardValue(5)
-    cv8 = CardValue(5)
-    cv9 = CardValue(5)
-    cv10 = CardValue(10)
     cv11 = CardValue(11)
     cv12 = CardValue(12)
 
@@ -936,7 +906,7 @@ def test_OtherPlayerHandCount():
     assert feature_array[0] == 4
 
 
-def test_HandCardCountRelative():
+def test_handcardcountrelative():
     """
     Test the HandCardCountRelative feature
     """
@@ -948,10 +918,6 @@ def test_HandCardCountRelative():
     cv3 = CardValue(3)
     cv4 = CardValue(4)
     cv5 = CardValue(5)
-    cv6 = CardValue(5)
-    cv7 = CardValue(5)
-    cv8 = CardValue(5)
-    cv9 = CardValue(5)
     cv10 = CardValue(10)
     cv11 = CardValue(11)
     cv12 = CardValue(12)
@@ -1078,7 +1044,7 @@ def test_HandCardCountRelative():
     assert feature_array[0] == 3
 
 
-def test_HighestCard():
+def test_highestcard():
     """
     Test the HighestCard feature
     """
@@ -1090,11 +1056,11 @@ def test_HighestCard():
     cv3 = CardValue(3)
     cv4 = CardValue(4)
     cv5 = CardValue(5)
-    cv6 = CardValue(6)
-    cv7 = CardValue(7)
+    CardValue(6)
+    CardValue(7)
     cv8 = CardValue(8)
-    cv9 = CardValue(9)
-    cv10 = CardValue(10)
+    CardValue(9)
+    CardValue(10)
     cv11 = CardValue(11)
     cv12 = CardValue(12)
 
@@ -1185,22 +1151,13 @@ def test_HighestCard():
     assert feature_array[0] == 0
 
 
-def test_AfterState_WillWinTrick_AfterState():
+def test_afterstatewillwintrickafterstate():
     """Test the WillWinTrick feature with afterstates."""
 
     # Create CardValue objects for ease of use later
     cv0 = CardValue(0)
     cv1 = CardValue(1)
-    cv2 = CardValue(2)
-    cv3 = CardValue(3)
     cv4 = CardValue(4)
-    cv5 = CardValue(5)
-    cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
-    cv9 = CardValue(9)
-    cv10 = CardValue(10)
-    cv11 = CardValue(11)
     cv12 = CardValue(12)
 
     # Setup the environment
@@ -1223,7 +1180,7 @@ def test_AfterState_WillWinTrick_AfterState():
     env, observation = create_ceo_env(hands)
     observation_factory = env.observation_factory
 
-    feature = WillWinTrick_AfterState(env)
+    feature = WillWinTrickAfterState(env)
     feature.notify_other_features([feature])
 
     feature_array = np.zeros(1)
@@ -1285,7 +1242,7 @@ def test_AfterState_WillWinTrick_AfterState():
     assert feature_array[0] == 0
 
 
-def test_AfterState_WillWinTrick_AfterState_SixPlayers():
+def test_afterstatewillwintrickafterstatesixplayers():
     """Test the WillWinTrick feature with afterstates. Here we have six players.
     Test when the feature value depends on the number of cards other players have."""
 
@@ -1295,13 +1252,6 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
     cv2 = CardValue(2)
     cv3 = CardValue(3)
     cv4 = CardValue(4)
-    cv5 = CardValue(5)
-    cv6 = CardValue(6)
-    cv7 = CardValue(7)
-    cv8 = CardValue(8)
-    cv9 = CardValue(9)
-    cv10 = CardValue(10)
-    cv11 = CardValue(11)
     cv12 = CardValue(12)
 
     # Setup the environment
@@ -1332,9 +1282,9 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
     env, observation = create_ceo_env(hands, num_players=6, action_space_type="card")
     observation_factory = env.observation_factory
 
-    feature_no_downstream = WillWinTrick_AfterState(env)
-    feature_one_downstream = WillWinTrick_AfterState(env)
-    feature_two_downstream = WillWinTrick_AfterState(env)
+    feature_no_downstream = WillWinTrickAfterState(env)
+    feature_one_downstream = WillWinTrickAfterState(env)
+    feature_two_downstream = WillWinTrickAfterState(env)
 
     feature_other_1 = OtherPlayerHandCount(env, other_player_index=1, max_value=5)
     feature_other_2 = OtherPlayerHandCount(env, other_player_index=2, max_value=5)
@@ -1594,7 +1544,8 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
     feature_two_downstream.calc(afterstate, feature_array, 0, info)
     assert feature_array[0] == 0
 
-    # Test where the agent passes in a situation where he would win the trick if he played.
+    # Test where the agent passes in a situation where he would win the trick if
+    # he played.
     starting_player = 2
     card_count = 2
     state = rd.RoundState(hands, starting_player)
@@ -1624,7 +1575,7 @@ def test_AfterState_WillWinTrick_AfterState_SixPlayers():
     assert feature_array[0] == 0
 
 
-def test_HandSummary():
+def test_handsummary():
     """
     Test the HandSummary features
     """
