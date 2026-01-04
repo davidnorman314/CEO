@@ -30,7 +30,7 @@
             }
         },
         {
-            "type": "WillWinTrick_AfterState",
+            "type": "WillWinTrickAfterState",
             "params": {
             }
         },

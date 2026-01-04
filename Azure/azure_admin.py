@@ -1,18 +1,19 @@
-"""File to setup Azure to support RL training and testing and to run jobs on Azure batch.
-   
-   The code uses azure.identity.EnvironmentCredential for authentication. This depends on
-   the environment variables:
-      AZURE_TENANT_ID: In the Azure portal go to the Active Directory section and the Tenant ID
-                       will be under Basic information.
-      AZURE_CLIENT_ID: The ID of an App Registration under Active Directory.
-      AZURE_CLIENT_SECRET: A secret for AZURE_CLIENT_ID, see Certificates and secrets for the 
-                           app registration.
+"""Azure setup helpers for RL training and Azure Batch jobs.
 
-   If creating a VM, the AZURE_VM_PASSWORD environment variable must be set.
+The code uses azure.identity.EnvironmentCredential for authentication. It
+relies on these environment variables:
 
-   If using Azure Batch functionality, then the key for the Azure batch account must be in the
-   environment variable AZURE_BATCH_KEY.
+  AZURE_TENANT_ID: In the Azure portal, the Tenant ID is visible under
+                   Active Directory -> Basic information.
+  AZURE_CLIENT_ID: The App Registration ID under Active Directory.
+  AZURE_CLIENT_SECRET: A secret for `AZURE_CLIENT_ID`; see Certificates and
+                        secrets for the app registration.
+
+If creating a VM, set the AZURE_VM_PASSWORD environment variable.
+
+If using Azure Batch, set the Azure batch key in AZURE_BATCH_KEY.
 """
+
 import argparse
 import datetime
 import io
@@ -66,7 +67,9 @@ class AccountInfo:
         self.batch_account = config["batch_account"]
 
 
-def get_batch_vm_images(account_info: AccountInfo, batch_account_key: str, node_agent_sku_id: str):
+def get_batch_vm_images(
+    account_info: AccountInfo, batch_account_key: str, node_agent_sku_id: str
+):
     """Queries Azure to find out which VM images can be used to create images for
     a batch pool.
     """
@@ -74,15 +77,21 @@ def get_batch_vm_images(account_info: AccountInfo, batch_account_key: str, node_
         f"https://{account_info.batch_account}.{account_info.location}.batch.azure.com"
     )
 
-    credentials = batchauth.SharedKeyCredentials(account_info.batch_account, batch_account_key)
+    credentials = batchauth.SharedKeyCredentials(
+        account_info.batch_account, batch_account_key
+    )
 
     batch_client = BatchServiceClient(credentials, batch_service_url)
     batch_client.config.retry_policy.retries = 5
 
     # Get VM images supported by Azure Batch
-    options = batchmodels.AccountListSupportedImagesOptions(filter="verificationType eq 'verified'")
+    options = batchmodels.AccountListSupportedImagesOptions(
+        filter="verificationType eq 'verified'"
+    )
     images = list(
-        batch_client.account.list_supported_images(account_list_supported_images_options=options)
+        batch_client.account.list_supported_images(
+            account_list_supported_images_options=options
+        )
     )
     filtered_images = list(
         filter(
@@ -125,7 +134,9 @@ def provision_vm(
     # Code from https://docs.microsoft.com/en-us/azure/developer/python/azure-sdk-example-virtual-machines?tabs=cmd
 
     # Create a VM
-    print("Provisioning a virtual machine...some operations might take a minute or two.")
+    print(
+        "Provisioning a virtual machine...some operations might take a minute or two."
+    )
 
     # Look up the network information
     network_client = NetworkManagementClient(credential, account_info.subscription_id)
@@ -164,7 +175,8 @@ def provision_vm(
     ip_address_result = poller.result()
 
     print(
-        f"Provisioned public IP address {ip_address_result.name} with address {ip_address_result.ip_address}"
+        f"Provisioned public IP {ip_address_result.name} "
+        f"with address {ip_address_result.ip_address}"
     )
 
     # Provision the network interface client (NIC)
@@ -199,7 +211,10 @@ def provision_vm(
     if not password or len(password) < 5:
         print("The AZURE_VM_PASSWORD environment variable is not set or is too short.")
 
-    print(f"Provisioning virtual machine {vm_name}; this operation might take a few minutes.")
+    print(
+        f"Provisioning virtual machine {vm_name}."
+        " This may take a few minutes."
+    )
 
     # Provision the VM.
     poller = compute_client.virtual_machines.begin_create_or_update(
@@ -246,7 +261,10 @@ def create_vm_image(
     vm_name: str,
     gallery_config: dict(),
 ):
-    """Creates a VM image from a VM and adds it to a gallery. The image can be used to create a pool."""
+    """Create a VM image from a VM and add it to a gallery.
+
+    The image can be used to create a pool.
+    """
     compute_client = ComputeManagementClient(credential, account_info.subscription_id)
 
     # Find the VM
@@ -264,19 +282,25 @@ def create_vm_image(
         return
 
     # Power off the VM
-    poller = compute_client.virtual_machines.begin_power_off(account_info.resource_group, vm_name)
-    power_off_result = poller.result()
+    poller = compute_client.virtual_machines.begin_power_off(
+        account_info.resource_group, vm_name
+    )
+    _power_off_result = poller.result()
 
     # Deallocate the VM so we don't get charged for it.
-    poller = compute_client.virtual_machines.begin_deallocate(account_info.resource_group, vm_name)
-    power_off_result = poller.result()
+    poller = compute_client.virtual_machines.begin_deallocate(
+        account_info.resource_group, vm_name
+    )
+    _power_off_result = poller.result()
 
     # Capture the VM
     vm_image_name = gallery_config["image_name"]
     compute_client.virtual_machines.generalize(account_info.resource_group, vm_name)
 
     source_sub_resource = SubResource(id=vm.id)
-    image = Image(location=account_info.location, source_virtual_machine=source_sub_resource)
+    image = Image(
+        location=account_info.location, source_virtual_machine=source_sub_resource
+    )
     poller = compute_client.images.begin_create_or_update(
         account_info.resource_group, vm_image_name, image
     )
@@ -304,7 +328,7 @@ def create_vm_image(
             delete_poller = compute_client.gallery_images.begin_delete(
                 account_info.resource_group, gallery_name, gallery_image_identifier
             )
-            result = delete_poller.result()
+            _result = delete_poller.result()
             print(f"Deleted old image {gallery_image_identifier}")
     except azure.core.exceptions.ResourceNotFoundError:
         pass
@@ -337,12 +361,14 @@ def create_vm_image(
     gallery_image_version = GalleryImageVersion(
         location=account_info.location, storage_profile=storage_profile
     )
-    create_image_version_poller = compute_client.gallery_image_versions.begin_create_or_update(
-        account_info.resource_group,
-        gallery_name,
-        gallery_image_name,
-        gallery_image_version_name,
-        gallery_image_version,
+    create_image_version_poller = (
+        compute_client.gallery_image_versions.begin_create_or_update(
+            account_info.resource_group,
+            gallery_name,
+            gallery_image_name,
+            gallery_image_version_name,
+            gallery_image_version,
+        )
     )
 
     image_version = create_image_version_poller.result()
@@ -368,7 +394,7 @@ def create_pool(
     client_id_var = "AZURE_CLIENT_ID"
     client_secret_var = "AZURE_CLIENT_SECRET"
     tenant_var = "AZURE_TENANT_ID"
-    RESOURCE = "https://batch.core.windows.net/"
+    resource = "https://batch.core.windows.net/"
     client_id = os.getenv(client_id_var)
     if not client_id:
         raise Exception("Environment variable", client_id_var, "is not set.")
@@ -385,7 +411,7 @@ def create_pool(
         client_id=client_id,
         secret=client_secret,
         tenant=tenant,
-        resource=RESOURCE,
+        resource=resource,
     )
 
     gallery_name = gallery_config["name"]
@@ -401,7 +427,9 @@ def create_pool(
 
     # Find the virtual network ID.
     network_client = NetworkManagementClient(credential, account_info.subscription_id)
-    subnet_result = network_client.subnets.get(account_info.resource_group, vnet_name, subnet_name)
+    subnet_result = network_client.subnets.get(
+        account_info.resource_group, vnet_name, subnet_name
+    )
 
     # Create the pool
     batch_account_name = pool_config["batch_account_name"]
@@ -414,11 +442,15 @@ def create_pool(
     autoscale_formula = AUTOSCALE_FORMULA.format(maxVMs=pool_config["maximum_nodes"])
     evaluation_interval = datetime.timedelta(minutes=5)
     network_config = batchmodels.NetworkConfiguration(subnet_id=subnet_result.id)
-    public_ip_config = batchmodels.PublicIPAddressConfiguration(provision="noPublicIPAddresses")
+    public_ip_config = batchmodels.PublicIPAddressConfiguration(
+        provision="noPublicIPAddresses"
+    )
     pool_add_parameters = batchmodels.PoolAddParameter(
         id=pool_id,
         virtual_machine_configuration=batchmodels.VirtualMachineConfiguration(
-            image_reference=batchmodels.ImageReference(virtual_machine_image_id=image_version.id),
+            image_reference=batchmodels.ImageReference(
+                virtual_machine_image_id=image_version.id
+            ),
             node_agent_sku_id=node_agent_sku_id,
         ),
         vm_size=vm_size,
@@ -448,7 +480,7 @@ def setup_pool_autoscale(
     client_id_var = "AZURE_CLIENT_ID"
     client_secret_var = "AZURE_CLIENT_SECRET"
     tenant_var = "AZURE_TENANT_ID"
-    RESOURCE = "https://batch.core.windows.net/"
+    resource = "https://batch.core.windows.net/"
     client_id = os.getenv(client_id_var)
     if not client_id:
         raise Exception("Environment variable", client_id_var, "is not set.")
@@ -465,7 +497,7 @@ def setup_pool_autoscale(
         client_id=client_id,
         secret=client_secret,
         tenant=tenant,
-        resource=RESOURCE,
+        resource=resource,
     )
 
     batch_account_name = pool_config["batch_account_name"]
@@ -495,7 +527,7 @@ def remove_node(
     client_id_var = "AZURE_CLIENT_ID"
     client_secret_var = "AZURE_CLIENT_SECRET"
     tenant_var = "AZURE_TENANT_ID"
-    RESOURCE = "https://batch.core.windows.net/"
+    resource = "https://batch.core.windows.net/"
     client_id = os.getenv(client_id_var)
     if not client_id:
         raise Exception("Environment variable", client_id_var, "is not set.")
@@ -512,7 +544,7 @@ def remove_node(
         client_id=client_id,
         secret=client_secret,
         tenant=tenant,
-        resource=RESOURCE,
+        resource=resource,
     )
 
     batch_account_name = pool_config["batch_account_name"]
@@ -557,7 +589,9 @@ def do_training(
         f"https://{account_info.batch_account}.{account_info.location}.batch.azure.com"
     )
 
-    credentials = batchauth.SharedKeyCredentials(account_info.batch_account, batch_account_key)
+    credentials = batchauth.SharedKeyCredentials(
+        account_info.batch_account, batch_account_key
+    )
 
     batch_client = BatchServiceClient(credentials, batch_service_url)
     batch_client.config.retry_policy.retries = 5
@@ -566,7 +600,7 @@ def do_training(
     storage_connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
     if not storage_connection_string or len(storage_connection_string) < 5:
         print(
-            "The AZURE_STORAGE_CONNECTION_STRING environment variable is not set or is too short."
+            "AZURE_STORAGE_CONNECTION_STRING is not set or is too short."
         )
 
     env_vars = list()
@@ -607,30 +641,35 @@ def do_training(
 
     # Create the tasks
     tasks = list()
-    for learning, i in zip(learning_config, range(len(learning_config))):
+    for learning, i in zip(learning_config, range(len(learning_config)), strict=False):
         task_id = f"Task{i}"
 
         learning_config_json = json.dumps(learning)
         learning_config_json = learning_config_json.replace('"', '\\"')
 
-        command = f"""/bin/bash -c "echo Learning task starting.;
-        echo '{learning_config_json}' > config.json;
-        echo Start config;
-        cat config.json;
-        echo End config;
-        git clone https://github.com/davidnorman314/CEO.git;
-        cd CEO/src;
-        echo Starting python;
-        python --version;
-        source /home/david/py39/bin/activate;
-        python -m learning.learning --azure --post-train-stats-episodes 100000 ../../config.json;
-        retVal=$?;
-        echo Python finished exit code $retVal;
-        if [ $retVal -ne 0 ]; then dmesg; fi;
-        echo Done;"
-        """
+        command = (
+            "/bin/bash -c \""
+            "echo Learning task starting.; "
+            f"echo '{learning_config_json}' > config.json; "
+            "echo Start config; "
+            "cat config.json; "
+            "echo End config; "
+            "git clone https://github.com/davidnorman314/CEO.git; "
+            "cd CEO/src; "
+            "echo Starting python; "
+            "python --version; "
+            "source /home/david/py39/bin/activate; "
+            "python -m learning.learning --azure "
+            "--post-train-stats-episodes 100000 ../../config.json; "
+            "retVal=$?; "
+            "echo Python finished exit code $retVal; "
+            "if [ $retVal -ne 0 ]; then dmesg; fi; "
+            "echo Done;\""
+        )
 
-        auto_user = batchmodels.AutoUserSpecification(scope="pool", elevation_level="admin")
+        auto_user = batchmodels.AutoUserSpecification(
+            scope="pool", elevation_level="admin"
+        )
         user_identity = batchmodels.UserIdentity(auto_user=auto_user, user_name=None)
 
         tasks.append(
@@ -693,7 +732,9 @@ def run_test_job(
         f"https://{account_info.batch_account}.{account_info.location}.batch.azure.com"
     )
 
-    credentials = batchauth.SharedKeyCredentials(account_info.batch_account, batch_account_key)
+    credentials = batchauth.SharedKeyCredentials(
+        account_info.batch_account, batch_account_key
+    )
 
     batch_client = BatchServiceClient(credentials, batch_service_url)
     batch_client.config.retry_policy.retries = 5
@@ -725,7 +766,9 @@ def run_test_job(
 
         file = f"First line File{i}\nSecond line\nThird line."
 
-        auto_user = batchmodels.AutoUserSpecification(scope="pool", elevation_level="admin")
+        auto_user = batchmodels.AutoUserSpecification(
+            scope="pool", elevation_level="admin"
+        )
         user_identity = batchmodels.UserIdentity(auto_user=auto_user, user_name=None)
 
         command = f"""/bin/bash -c "echo Task {i} executing.;
@@ -764,7 +807,7 @@ def run_test_job(
         echo Done;"
         """
 
-        old = """
+        _old = """
         if [$retVal -eq 0] then
             echo in if 0
         fi;
@@ -929,7 +972,12 @@ def main():
     credential = EnvironmentCredential()
 
     batch_account_key = None
-    if args.get_batch_vm_images or args.test_task_count or args.learning_config or args.remove_node:
+    if (
+        args.get_batch_vm_images
+        or args.test_task_count
+        or args.learning_config
+        or args.remove_node
+    ):
         batch_key_env_var = "AZURE_BATCH_KEY"
         batch_account_key = os.getenv(batch_key_env_var)
 

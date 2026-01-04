@@ -32,3 +32,6 @@ ignore = [
     # Don't use builtin open
     "PTH123",
 ]
+
+# Exclude notebooks from linting (notebook cell contents can have long lines)
+exclude = ["notebooks/**"]
