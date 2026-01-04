@@ -1,3 +1,5 @@
+from collections.abc import Generator
+
 import numpy as np
 from gymnasium.spaces import Box
 
@@ -597,7 +599,7 @@ class HandSummary:
             sep="",
         )
 
-    def _get_buckets(self, highest_value: int) -> tuple[int, int]:
+    def _get_buckets(self, highest_value: int) -> Generator[tuple[int, int]]:
         # Calculate the bucket parameters
         max_bucket_card_value = highest_value - self._high_card_exact_count
         base_bucket_width = (max_bucket_card_value + 1) // self._bucket_count
