@@ -35,6 +35,7 @@ select = [
     "NPY",    # NumPy-specific rules
     "PTH",    # use-pathlib
     "SIM212", # if-expr-with-twisted-arms
+    "W",      # pycodestyle-warnings
 ]
 ignore = [
     "PTH123", # Don't use builtin open
