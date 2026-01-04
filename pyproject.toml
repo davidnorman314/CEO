@@ -1,2 +1,22 @@
+[project]
+name = "ceo"
+version = "0.1.0"
+description = "Reinforcement learning for the card game CEO"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "gymnasium>=1.2.3",
+    "torch>=1.13.0",
+    "torchaudio>=0.13.0",
+    "torchvision>=0.14.0",
+    "tensorboard>=2.10.1",
+    "stable_baselines3>=1.6.2",
+    "statsmodels>=0.13.4",
+    "azure-storage-blob>=12.9.0",
+    "pytest>=7.2.0",
+    "tabulate>=0.9.0",
+    "ruff",
+]
+
 [tool.black]
 line-length = 100
