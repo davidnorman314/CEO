@@ -29,15 +29,15 @@ uv run pytest -s -k game
 ```
 
 ## Play games from the command line
-`uv run python -m ceo.main.console_game`
+`uv run python -m ceo.cli.console_game`
 
-`uv run python -m ceo.main.many_games`
+`uv run python -m ceo.cli.many_games`
 
-`uv run python -m ceo.main.many_games --print --count 1`
+`uv run python -m ceo.cli.many_games --print --count 1`
 
-`uv run python -m ceo.main.console_game --play-ceo --agent-file training.pkl`
+`uv run python -m ceo.cli.console_game --play-ceo --agent-file training.pkl`
 
-`uv run python -m ceo.main.console_game --play-ceo --ppo-file eval_log/PPOM01/best_model.zip --device cpu`
+`uv run python -m ceo.cli.console_game --play-ceo --ppo-file eval_log/PPOM01/best_model.zip --device cpu`
 
 
 ## Train agents
@@ -87,11 +87,11 @@ uv run pytest -s -k game
 
 ## Azure command-line client
 
-`uv run python -m ceo.main.azure_rl --get-rl-trainings`
+`uv run python -m ceo.cli.azure_rl --get-rl-trainings`
 
-`uv run python -m ceo.main.azure_rl --get-blob blob_name --save-file save.txt`
+`uv run python -m ceo.cli.azure_rl --get-blob blob_name --save-file save.txt`
 
-`uv run python -m ceo.main.azure_rl --get-training-progress notebooks/progress.pkl --earliest-start 2022-03-10T00:00:00`
+`uv run python -m ceo.cli.azure_rl --get-training-progress notebooks/progress.pkl --earliest-start 2022-03-10T00:00:00`
 
 ## Azure administration
 
