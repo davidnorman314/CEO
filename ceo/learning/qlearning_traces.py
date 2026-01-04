@@ -18,7 +18,7 @@ from ceo.learning.learning_base import EpisodeInfo, QTableLearningBase
 
 class QLearningTraces(QTableLearningBase):
     """
-    Class implementing Watkins Q(\lambda) with eligibility traces for a Gymnasium
+    Class implementing Watkins Q(lambda) with eligibility traces for a Gymnasium
     environment.
     See:
         1. Sutton and Barto 312 and the
