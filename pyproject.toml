@@ -18,5 +18,27 @@ dependencies = [
     "ruff",
 ]
 
-[tool.black]
-line-length = 100
+[tool.ruff]
+target-version = "py313"
+exclude = ["notebooks/**"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle
+    "F",      # Pyflakes
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "SIM",    # flake8-simplify
+    "I",      # isort
+    "N",      # pep8-naming
+    "PD",     # pandas-vet
+    "NPY",    # NumPy-specific rules
+    "PTH",    # use-pathlib
+    "SIM212", # if-expr-with-twisted-arms
+]
+ignore = [
+    "PTH123", # Don't use builtin open
+]
+
+[tool.pytest.ini_options]
+# Add pytest options here if needed
