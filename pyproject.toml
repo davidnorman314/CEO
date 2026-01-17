@@ -18,6 +18,11 @@ dependencies = [
     "ruff",
 ]
 
+[dependency-groups]
+dev = [
+    "uv",
+]
+
 [tool.ruff]
 target-version = "py313"
 exclude = ["notebooks/**"]

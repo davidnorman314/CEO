@@ -28,25 +28,27 @@ tests/          # Test suite (*_test.py naming)
 
 ## Common Commands
 
+Run commands using `.venv/Scripts/uv.exe run` rather than `uv run`.
+
 ```bash
 # Install dependencies
-uv sync
+.venv/Scripts/uv.exe sync
 
 # Run tests
-uv run pytest tests/
+.venv/Scripts/uv.exe run pytest tests/
 
 # Lint check
-uv run ruff check .
+.venv/Scripts/uv.exe run ruff check .
 
 # Fix lint errors
-uv run ruff check . --fix
+.venv/Scripts/uv.exe run ruff check . --fix
 
 # Play interactive game
-uv run python -m ceo.cli.console_game
+.venv/Scripts/uv.exe run python -m ceo.cli.console_game
 
 # Train agents
-uv run python -m ceo.learning.qlearning --episodes 1000000
-uv run python -m ceo.learning.ppo --name PPOTest --n-steps-per-update 64
+.venv/Scripts/uv.exe run python -m ceo.learning.qlearning --episodes 1000000
+.venv/Scripts/uv.exe run python -m ceo.learning.ppo --name PPOTest --n-steps-per-update 64
 ```
 
 ## Code Conventions
@@ -61,4 +63,4 @@ uv run python -m ceo.learning.ppo --name PPOTest --n-steps-per-update 64
 
 **No task is complete until all ruff errors have been fixed.**
 
-Always run `uv run ruff check .` before considering any task done. Fix all errors before marking work as complete.
+Always run `.venv/Scripts/uv.exe run ruff check .` before considering any task done. Fix all errors before marking work as complete.
