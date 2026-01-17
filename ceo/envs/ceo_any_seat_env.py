@@ -2,7 +2,6 @@ from argparse import ArgumentError
 
 import gymnasium
 import numpy as np
-from gymnasium.spaces import Box
 
 from ceo.envs.actions import (
     ActionEnum,
@@ -111,12 +110,7 @@ class CEOAnySeatEnv(gymnasium.Env):
             num_players, include_seat_number=True, **obs_kwargs
         )
         self._observation_dimension = self.observation_factory.observation_dimension
-
-        self.observation_space = Box(
-            low=np.array([0.0] * self._observation_dimension),
-            high=np.array([13.0] * self._observation_dimension),
-            dtype=np.float64,
-        )
+        self.observation_space = self.observation_factory.create_observation_space()
 
         self.action_space_type = action_space_type
         if action_space_type == "ceo":

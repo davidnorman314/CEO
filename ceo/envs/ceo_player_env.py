@@ -1,6 +1,3 @@
-import numpy as np
-from gymnasium.spaces import Box
-
 from ceo.envs.ceo_any_seat_env import CEOAnySeatEnv
 from ceo.envs.observation import ObservationFactory
 from ceo.game.hand import Hand
@@ -70,13 +67,7 @@ class CEOPlayerEnv(CEOAnySeatEnv):
             num_players, seat_number=seat_number, **obs_kwargs
         )
         self._observation_dimension = self.observation_factory.observation_dimension
-
-        # Update observation space to match
-        self.observation_space = Box(
-            low=np.array([0.0] * self._observation_dimension),
-            high=np.array([13.0] * self._observation_dimension),
-            dtype=np.float64,
-        )
+        self.observation_space = self.observation_factory.create_observation_space()
 
         # Set current seat to fixed value
         self._current_seat = seat_number

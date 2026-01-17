@@ -1,5 +1,6 @@
 import numpy as np
 import torch as th
+from gymnasium.spaces import Box
 
 from ceo.game.hand import CardValue, HandInterface, PlayedCards
 
@@ -90,6 +91,16 @@ class ObservationFactory:
         the arguments.
         """
         return Observation(self, **kwargs)
+
+    def create_observation_space(self) -> Box:
+        """Creates a Gymnasium Box observation space matching this factory's
+        configuration.
+        """
+        return Box(
+            low=np.array([0.0] * self.observation_dimension),
+            high=np.array([13.0] * self.observation_dimension),
+            dtype=np.float64,
+        )
 
     def get_valid_action_range(self):
         return (
