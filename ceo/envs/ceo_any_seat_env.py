@@ -157,11 +157,15 @@ class CEOAnySeatEnv(gymnasium.Env):
         """Updates the observation factory to use the given seat."""
         self.observation_factory.set_seat_number(seat)
 
+    def _select_seat(self) -> int:
+        """Selects the seat for the episode. Override in subclasses for fixed seat."""
+        return int(self.np_random.integers(0, self.num_players))
+
     def reset(self, *, seed=None, options=None, hands: list[Hand] = None):
         super().reset(seed=seed)
 
-        # Select a random seat for this episode
-        self._current_seat = int(self.np_random.integers(0, self.num_players))
+        # Select seat for this episode (random in base class, fixed in subclasses)
+        self._current_seat = self._select_seat()
 
         # Update observation factory with new seat
         self._update_observation_factory_seat(self._current_seat)
