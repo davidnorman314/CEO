@@ -8,6 +8,7 @@ class ObservationFactory:
     """Class that creates Observations"""
 
     # The indices into the observation array where the various features start
+    _obs_index_seat_number: int | None
     _obs_index_hand_cards: int
     _obs_index_other_player_card_count: int
     _obs_index_cur_trick_value: int
@@ -24,9 +25,22 @@ class ObservationFactory:
     _seat_number: int
     """The seat number of the agent. Zero is CEO."""
 
+    _include_seat_number: bool
+
     observation_dimension: int
 
-    def __init__(self, num_players: int, seat_number: int, include_valid_actions=False):
+    def __init__(
+        self,
+        num_players: int,
+        seat_number: int | None = None,
+        include_valid_actions: bool = False,
+        include_seat_number: bool = False,
+    ):
+        if seat_number is None and not include_seat_number:
+            raise ValueError(
+                "seat_number is required when include_seat_number is False"
+            )
+        # Optional: One dimension for the seat number
         # Thirteen dimensions for the cards in the hand.
         # (num_players - 1) dimensions for the number of cards
         # in the other player's hands
@@ -34,7 +48,15 @@ class ObservationFactory:
         # One dimension for the number of cards in the trick
         # One dimension for the starting player on the trick
         # One dimension for the last player that played on the trick.
-        self._obs_index_hand_cards = 0
+        self._include_seat_number = include_seat_number
+
+        if include_seat_number:
+            self._obs_index_seat_number = 0
+            self._obs_index_hand_cards = 1
+        else:
+            self._obs_index_seat_number = None
+            self._obs_index_hand_cards = 0
+
         self._obs_index_other_player_card_count = self._obs_index_hand_cards + 13
         self._obs_index_cur_trick_value = (
             self._obs_index_other_player_card_count + num_players - 1
@@ -57,6 +79,10 @@ class ObservationFactory:
         self._obs_value_trick_not_started = num_players
 
         self._num_players = num_players
+        self._seat_number = seat_number
+
+    def set_seat_number(self, seat_number: int):
+        """Sets the seat number for subsequent observations."""
         self._seat_number = seat_number
 
     def create_observation(self, **kwargs):
@@ -134,6 +160,10 @@ class Observation:
             # Create the return array
             self._obs = np.zeros(self._factory.observation_dimension)
 
+            # Add the seat number if configured
+            if self._factory._obs_index_seat_number is not None:
+                self._obs[self._factory._obs_index_seat_number] = seat_number
+
             # Add the cards in our hand
             for v in range(13):
                 self._obs[obs_index_hand_cards + v] = cur_hand.count(CardValue(v))
@@ -164,6 +194,10 @@ class Observation:
 
             # Create the return array
             self._obs = np.zeros(self._factory.observation_dimension)
+
+            # Add the seat number if configured
+            if self._factory._obs_index_seat_number is not None:
+                self._obs[self._factory._obs_index_seat_number] = seat_number
 
             # Add the cards in our hand
             for v in range(13):
@@ -247,6 +281,12 @@ class Observation:
 
     def get_card_count(self, card_value: int):
         return self._obs[self._factory._obs_index_hand_cards + card_value]
+
+    def get_seat_number(self) -> int | None:
+        """Returns the seat number if included in the observation, else None."""
+        if self._factory._obs_index_seat_number is None:
+            return None
+        return int(self._obs[self._factory._obs_index_seat_number])
 
     def get_other_player_card_count(self, adj_player_index: int):
         """Returns the number of cards in another player's hand. The index is
