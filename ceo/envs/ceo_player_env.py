@@ -25,7 +25,7 @@ from ceo.game.simplebehavior import BasicBehavior, SimpleBehaviorBase
 
 class CEOPlayerEnv(gymnasium.Env):
     """
-    Environment for a player in the CEO seat. This environment's observations
+    Environment for a player in a given seat. This environment's observations
     contains all the information available to a player.
     """
 
