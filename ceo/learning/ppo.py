@@ -1,5 +1,6 @@
 """PPO training module for CEO."""
 
+import pathlib
 import random
 from collections.abc import Callable
 
@@ -394,8 +395,20 @@ class PPOLearning:
             device=device,
         )
 
-    def save(self, file: str):
-        self._ppo.save(file)
+    def save(self, output_dir: str):
+        """Save the PPO model to a checkpoint file.
+
+        Args:
+            output_dir: Directory where checkpoints will be saved.
+                       Creates a 'checkpoints' subdirectory and saves the model
+                       as 'seatceo_ppo_{step_count}.zip'.
+        """
+        checkpoints_dir = pathlib.Path(output_dir) / "checkpoints"
+        checkpoints_dir.mkdir(parents=True, exist_ok=True)
+
+        step_count = self._ppo.num_timesteps
+        checkpoint_path = checkpoints_dir / f"seatceo_ppo_{step_count}.zip"
+        self._ppo.save(str(checkpoint_path))
 
     def str_to_net_arch(self, net_arch_str):
         toks = net_arch_str.split(" ")

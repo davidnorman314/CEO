@@ -30,7 +30,7 @@ def env_args():
 
 
 def test_ppo_training_basic(env_args, test_output_dir):
-    """Test basic PPO training runs without errors."""
+    """Test basic PPO training runs without errors and saves checkpoint correctly."""
     env = CEOPlayerEnv(**env_args)
     eval_env = CEOPlayerEnv(**env_args)
 
@@ -59,6 +59,16 @@ def test_ppo_training_basic(env_args, test_output_dir):
     }
 
     learning.train(observation_factory, eval_log_path, train_params, do_log=False)
+
+    # Save checkpoint and verify it's saved correctly
+    learning.save(str(test_output_dir))
+
+    checkpoints_dir = test_output_dir / "checkpoints"
+    assert checkpoints_dir.exists(), "checkpoints directory should exist"
+
+    checkpoint_files = list(checkpoints_dir.glob("seatceo_ppo_*.zip"))
+    assert len(checkpoint_files) == 1, "Should have exactly one checkpoint file"
+    assert checkpoint_files[0].name.endswith(".zip")
 
 
 def test_ppo_training_relu_activation(env_args, test_output_dir):

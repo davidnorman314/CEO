@@ -161,8 +161,8 @@ def main(cfg: DictConfig) -> None:
     else:
         learning.train(observation_factory, eval_log_path, train_params, cfg.log)
 
-    # Save the agent
-    learning.save("seatceo_ppo")
+    # Save the agent to checkpoints directory inside hydra output dir
+    learning.save(hydra_output_dir)
 
 
 if __name__ == "__main__":
