@@ -1,0 +1,3 @@
+num_players: 6
+seat_number: 0
+parallel_env_count: null

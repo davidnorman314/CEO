@@ -1,0 +1,28 @@
+defaults:
+  - ppo: default
+  - network: default
+  - env: default
+  - _self_
+
+# Required - run name
+name: ???
+
+# Flags
+profile: false
+log: false
+azure: false
+continue_training: false
+
+# Device configuration
+device: cuda
+
+# PPO agents for other seats (list of directory paths)
+ppo_agents: []
+
+# Hydra configuration
+hydra:
+  run:
+    dir: outputs/${name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: multirun/${name}/${now:%Y-%m-%d_%H-%M-%S}
+    subdir: ${hydra.job.num}
