@@ -174,11 +174,9 @@ class CustomActorCriticPolicy(ActorCriticPolicy):
         """Adjust the outputs of the policy network based on which actions
         are invalid."""
 
-        # print("_adjust_action_logits features", features.dtype, features)
-        # print("_adjust_action_logits raw_action_logits", raw_action_logits.dtype,
-        #       raw_action_logits)
-        # print("invalid layer", self._invalid_actions_layer.dtype)
-        invalid_actions_float = self._invalid_actions_layer(features)
+        # Ensure features dtype matches the layer weights (float32)
+        features_float = features.float()
+        invalid_actions_float = self._invalid_actions_layer(features_float)
         invalid_actions = invalid_actions_float > 0.0
 
         # Adjust the logits so that the invalid actions have small probabilities.
