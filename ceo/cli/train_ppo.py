@@ -1,271 +1,95 @@
-"""CLI for PPO training."""
+"""CLI for PPO training using Hydra configuration."""
 
-import argparse
-import copy
 import cProfile
-import json
 import pathlib
 import random
 from pstats import SortKey
 
+import hydra
+from hydra.core.hydra_config import HydraConfig
+from omegaconf import DictConfig, OmegaConf
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 
 from ceo.azure_rl.azure_client import AzureClient
 from ceo.envs.ceo_player_env import CEOPlayerEnv
-from ceo.game.eventlistener import EventListenerInterface, PrintAllEventListener
+from ceo.game.eventlistener import EventListenerInterface
 from ceo.learning.ppo import PPOLearning
 from ceo.learning.ppo_agents import process_ppo_agents
 
 
-def main():
+def validate_continue_training(cfg: DictConfig, prev_cfg: DictConfig) -> None:
+    """Validate that continue_training config matches previous run."""
+    if cfg.env.num_players != prev_cfg.env.num_players:
+        raise ValueError(
+            f"num_players mismatch: current={cfg.env.num_players}, "
+            f"previous={prev_cfg.env.num_players}"
+        )
+    if cfg.env.seat_number != prev_cfg.env.seat_number:
+        raise ValueError(
+            f"seat_number mismatch: current={cfg.env.seat_number}, "
+            f"previous={prev_cfg.env.seat_number}"
+        )
+    # Validate ppo_agents match
+    prev_agents = prev_cfg.get("ppo_agents", [])
+    if list(cfg.ppo_agents) != list(prev_agents):
+        raise ValueError(
+            f"ppo_agents mismatch: current={list(cfg.ppo_agents)}, "
+            f"previous={list(prev_agents)}"
+        )
+
+
+@hydra.main(version_base=None, config_path="../conf", config_name="config")
+def main(cfg: DictConfig) -> None:
     print("In main")
+    print(OmegaConf.to_yaml(cfg))
 
-    parser = argparse.ArgumentParser(description="Do learning")
-    parser.add_argument(
-        "--profile",
-        dest="profile",
-        action="store_const",
-        const=True,
-        default=False,
-        help="Do profiling.",
-    )
-    parser.add_argument(
-        "--log",
-        dest="log",
-        action="store_const",
-        const=True,
-        default=False,
-        help="Do logging.",
-    )
-    parser.add_argument(
-        "--name",
-        dest="name",
-        type=str,
-        required=True,
-        help="The name of the run. Used for eval and tensorboard logging.",
-    )
-    parser.add_argument(
-        "--parallel-env-count",
-        dest="parallel_env_count",
-        type=int,
-        default=None,
-        help="The number of parallel environments to run in parallel.",
-    )
-    parser.add_argument(
-        "--total-steps",
-        dest="total_steps",
-        type=int,
-        default=None,
-        help="The steps to use in training",
-    )
-    parser.add_argument(
-        "--n-steps-per-update",
-        dest="n_steps_per_update",
-        type=int,
-        default=None,
-        help="The number of steps per neural network update",
-    )
-    parser.add_argument(
-        "--learning-rate",
-        dest="learning_rate",
-        type=float,
-        default=None,
-        help="The learning rate",
-    )
-    parser.add_argument(
-        "--gae-lambda",
-        dest="gae_lambda",
-        type=float,
-        default=None,
-        help="The gae lambda value",
-    )
-    parser.add_argument(
-        "--batch-size",
-        dest="batch_size",
-        type=int,
-        default=None,
-        help="The batch size",
-    )
-    parser.add_argument(
-        "--pi-net-arch",
-        dest="pi_net_arch",
-        type=str,
-        default=None,
-        help="The policy network architecture",
-    )
-    parser.add_argument(
-        "--vf-net-arch",
-        dest="vf_net_arch",
-        type=str,
-        default=None,
-        help="The value function network architecture",
-    )
-    parser.add_argument(
-        "--activation-fn",
-        dest="activation_fn",
-        type=str,
-        default=None,
-        help=(
-            "The neural network activation function network architecture, "
-            "e.g., relu or tanh. Optional."
-        ),
-    )
-    parser.add_argument(
-        "--device",
-        dest="device",
-        type=str,
-        default=None,
-        help="The CUDA device to use, e.g., cuda or cuda:0",
-    )
-    parser.add_argument(
-        "--azure",
-        dest="azure",
-        action="store_const",
-        const=True,
-        default=False,
-        help="Save agent and log information to azure blob storage.",
-    )
-    parser.add_argument(
-        "--seat-number",
-        dest="seat_number",
-        type=int,
-        default=None,
-        help="The seat number for the agent.",
-    )
-    parser.add_argument(
-        "--num-players",
-        dest="num_players",
-        type=int,
-        default=None,
-        help="The number of players in the game.",
-    )
-    parser.add_argument(
-        "--continue-training",
-        dest="continue_training",
-        action="store_const",
-        const=True,
-        default=False,
-        help="Continue training the previously saved agent.",
-    )
-    parser.add_argument(
-        "--ppo-agents",
-        dest="ppo_agents",
-        type=str,
-        nargs="*",
-        default=[],
-        help=(
-            "Specifies directories containing trained PPO agents "
-            "to play other seats in the game."
-        ),
-    )
-
-    args = parser.parse_args()
-
-    learning_kwargs = dict()
-
-    if args.total_steps:
-        learning_kwargs["total_steps"] = args.total_steps
-    if args.azure:
+    # Set up learning kwargs
+    learning_kwargs: dict = {}
+    if cfg.ppo.total_steps:
+        learning_kwargs["total_steps"] = cfg.ppo.total_steps
+    if cfg.azure:
         learning_kwargs["azure_client"] = AzureClient()
 
-    do_log = False
-    if args.log:
-        do_log = args.log
-
     random.seed(0)
-    listener = PrintAllEventListener()
     listener = EventListenerInterface()
-
     obs_kwargs = {"include_valid_actions": True}
 
     # Set up the parameters file location
-    eval_log_path = "eval_log/" + args.name
-    param_file = eval_log_path + "/params.json"
+    eval_log_path = f"eval_log/{cfg.name}"
+    param_file = f"{eval_log_path}/params.yaml"
 
-    # If we are continuing a previous training, then load the environment args from
-    # the saved parameters.
-    if args.continue_training:
-        if args.num_players:
-            raise Exception(
-                "Can't specify --num-players when using --continue-training"
-            )
-
-        if args.seat_number:
-            raise Exception(
-                "Can't specify --seat-number when using --continue-training"
-            )
-
-        with open(param_file) as data_file:
-            prev_params = json.load(data_file)
-
-        args.num_players = prev_params["env_args"]["num_players"]
-        args.seat_number = prev_params["env_args"]["seat_number"]
-
+    # Handle continue_training
+    if cfg.continue_training:
+        prev_cfg = OmegaConf.load(param_file)
+        validate_continue_training(cfg, prev_cfg)
+        # Use previous env settings
+        num_players = prev_cfg.env.num_players
+        seat_number = prev_cfg.env.seat_number
         print(
-            f"Loading previous num_players {args.num_players} "
-            f"and seat_number {args.seat_number}"
+            f"Loading previous num_players {num_players} "
+            f"and seat_number {seat_number}"
         )
-
-        assert args.num_players is not None
-        assert args.seat_number is not None
-
-        prev_custom_behaviors = prev_params["env_args"].get("custom_behaviors", None)
     else:
-        # Handle defaults for starting a new training
-        if not args.seat_number:
-            args.seat_number = 0
-            print(f"Using default {args.seat_number} seat for the agent.")
+        num_players = cfg.env.num_players
+        seat_number = cfg.env.seat_number
 
-        if not args.num_players:
-            args.num_players = 6
-            print(f"Using default {args.num_players} seat for the agent.")
-
-        prev_custom_behaviors = None
-
-    # Set up custom behaviors
+    # Set up custom behaviors from ppo_agents
     custom_behaviors, custom_behavior_descs = process_ppo_agents(
-        args.ppo_agents, device=args.device, num_players=args.num_players
+        list(cfg.ppo_agents), device=cfg.device, num_players=num_players
     )
 
-    # If continuing training, validate that the custom behaviors match the previous
-    # custom behaviors
-    if (
-        args.continue_training
-        and prev_custom_behaviors is None
-        and custom_behavior_descs is not None
-    ):
-        raise Exception(
-            "The saved agent did not use custom behaviors, "
-            "but they were specified on the command line."
-        )
-    elif prev_custom_behaviors is not None and custom_behavior_descs is None:
-        raise Exception(
-            "The saved agent did used custom behaviors, "
-            "but they were not specified on the command line."
-        )
-    elif (
-        prev_custom_behaviors is not None
-        and custom_behavior_descs is not None
-        and prev_custom_behaviors != custom_behavior_descs
-    ):
-        raise Exception(
-            f"The saved agent did used custom behaviors {prev_custom_behaviors}, "
-            "but they don't match the command line custom "
-            f"behaviors {custom_behavior_descs}."
-        )
-
-    # Check that the custom behaviors don't include the seat being trained.
-    if custom_behaviors is not None and args.seat_number in custom_behaviors:
-        raise Exception(
-            f"The seat {args.seat_number} has a custom behavior, "
+    # Validate custom behaviors don't include the training seat
+    if custom_behaviors is not None and seat_number in custom_behaviors:
+        raise ValueError(
+            f"Seat {seat_number} has a custom behavior, "
             "but that is the seat being trained."
         )
 
-    # Create the environment.
+    # Create the environment
     env_args = {
-        "num_players": args.num_players,
-        "seat_number": args.seat_number,
+        "num_players": num_players,
+        "seat_number": seat_number,
         "listener": listener,
         "action_space_type": "all_card",
         "reward_includes_cards_left": False,
@@ -273,17 +97,17 @@ def main():
         "obs_kwargs": obs_kwargs,
     }
 
-    if args.parallel_env_count is None:
+    if cfg.env.parallel_env_count is None:
         env = CEOPlayerEnv(**env_args)
     else:
         env = make_vec_env(
-            CEOPlayerEnv, n_envs=args.parallel_env_count, env_kwargs=env_args
+            CEOPlayerEnv, n_envs=cfg.env.parallel_env_count, env_kwargs=env_args
         )
 
-    # Use the usual reward for eval_env
+    # Create eval environment
     eval_env = CEOPlayerEnv(
-        num_players=args.num_players,
-        seat_number=args.seat_number,
+        num_players=num_players,
+        seat_number=seat_number,
         listener=listener,
         action_space_type="all_card",
         custom_behaviors=custom_behaviors,
@@ -293,61 +117,51 @@ def main():
 
     observation_factory = eval_env.observation_factory
 
-    learning = PPOLearning(args.name, env, eval_env, **learning_kwargs)
+    # Use Hydra's output directory for tensorboard logs
+    hydra_output_dir = HydraConfig.get().runtime.output_dir
+    learning_kwargs["tensorboard_log"] = f"{hydra_output_dir}/tensorboard"
 
-    train_params = dict()
-    if args.n_steps_per_update:
-        train_params["n_steps_per_update"] = args.n_steps_per_update
-    if args.batch_size:
-        train_params["batch_size"] = args.batch_size
-    if args.learning_rate:
-        train_params["learning_rate"] = args.learning_rate
-    if args.gae_lambda:
-        train_params["gae_lambda"] = args.gae_lambda
-    if args.pi_net_arch:
-        train_params["pi_net_arch"] = args.pi_net_arch
-    if args.vf_net_arch:
-        train_params["vf_net_arch"] = args.vf_net_arch
-    if args.activation_fn:
-        train_params["activation_fn"] = args.activation_fn
-    if args.device:
-        train_params["device"] = args.device
+    learning = PPOLearning(cfg.name, env, eval_env, **learning_kwargs)
 
-    if not args.continue_training:
-        # Save all parameters to the eval_log directory
-        save_params = dict()
-        save_params["learning_kwargs"] = learning_kwargs
-        save_params["train_params"] = train_params
+    # Build train_params from config
+    train_params = {
+        "n_steps_per_update": cfg.ppo.n_steps_per_update,
+        "batch_size": cfg.ppo.batch_size,
+        "learning_rate": cfg.ppo.learning_rate,
+        "gae_lambda": cfg.ppo.gae_lambda,
+        "pi_net_arch": cfg.network.pi_net_arch,
+        "vf_net_arch": cfg.network.vf_net_arch,
+        "activation_fn": cfg.network.activation_fn,
+        "device": cfg.device,
+    }
 
-        save_params["env_args"] = copy.copy(env_args)
-        del save_params["env_args"]["listener"]
-        save_params["env_args"]["custom_behaviors"] = custom_behavior_descs
-
+    if not cfg.continue_training:
+        # Save configuration to eval_log directory
         eval_log_path_obj = pathlib.Path(eval_log_path)
         if not eval_log_path_obj.is_dir():
             eval_log_path_obj.mkdir(parents=True)
 
-        with open(param_file, "w") as data_file:
-            json.dump(save_params, data_file, indent=4, sort_keys=True)
+        # Save full config (Hydra also saves this, but we want it in eval_log)
+        OmegaConf.save(cfg, param_file)
     else:
         ppo = PPO.load(
-            eval_log_path + "/best_model.zip",
-            device=args.device,
+            f"{eval_log_path}/best_model.zip",
+            device=cfg.device,
             print_system_info=True,
             env=env,
         )
         train_params["continue_ppo"] = ppo
 
-    if args.profile:
+    if cfg.profile:
         print("Running with profiling")
         cProfile.run(
-            "learning.train(observation_factory, train_params, do_log)",
+            "learning.train(observation_factory, eval_log_path, train_params, cfg.log)",
             sort=SortKey.CUMULATIVE,
         )
     else:
-        learning.train(observation_factory, eval_log_path, train_params, do_log)
+        learning.train(observation_factory, eval_log_path, train_params, cfg.log)
 
-    # Save the agent in a pickle file.
+    # Save the agent
     learning.save("seatceo_ppo")
 
 

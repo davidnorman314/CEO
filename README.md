@@ -58,14 +58,54 @@ uv run pytest -s -k game
 
 `uv run python -m ceo.cli.train_learning --pickle-file training.pkl --disable-agent-testing data/qlearning_traces_features.json`
 
-`uv run python -m ceo.cli.train_ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu`
+### PPO Training (Hydra-based)
 
-`uv run python -m ceo.cli.train_ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu --ppo-agents eval_log/BL_0_6_A`
+Basic training:
+```bash
+uv run python -m ceo.cli.train_ppo name=MyRun
+```
 
-`uv run python -m ceo.cli.train_ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --activation-fn relu --device cpu --ppo-agents eval_log/BL_0_6_A`
+Quick training for development/debugging (fewer steps, higher learning rate):
+```bash
+uv run python -m ceo.cli.train_ppo name=QuickTest ppo=fast
+```
 
-### Continue training
-`uv run python -m ceo.cli.train_ppo --continue-training --name PPOTest --device cpu --ppo-agents eval_log/BL_0_6_A`
+Override specific hyperparameters:
+```bash
+uv run python -m ceo.cli.train_ppo name=MyRun ppo.learning_rate=3e-5 ppo.batch_size=64
+```
+
+Configure network architecture:
+```bash
+uv run python -m ceo.cli.train_ppo name=MyRun network.pi_net_arch="64 64" network.vf_net_arch="64 64"
+```
+
+Use 4-player environment:
+```bash
+uv run python -m ceo.cli.train_ppo name=MyRun env=4player
+```
+
+Train with PPO agents at other seats:
+```bash
+uv run python -m ceo.cli.train_ppo name=MyRun 'ppo_agents=[eval_log/BL_0_6_A]'
+```
+
+Continue training from a saved model:
+```bash
+uv run python -m ceo.cli.train_ppo name=MyRun continue_training=true
+```
+
+Run on specific device:
+```bash
+uv run python -m ceo.cli.train_ppo name=MyRun device=cuda:0
+# or
+uv run python -m ceo.cli.train_ppo name=MyRun device=cpu
+```
+
+Hyperparameter sweep (runs multiple trainings):
+```bash
+uv run python -m ceo.cli.train_ppo -m name=Sweep ppo.learning_rate=1e-3,1e-4,1e-5
+```
 
 ## Use trained agents to play
 

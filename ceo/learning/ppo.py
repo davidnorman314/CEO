@@ -244,6 +244,7 @@ class PPOLearning:
     _ppo: stable_baselines3.PPO
     _env: gymnasium.Env
     _eval_env: gymnasium.Env
+    _tensorboard_log: str | None
 
     def __init__(
         self,
@@ -251,12 +252,14 @@ class PPOLearning:
         env: gymnasium.Env,
         eval_env: gymnasium.Env,
         total_steps=1000000000,
+        tensorboard_log: str | None = None,
         **kwargs,
     ):
         self._name = name
         self._env = env
         self._eval_env = eval_env
         self._total_steps = total_steps
+        self._tensorboard_log = tensorboard_log
 
         if "azure_client" in kwargs:
             self._azure_client = kwargs["azure_client"]
@@ -358,7 +361,7 @@ class PPOLearning:
 
         print("Training with", self._total_steps, "total steps")
 
-        tensorboard_log = "tensorboard_log"
+        tensorboard_log = self._tensorboard_log
 
         verbose = 1
         verbose = 0
