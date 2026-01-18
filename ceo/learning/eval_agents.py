@@ -1,7 +1,5 @@
 """Code to play rounds with various agents and evaluate their performance."""
 
-import argparse
-
 from ceo.game.eventlistener import (
     EventListenerInterface,
     MultiEventListener,
@@ -73,87 +71,55 @@ class HeuristicMonitorListener(EventListenerInterface):
                 self.stats[index].lead_second_lgdiff_lowest_count += 1
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Play many games")
-    parser.add_argument(
-        "--print",
-        dest="print",
-        action="store_const",
-        const=True,
-        default=False,
-        help="Print the game status.",
-    )
-    parser.add_argument(
-        "--num-rounds",
-        dest="num_rounds",
-        type=int,
-        default=1000,
-        help="The number of rounds to play",
-    )
-    parser.add_argument(
-        "--num-players",
-        dest="num_players",
-        type=int,
-        default=None,
-        help="The number of players in the game.",
-    )
-    parser.add_argument(
-        "--ppo-agents",
-        dest="ppo_agents",
-        type=str,
-        nargs="*",
-        default=[],
-        help=(
-            "Specifies directories containing trained PPO agents "
-            "to include in the games."
-        ),
-    )
-    parser.add_argument(
-        "--basic-agent-seats",
-        dest="basic_agent_seats",
-        type=int,
-        nargs="*",
-        default=[],
-        help="Specifies which seats should be played by BasicBehavior agents.",
-    )
-    parser.add_argument(
-        "--device",
-        dest="device",
-        type=str,
-        default=None,
-        help="The CUDA device to use, e.g., cuda or cuda:0",
-    )
+def evaluate_agents(
+    num_players: int,
+    num_rounds: int,
+    ppo_agents: list[str],
+    basic_agent_seats: list[int],
+    device: str = None,
+    do_print: bool = False,
+):
+    """Evaluate agents by playing rounds and collecting statistics.
 
-    args = parser.parse_args()
-    num_players = args.num_players
-    basic_agent_seats = set(args.basic_agent_seats)
+    Args:
+        num_players: Number of players in the game.
+        num_rounds: Number of rounds to play.
+        ppo_agents: List of directories containing trained PPO agents.
+        basic_agent_seats: List of seat numbers for BasicBehavior agents.
+        device: CUDA device to use (e.g., "cuda" or "cuda:0").
+        do_print: If True, print game status instead of collecting stats.
+
+    Returns:
+        Tuple of (win_loss_listener, heuristic_monitor, players) if do_print is False,
+        otherwise None.
+    """
+    basic_agent_seats_set = set(basic_agent_seats)
 
     # Load the agents
     custom_behaviors, custom_behavior_descs = process_ppo_agents(
-        args.ppo_agents, device=args.device, num_players=num_players
+        ppo_agents, device=device, num_players=num_players
     )
 
     players = []
-    for seat in range(args.num_players):
-        if seat not in custom_behaviors and seat not in basic_agent_seats:
-            print(f"Basic agents {basic_agent_seats}.")
+    for seat in range(num_players):
+        if seat not in custom_behaviors and seat not in basic_agent_seats_set:
+            print(f"Basic agents {basic_agent_seats_set}.")
             raise Exception(f"No player specified for seat {seat}.")
 
-        if seat in basic_agent_seats:
+        if seat in basic_agent_seats_set:
             assert seat not in custom_behaviors
             name = "Basic" + str(seat)
             players.append(Player(name, BasicBehavior()))
 
         if seat in custom_behaviors:
-            assert seat not in basic_agent_seats
+            assert seat not in basic_agent_seats_set
             players.append(Player(custom_behavior_descs[seat], custom_behaviors[seat]))
 
     listeners = []
-    if args.print:
-        do_stats = False
+    win_loss_listener = None
+    if do_print:
         listeners.append(PrintAllEventListener())
     else:
-        do_stats = True
         win_loss_listener = WinLossStatisticsCollector(players)
         listeners.append(win_loss_listener)
 
@@ -162,16 +128,26 @@ def main():
 
     listener = MultiEventListener(listeners)
 
-    num_rounds = args.num_rounds
     game = Game(players, listener)
-    game.play(round_count=args.num_rounds, do_shuffle=False, reorder_seats=False)
+    game.play(round_count=num_rounds, do_shuffle=False, reorder_seats=False)
 
+    if do_print:
+        return None
+
+    return win_loss_listener, heuristic_monitor, players
+
+
+def print_statistics(
+    win_loss_listener: WinLossStatisticsCollector,
+    heuristic_monitor: HeuristicMonitorListener,
+    players: list[Player],
+    num_players: int,
+    num_rounds: int,
+):
+    """Print win/loss and heuristic statistics."""
     format1 = "{:20}"
     format2 = "{:5.2f}"
     format2a = "{:5.0f}"
-
-    if not do_stats:
-        exit(1)
 
     # Print win/loss statistics
     for behavior_name in win_loss_listener.stats:
@@ -274,11 +250,6 @@ def main():
             )
             print("")
 
-        # for i in range(num_players):
-        #    pct = stats.end_position_count[i]
-        #
-        #    print("{0:5d}".format(pct), end="")
-
         print("")
 
     # Print heuristics statistics
@@ -293,6 +264,7 @@ def main():
         total = lead_lowest_count + lead_second_lowest_count
         if total == 0:
             print(f"Skipping {name}, since no data")
+            continue
 
         pct_lead_lowest = lead_lowest_count / total
 
@@ -309,6 +281,7 @@ def main():
         total = lead_lowest_count + lead_second_lowest_count
         if total == 0:
             print(f"Skipping {name}, since no data")
+            continue
 
         pct_lead_lowest = lead_lowest_count / total
 
@@ -317,7 +290,3 @@ def main():
         )
 
     print("")
-
-
-if __name__ == "__main__":
-    main()

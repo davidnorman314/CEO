@@ -47,8 +47,8 @@ Run commands using `.venv/Scripts/uv.exe run` rather than `uv run`.
 .venv/Scripts/uv.exe run python -m ceo.cli.console_game
 
 # Train agents
-.venv/Scripts/uv.exe run python -m ceo.learning.qlearning --episodes 1000000
-.venv/Scripts/uv.exe run python -m ceo.learning.ppo --name PPOTest --n-steps-per-update 64
+.venv/Scripts/uv.exe run python -m ceo.cli.train_qlearning --episodes 1000000
+.venv/Scripts/uv.exe run python -m ceo.cli.train_ppo --name PPOTest --n-steps-per-update 64
 ```
 
 ## Code Conventions

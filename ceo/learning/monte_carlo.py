@@ -1,9 +1,5 @@
-"""Monte carlo reinforcement learning for CEO.
+"""Monte carlo reinforcement learning for CEO."""
 
-The program can either train a new model or play games with a trained model.
-"""
-
-import argparse
 import random
 from collections import deque
 from copy import deepcopy
@@ -14,11 +10,52 @@ import gymnasium
 from ceo.envs.actions import ActionEnum
 from ceo.envs.seat_ceo_env import CEOActionSpace, SeatCEOEnv
 from ceo.envs.seat_ceo_features_env import SeatCEOFeaturesEnv
-from ceo.game.eventlistener import (
-    EventListenerInterface,
-    PrintAllEventListener,
-)
+from ceo.game.eventlistener import EventListenerInterface, PrintAllEventListener
 from ceo.learning.learning_base import QTableLearningBase
+
+# Module-level variables for worker processes
+_worker_base_env = None
+_worker_env = None
+_worker_learning = None
+
+
+def _create_worker_environment(shared_q: RawArray, shared_state_count: RawArray):
+    """Create an environment for a worker process using shared arrays."""
+    listener = PrintAllEventListener()
+    listener = EventListenerInterface()
+    base_env = SeatCEOEnv(listener=listener)
+    env = SeatCEOFeaturesEnv(base_env)
+
+    env_kwargs = {
+        "shared_q": shared_q,
+        "shared_state_count": shared_state_count,
+    }
+    learning = MonteCarloLearning(env, base_env, **env_kwargs)
+
+    return base_env, env, learning
+
+
+def init_worker(q_raw_array: RawArray, state_count_raw_array: RawArray):
+    """Initialize a worker process with shared arrays."""
+    global _worker_base_env
+    global _worker_env
+    global _worker_learning
+
+    _worker_base_env, _worker_env, _worker_learning = _create_worker_environment(
+        q_raw_array, state_count_raw_array
+    )
+
+
+def worker_func(episode_count: int):
+    """Worker function that runs episodes in a child process."""
+    assert _worker_learning is not None
+    episode_results = []
+
+    for _episode in range(episode_count):
+        states, actions, reward, statistics = _worker_learning.do_episode()
+        episode_results.append((states, actions, reward, statistics))
+
+    return episode_results
 
 
 class SearchStatistics:
@@ -288,120 +325,3 @@ class MonteCarloLearning(QTableLearningBase):
             pool.close()
 
 
-def create_environment(**kwargs):
-    """Initialize the environment and learning objects.
-    If kwargs is empty, do normal, single-process learning.
-    If kwargs has parent=True, then create a parent environment for learning
-    using sub-processes to run the episodes.
-    If kwargs has shared_q=RawArray and shared_state_count=RawArray, then create
-    the worker environment using the given shared arrays.
-    """
-
-    env_kwargs = dict()
-    if not kwargs:
-        # Single process
-        pass
-    elif "parent" in kwargs and kwargs["parent"]:
-        env_kwargs["shared"] = True
-    elif "shared_q" in kwargs and "shared_state_count" in kwargs:
-        env_kwargs["shared_q"] = kwargs["shared_q"]
-        env_kwargs["shared_state_count"] = kwargs["shared_state_count"]
-    else:
-        raise Exception("Illegal arguments to create_environment")
-
-    listener = PrintAllEventListener()
-    listener = EventListenerInterface()
-    base_env = SeatCEOEnv(listener=listener)
-    env = SeatCEOFeaturesEnv(base_env)
-
-    learning = MonteCarloLearning(env, base_env, **env_kwargs)
-
-    return base_env, env, learning
-
-
-def train_and_save(episodes: int, process_count: int):
-    # Set up the environment
-    random.seed(0)
-
-    env_kwargs = dict()
-    if process_count > 1:
-        env_kwargs["parent"] = True
-    base_env, env, learning = create_environment(**env_kwargs)
-
-    learning.train(episodes, process_count)
-
-    # Save the agent in a pickle file.
-    learning.pickle("monte_carlo.pickle")
-
-
-worker_base_env = None
-worker_env = None
-worker_learning = None
-
-
-def init_worker(q_raw_array: RawArray, state_count_raw_array: RawArray):
-    global worker_base_env
-    global worker_env
-    global worker_learning
-
-    worker_base_env, worker_env, worker_learning = create_environment(
-        shared_q=q_raw_array, shared_state_count=state_count_raw_array
-    )
-
-
-def worker_func(episode_count: int):
-    assert worker_learning is not None
-    episode_results = []
-
-    for _episode in range(episode_count):
-        states, actions, reward, statistics = worker_learning.do_episode()
-        episode_results.append((states, actions, reward, statistics))
-
-    return episode_results
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--profile",
-        dest="profile",
-        action="store_const",
-        const=True,
-        default=False,
-        help="Do profiling.",
-    )
-
-    parser.add_argument(
-        "--train",
-        dest="train",
-        action="store_const",
-        const=True,
-        help="Train a new agent",
-    )
-    parser.add_argument(
-        "--episodes",
-        dest="episodes",
-        type=int,
-        default=100000,
-        help="The number of rounds to play",
-    )
-    parser.add_argument(
-        "--processes",
-        dest="process_count",
-        type=int,
-        default=1,
-        help="The number of parallel processes to use during training",
-    )
-
-    args = parser.parse_args()
-    # print(args)
-
-    if args.train:
-        train_and_save(args.episodes, args.process_count)
-    else:
-        parser.print_usage()
-
-
-if __name__ == "__main__":
-    # execute only if run as a script
-    main()

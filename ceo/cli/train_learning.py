@@ -1,10 +1,11 @@
-"""Config-driven training module.
+"""CLI for config-driven training.
 
 Trains an agent based on a JSON configuration file.
 Example configuration files are in the data directory in the root of
 the repository.
 """
 
+import argparse
 import cProfile
 import json
 import random
@@ -140,3 +141,102 @@ def post_train_test_stats(learning, env, base_env, episodes, azure_client):
             total_losses=stats.total_losses,
             pct_win=stats.pct_win,
         )
+
+
+def main():
+    """Main function"""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--profile",
+        dest="profile",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Do profiling.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        nargs=1,
+        default=None,
+        help="The random seed",
+    )
+    parser.add_argument(
+        "--pickle-file",
+        type=str,
+        nargs="?",
+        default=None,
+        help="The name of the file where pickled results should be saved.",
+    )
+    parser.add_argument(
+        "--log",
+        dest="log",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Do logging.",
+    )
+    parser.add_argument(
+        "--azure",
+        dest="azure",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Save agent and log information to azure blob storage.",
+    )
+    parser.add_argument(
+        "configfile",
+        metavar="config_file",
+        type=str,
+        nargs=1,
+        help="The learning configuration file",
+    )
+    parser.add_argument(
+        "--post-train-stats-episodes",
+        type=int,
+        default=None,
+        help="Number of episodes to run when testing after training.",
+    )
+    parser.add_argument(
+        "--during-training-stats-episodes",
+        type=int,
+        default=None,
+        help="Number of episodes to run for testing during training.",
+    )
+    parser.add_argument(
+        "--during-training-stats-frequency",
+        type=int,
+        default=None,
+        help="How frequently during training the agent should be tested.",
+    )
+    parser.add_argument(
+        "--disable-agent-testing",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Disables testing the agent during search.",
+    )
+
+    args = parser.parse_args()
+
+    kwargs = dict()
+    if args.during_training_stats_episodes:
+        kwargs["during_training_stats_episodes"] = args.during_training_stats_episodes
+    if args.during_training_stats_frequency:
+        kwargs["during_training_stats_frequency"] = args.during_training_stats_frequency
+
+    do_learning(
+        args.configfile[0],
+        args.azure,
+        args.log,
+        args.seed,
+        args.profile,
+        args.pickle_file,
+        args.disable_agent_testing,
+        args.post_train_stats_episodes,
+        **kwargs,
+    )
+
+
+if __name__ == "__main__":
+    main()

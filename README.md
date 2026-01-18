@@ -42,47 +42,47 @@ uv run pytest -s -k game
 
 ## Train agents
 
-`uv run python -m ceo.learning.qlearning --episodes 1000000`
+`uv run python -m ceo.cli.train_qlearning --episodes 1000000`
 
-`uv run python -m ceo.learning.qlearning_afterstates --episodes 10000000`
+`uv run python -m ceo.cli.train_qlearning_afterstates --episodes 10000000`
 
-`uv run python -m ceo.learning.learning --episodes 10000000 --during-training-stats-episodes 1000 --during-training-stats-frequency 50000`
+`uv run python -m ceo.cli.train_learning --episodes 10000000 --during-training-stats-episodes 1000 --during-training-stats-frequency 50000`
 
-`uv run python -m ceo.learning.qlearning_traces --episodes 100000`
+`uv run python -m ceo.cli.train_qlearning_traces --episodes 100000`
 
-`uv run python -m ceo.learning.monte_carlo --train --episodes 1000000`
+`uv run python -m ceo.cli.train_monte_carlo --train --episodes 1000000`
 
-`uv run python -m ceo.learning.monte_carlo --train --episodes 5000 --processes 3`
+`uv run python -m ceo.cli.train_monte_carlo --train --episodes 5000 --processes 3`
 
-`uv run python -m ceo.learning.learning --pickle-file training.pkl --disable-agent-testing data/qlearning.json`
+`uv run python -m ceo.cli.train_learning --pickle-file training.pkl --disable-agent-testing data/qlearning.json`
 
-`uv run python -m ceo.learning.learning --pickle-file training.pkl --disable-agent-testing data/qlearning_traces_features.json`
+`uv run python -m ceo.cli.train_learning --pickle-file training.pkl --disable-agent-testing data/qlearning_traces_features.json`
 
-`uv run python -m ceo.learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu`
+`uv run python -m ceo.cli.train_ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu`
 
-`uv run python -m ceo.learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu --ppo-agents eval_log/BL_0_6_A`
+`uv run python -m ceo.cli.train_ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --device cpu --ppo-agents eval_log/BL_0_6_A`
 
-`uv run python -m ceo.learning.ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --activation-fn relu --device cpu --ppo-agents eval_log/BL_0_6_A`
+`uv run python -m ceo.cli.train_ppo --name PPOTest --n-steps-per-update 64 --batch-size 64 --learning-rate 3e-5 --pi-net-arch "64 64" --vf-net-arch "64 64" --activation-fn relu --device cpu --ppo-agents eval_log/BL_0_6_A`
 
 ### Continue training
-`uv run python -m ceo.learning.ppo --continue-training --name PPOTest --device cpu --ppo-agents eval_log/BL_0_6_A`
+`uv run python -m ceo.cli.train_ppo --continue-training --name PPOTest --device cpu --ppo-agents eval_log/BL_0_6_A`
 
 ## Use trained agents to play
 
-`uv run python -m ceo.learning.play_qagent --play --episodes 100 --ppo-dir eval_log/PPOM01 --device cpu`
+`uv run python -m ceo.cli.play_qagent --play --episodes 100 --ppo-dir eval_log/PPOM01 --device cpu`
 
-`uv run python -m ceo.learning.play_qagent --play --agent-file monte_carlo.pickle --episodes 200 > log.txt`
+`uv run python -m ceo.cli.play_qagent --play --agent-file monte_carlo.pickle --episodes 200 > log.txt`
 
-`uv run python -m ceo.learning.play_qagent --play --episodes 100000 --agent-file monte_carlo.pickle`
+`uv run python -m ceo.cli.play_qagent --play --episodes 100000 --agent-file monte_carlo.pickle`
 
-`uv run python -m ceo.learning.play_qagent --play --ppo-file eval_log/PPOM01/best_model.zip --episodes 200 > log.txt`
+`uv run python -m ceo.cli.play_qagent --play --ppo-file eval_log/PPOM01/best_model.zip --episodes 200 > log.txt`
 
-`uv run python -m ceo.learning.play_qagent --play-round-file play_hands/hands9.pickle --agent-file monte_carlo.pickle --do-logging > log.txt`
+`uv run python -m ceo.cli.play_qagent --play-round-file play_hands/hands9.pickle --agent-file monte_carlo.pickle --do-logging > log.txt`
 
 ## Evaluate agents
-`uv run python -m ceo.learning.eval_agents --num-players 6 --num-rounds 1000 --device cuda:1 --ppo-agents eval_log/BL_0_6_A eval_log/BL_1_6_A eval_log/BL_2_6_A eval_log/BL_3_6_A eval_log/BL_4_6_A eval_log/BL_5_6_A`
+`uv run python -m ceo.cli.eval_agents --num-players 6 --num-rounds 1000 --device cuda:1 --ppo-agents eval_log/BL_0_6_A eval_log/BL_1_6_A eval_log/BL_2_6_A eval_log/BL_3_6_A eval_log/BL_4_6_A eval_log/BL_5_6_A`
 
-`uv run python -m ceo.learning.eval_agents --num-players 6 --num-rounds 1000 --device cpu --ppo-agents eval_log/BL_2_6_A eval_log/BL_3_6_A eval_log/BL_4_6_A eval_log/BL_5_6_A --basic-agent-seats 0 1`
+`uv run python -m ceo.cli.eval_agents --num-players 6 --num-rounds 1000 --device cpu --ppo-agents eval_log/BL_2_6_A eval_log/BL_3_6_A eval_log/BL_4_6_A eval_log/BL_5_6_A --basic-agent-seats 0 1`
 
 
 ## Azure command-line client

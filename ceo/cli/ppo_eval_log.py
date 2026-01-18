@@ -1,5 +1,6 @@
-"""Utilities for parsing the PPO eval_log."""
+"""CLI for parsing the PPO eval_log."""
 
+import argparse
 import json
 import pathlib
 
@@ -103,3 +104,35 @@ def load_all_eval(eval_dirs: list[str]):
     )
 
     print(tabulate.tabulate(df, headers="keys", tablefmt="github"))
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Parse PPO evaluation logs")
+
+    parser.add_argument(
+        "--eval-dir",
+        dest="eval_dir",
+        default=None,
+        help="The directory containing the evaluation information.",
+    )
+    parser.add_argument(
+        "--all",
+        dest="all",
+        type=str,
+        nargs="*",
+        default=[],
+        help="Load all logs in the given directories.",
+    )
+
+    args = parser.parse_args()
+
+    if args.eval_dir:
+        load_eval(args.eval_dir)
+    elif args.all:
+        load_all_eval(args.all)
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
