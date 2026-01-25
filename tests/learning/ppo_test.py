@@ -30,19 +30,33 @@ def env_args():
 
 
 def test_ppo_training_basic(env_args, test_output_dir):
-    """Test basic PPO training runs without errors and saves checkpoint correctly."""
+    """Test basic PPO training with periodic and final checkpoints."""
     env = CEOPlayerEnv(**env_args)
     eval_env = CEOPlayerEnv(**env_args)
 
     tensorboard_log = str(test_output_dir / "tensorboard")
     eval_log_path = str(test_output_dir / "eval_log")
+    checkpoints_dir = str(test_output_dir / "checkpoints")
 
+    # With 200 total steps, 32 steps per update, and checkpoint every 50 steps,
+    # checkpoints occur when num_timesteps - last_checkpoint >= 50.
+    # Updates happen at steps 32, 64, 96, 128, 160, 192, 224.
+    # Checkpoints at: 50 (after 64), 100 (after 128), 150 (after 160), 200 (after 224)
+    # But step counts are the actual timesteps: 64, 128, 160, 224
+    # Wait - the callback checks after each step, so:
+    # - After step 50: checkpoint at 50
+    # - After step 100: checkpoint at 100
+    # - After step 150: checkpoint at 150
+    # - After step 200: checkpoint at 200
+    # Plus final checkpoint at 224 (total steps reached)
     learning = PPOLearning(
         name="test_ppo",
         env=env,
         eval_env=eval_env,
-        total_steps=100,
+        total_steps=200,
         tensorboard_log=tensorboard_log,
+        checkpoint_dir=checkpoints_dir,
+        checkpoint_interval=50,
     )
 
     observation_factory = eval_env.observation_factory
@@ -60,15 +74,36 @@ def test_ppo_training_basic(env_args, test_output_dir):
 
     learning.train(observation_factory, eval_log_path, train_params, do_log=False)
 
-    # Save checkpoint and verify it's saved correctly
-    learning.save(str(test_output_dir))
+    # Save final checkpoint
+    learning.save(checkpoints_dir)
 
-    checkpoints_dir = test_output_dir / "checkpoints"
-    assert checkpoints_dir.exists(), "checkpoints directory should exist"
+    checkpoints_path = test_output_dir / "checkpoints"
+    assert checkpoints_path.exists(), "checkpoints directory should exist"
 
-    checkpoint_files = list(checkpoints_dir.glob("seatceo_ppo_*.zip"))
-    assert len(checkpoint_files) == 1, "Should have exactly one checkpoint file"
-    assert checkpoint_files[0].name.endswith(".zip")
+    checkpoint_files = list(checkpoints_path.glob("seatceo_ppo_*.zip"))
+
+    # Extract step numbers from checkpoint filenames
+    step_numbers = []
+    for f in checkpoint_files:
+        # Extract number from "seatceo_ppo_123.zip"
+        step_str = f.stem.replace("seatceo_ppo_", "")
+        step_numbers.append(int(step_str))
+    step_numbers.sort()
+
+    # Should have checkpoints at approximately 50, 100, 150, 200, plus final
+    assert len(step_numbers) >= 4, (
+        f"Should have at least 4 checkpoints, got {len(step_numbers)}: {step_numbers}"
+    )
+
+    # Verify checkpoints are at expected intervals (multiples of ~50)
+    # The first checkpoint should be around 50
+    assert step_numbers[0] >= 50, (
+        f"First checkpoint should be >= 50, got {step_numbers[0]}"
+    )
+    # The last checkpoint should be the final step count
+    assert step_numbers[-1] > 200, (
+        f"Final checkpoint should be > 200, got {step_numbers[-1]}"
+    )
 
 
 def test_ppo_training_relu_activation(env_args, test_output_dir):

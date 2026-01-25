@@ -16,6 +16,9 @@ continue_training: false
 # Device configuration
 device: cuda
 
+# Checkpoint configuration (steps between checkpoints, null to disable periodic checkpoints)
+checkpoint_interval: 100000
+
 # PPO agents for other seats (list of directory paths)
 ppo_agents: []
 

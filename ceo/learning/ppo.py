@@ -58,6 +58,34 @@ class PPOCallback(BaseCallback):
         return True
 
 
+class CheckpointCallback(BaseCallback):
+    """Callback to save model checkpoints at regular intervals."""
+
+    def __init__(
+        self,
+        checkpoint_dir: str,
+        checkpoint_interval: int,
+        verbose: int = 0,
+    ):
+        super().__init__(verbose)
+        self._checkpoint_dir = pathlib.Path(checkpoint_dir)
+        self._checkpoint_interval = checkpoint_interval
+        self._last_checkpoint_step = 0
+
+    def _on_step(self) -> bool:
+        if self.num_timesteps - self._last_checkpoint_step >= self._checkpoint_interval:
+            self._save_checkpoint()
+            self._last_checkpoint_step = self.num_timesteps
+        return True
+
+    def _save_checkpoint(self) -> None:
+        self._checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        checkpoint_path = (
+            self._checkpoint_dir / f"seatceo_ppo_{self.num_timesteps}.zip"
+        )
+        self.model.save(str(checkpoint_path))
+
+
 class CustomActorCriticPolicy(ActorCriticPolicy):
     _invalid_actions_layer: th.nn.Linear
 
@@ -244,6 +272,8 @@ class PPOLearning:
     _env: gymnasium.Env
     _eval_env: gymnasium.Env
     _tensorboard_log: str | None
+    _checkpoint_dir: str | None
+    _checkpoint_interval: int | None
 
     def __init__(
         self,
@@ -252,6 +282,8 @@ class PPOLearning:
         eval_env: gymnasium.Env,
         total_steps=1000000000,
         tensorboard_log: str | None = None,
+        checkpoint_dir: str | None = None,
+        checkpoint_interval: int | None = None,
         **kwargs,
     ):
         self._name = name
@@ -259,6 +291,8 @@ class PPOLearning:
         self._eval_env = eval_env
         self._total_steps = total_steps
         self._tensorboard_log = tensorboard_log
+        self._checkpoint_dir = checkpoint_dir
+        self._checkpoint_interval = checkpoint_interval
 
         if "azure_client" in kwargs:
             self._azure_client = kwargs["azure_client"]
@@ -295,7 +329,17 @@ class PPOLearning:
             n_eval_episodes=10000,
             log_path=eval_log_path,
         )
-        callback = CallbackList([ppo_callback, eval_callback])
+        callbacks = [ppo_callback, eval_callback]
+
+        # Add checkpoint callback if configured
+        if self._checkpoint_dir and self._checkpoint_interval:
+            checkpoint_callback = CheckpointCallback(
+                checkpoint_dir=self._checkpoint_dir,
+                checkpoint_interval=self._checkpoint_interval,
+            )
+            callbacks.append(checkpoint_callback)
+
+        callback = CallbackList(callbacks)
 
         self._ppo.learn(
             self._total_steps,
@@ -395,20 +439,19 @@ class PPOLearning:
             device=device,
         )
 
-    def save(self, output_dir: str):
+    def save(self, checkpoint_dir: str):
         """Save the PPO model to a checkpoint file.
 
         Args:
-            output_dir: Directory where checkpoints will be saved.
-                       Creates a 'checkpoints' subdirectory and saves the model
-                       as 'seatceo_ppo_{step_count}.zip'.
+            checkpoint_dir: Directory where checkpoint will be saved.
+                           Saves the model as 'seatceo_ppo_{step_count}.zip'.
         """
-        checkpoints_dir = pathlib.Path(output_dir) / "checkpoints"
-        checkpoints_dir.mkdir(parents=True, exist_ok=True)
+        checkpoint_path = pathlib.Path(checkpoint_dir)
+        checkpoint_path.mkdir(parents=True, exist_ok=True)
 
         step_count = self._ppo.num_timesteps
-        checkpoint_path = checkpoints_dir / f"seatceo_ppo_{step_count}.zip"
-        self._ppo.save(str(checkpoint_path))
+        checkpoint_file = checkpoint_path / f"seatceo_ppo_{step_count}.zip"
+        self._ppo.save(str(checkpoint_file))
 
     def str_to_net_arch(self, net_arch_str):
         toks = net_arch_str.split(" ")

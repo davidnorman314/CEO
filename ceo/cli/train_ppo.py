@@ -117,9 +117,13 @@ def main(cfg: DictConfig) -> None:
 
     observation_factory = eval_env.observation_factory
 
-    # Use Hydra's output directory for tensorboard logs
+    # Use Hydra's output directory for tensorboard logs and checkpoints
     hydra_output_dir = HydraConfig.get().runtime.output_dir
+    checkpoint_dir = f"{hydra_output_dir}/checkpoints"
     learning_kwargs["tensorboard_log"] = f"{hydra_output_dir}/tensorboard"
+    learning_kwargs["checkpoint_dir"] = checkpoint_dir
+    if cfg.checkpoint_interval:
+        learning_kwargs["checkpoint_interval"] = cfg.checkpoint_interval
 
     learning = PPOLearning(cfg.name, env, eval_env, **learning_kwargs)
 
@@ -161,8 +165,8 @@ def main(cfg: DictConfig) -> None:
     else:
         learning.train(observation_factory, eval_log_path, train_params, cfg.log)
 
-    # Save the agent to checkpoints directory inside hydra output dir
-    learning.save(hydra_output_dir)
+    # Save final checkpoint
+    learning.save(checkpoint_dir)
 
 
 if __name__ == "__main__":
