@@ -72,6 +72,7 @@ class CEOAnySeatEnv(gymnasium.Env):
         self,
         num_players=6,
         behaviors=None,
+        custom_behaviors=None,
         hands=None,
         listener=None,
         skip_passing=False,
@@ -87,6 +88,12 @@ class CEOAnySeatEnv(gymnasium.Env):
         # Initialize defaults inside the function to avoid mutable/default-call issues
         if behaviors is None:
             behaviors = [BasicBehavior() for _ in range(num_players)]
+
+        # Handle custom_behaviors by merging into behaviors list
+        if custom_behaviors is not None:
+            behaviors = list(behaviors)
+            for i, behavior in custom_behaviors.items():
+                behaviors[i] = behavior
 
         assert len(behaviors) == num_players
         self._behaviors = behaviors
