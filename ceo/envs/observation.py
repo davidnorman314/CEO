@@ -82,6 +82,13 @@ class ObservationFactory:
         self._num_players = num_players
         self._seat_number = seat_number
 
+        print(
+            f"ObservationFactory created with {self.observation_dimension} dimensions "
+            f"(num_players={num_players}, seat_number={seat_number}, "
+            f"include_valid_actions={include_valid_actions}, "
+            f"include_seat_number={include_seat_number})"
+        )
+
     def set_seat_number(self, seat_number: int):
         """Sets the seat number for subsequent observations."""
         self._seat_number = seat_number
