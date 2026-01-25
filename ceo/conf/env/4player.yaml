@@ -1,3 +1,5 @@
+_target_: ceo.envs.ceo_player_env.CEOPlayerEnv
 num_players: 4
 seat_number: 0
-parallel_env_count: null
+action_space_type: all_card
+reward_includes_cards_left: false

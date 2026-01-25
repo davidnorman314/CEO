@@ -85,6 +85,11 @@ Use 4-player environment:
 uv run python -m ceo.cli.train_ppo name=MyRun env=4player
 ```
 
+Train agent for any seat (seat changes randomly each episode):
+```bash
+uv run python -m ceo.cli.train_ppo name=MyRun env=any_seat
+```
+
 Train with PPO agents at other seats:
 ```bash
 uv run python -m ceo.cli.train_ppo name=MyRun 'ppo_agents=[eval_log/BL_0_6_A]'

@@ -1,5 +1,4 @@
-_target_: ceo.envs.ceo_player_env.CEOPlayerEnv
+_target_: ceo.envs.ceo_any_seat_env.CEOAnySeatEnv
 num_players: 6
-seat_number: 0
 action_space_type: all_card
 reward_includes_cards_left: false

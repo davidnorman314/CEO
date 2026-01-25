@@ -7,12 +7,12 @@ from pstats import SortKey
 
 import hydra
 from hydra.core.hydra_config import HydraConfig
+from hydra.utils import get_class, instantiate
 from omegaconf import DictConfig, OmegaConf
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 
 from ceo.azure_rl.azure_client import AzureClient
-from ceo.envs.ceo_player_env import CEOPlayerEnv
 from ceo.game.eventlistener import EventListenerInterface
 from ceo.learning.ppo import PPOLearning
 from ceo.learning.ppo_agents import process_ppo_agents
@@ -20,15 +20,22 @@ from ceo.learning.ppo_agents import process_ppo_agents
 
 def validate_continue_training(cfg: DictConfig, prev_cfg: DictConfig) -> None:
     """Validate that continue_training config matches previous run."""
+    if cfg.env._target_ != prev_cfg.env._target_:
+        raise ValueError(
+            f"env class mismatch: current={cfg.env._target_}, "
+            f"previous={prev_cfg.env._target_}"
+        )
     if cfg.env.num_players != prev_cfg.env.num_players:
         raise ValueError(
             f"num_players mismatch: current={cfg.env.num_players}, "
             f"previous={prev_cfg.env.num_players}"
         )
-    if cfg.env.seat_number != prev_cfg.env.seat_number:
+    # seat_number only exists for fixed-seat environments
+    cur_seat = cfg.env.get("seat_number")
+    prev_seat = prev_cfg.env.get("seat_number")
+    if cur_seat != prev_seat:
         raise ValueError(
-            f"seat_number mismatch: current={cfg.env.seat_number}, "
-            f"previous={prev_cfg.env.seat_number}"
+            f"seat_number mismatch: current={cur_seat}, previous={prev_seat}"
         )
     # Validate ppo_agents match
     prev_agents = prev_cfg.get("ppo_agents", [])
@@ -63,57 +70,46 @@ def main(cfg: DictConfig) -> None:
     if cfg.continue_training:
         prev_cfg = OmegaConf.load(param_file)
         validate_continue_training(cfg, prev_cfg)
-        # Use previous env settings
-        num_players = prev_cfg.env.num_players
-        seat_number = prev_cfg.env.seat_number
-        print(
-            f"Loading previous num_players {num_players} "
-            f"and seat_number {seat_number}"
-        )
-    else:
-        num_players = cfg.env.num_players
-        seat_number = cfg.env.seat_number
+        print(f"Continuing training with env config: {cfg.env._target_}")
 
     # Set up custom behaviors from ppo_agents
     custom_behaviors, custom_behavior_descs = process_ppo_agents(
-        list(cfg.ppo_agents), device=cfg.device, num_players=num_players
+        list(cfg.ppo_agents), device=cfg.device, num_players=cfg.env.num_players
     )
 
-    # Validate custom behaviors don't include the training seat
-    if custom_behaviors is not None and seat_number in custom_behaviors:
+    # Validate custom behaviors don't include the training seat (for fixed-seat envs)
+    seat_number = cfg.env.get("seat_number")
+    if (
+        custom_behaviors is not None
+        and seat_number is not None
+        and seat_number in custom_behaviors
+    ):
         raise ValueError(
             f"Seat {seat_number} has a custom behavior, "
             "but that is the seat being trained."
         )
 
-    # Create the environment
-    env_args = {
-        "num_players": num_players,
-        "seat_number": seat_number,
+    # Build runtime kwargs for environment instantiation
+    runtime_kwargs = {
         "listener": listener,
-        "action_space_type": "all_card",
-        "reward_includes_cards_left": False,
         "custom_behaviors": custom_behaviors,
         "obs_kwargs": obs_kwargs,
     }
 
-    if cfg.env.parallel_env_count is None:
-        env = CEOPlayerEnv(**env_args)
+    # Create the environment using Hydra instantiation
+    parallel_env_count = cfg.ppo.parallel_env_count
+    if parallel_env_count is None:
+        env = instantiate(cfg.env, **runtime_kwargs)
     else:
-        env = make_vec_env(
-            CEOPlayerEnv, n_envs=cfg.env.parallel_env_count, env_kwargs=env_args
-        )
+        # For vectorized envs, get the class and kwargs separately
+        env_class = get_class(cfg.env._target_)
+        env_kwargs = OmegaConf.to_container(cfg.env, resolve=True)
+        env_kwargs.pop("_target_")
+        env_kwargs.update(runtime_kwargs)
+        env = make_vec_env(env_class, n_envs=parallel_env_count, env_kwargs=env_kwargs)
 
     # Create eval environment
-    eval_env = CEOPlayerEnv(
-        num_players=num_players,
-        seat_number=seat_number,
-        listener=listener,
-        action_space_type="all_card",
-        custom_behaviors=custom_behaviors,
-        reward_includes_cards_left=False,
-        obs_kwargs=obs_kwargs,
-    )
+    eval_env = instantiate(cfg.env, **runtime_kwargs)
 
     observation_factory = eval_env.observation_factory
 
