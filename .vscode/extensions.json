@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "anthropic.claude-code",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.vscode-jupyter-cell-tags",
+        "ms-toolsai.jupyter-keymap",
+        "ms-python.python",
+        "ms-python.debugpy",
+        "ms-python.vscode-python-envs",
+        "charliermarsh.ruff",
+        "ms-toolsai.tensorboard",
+        "vscodevim.vim"
+    ]
+}
